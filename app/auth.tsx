@@ -1,20 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { router } from 'expo-router';
 import { useApp } from '@/contexts/AppContext';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-WebBrowser.maybeCompleteAuthSession();
-
-// Set these in your environment for real Google Sign-In:
-// EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID — from Google Cloud Console
-// EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID      — from Google Cloud Console
-const ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '';
-const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '';
+const WEB_CLIENT_ID = '205619709770-c7cabrrdedn0nnndifceo9cbo387llcd.apps.googleusercontent.com';
 
 export default function AuthScreen() {
   const { signIn } = useApp();
@@ -23,49 +17,50 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: ANDROID_CLIENT_ID,
-    webClientId: WEB_CLIENT_ID,
-  });
-
   useEffect(() => {
-    if (response?.type === 'success') {
-      handleGoogleSuccess(response.authentication?.accessToken ?? '');
-    } else if (response?.type === 'error') {
-      setError('Google sign-in failed. Try demo mode below.');
-      setLoading(false);
-    } else if (response?.type === 'dismiss' || response?.type === 'cancel') {
-      setLoading(false);
-    }
-  }, [response]);
-
-  async function handleGoogleSuccess(token: string) {
     try {
-      const res = await fetch('https://www.googleapis.com/userinfo/v2/me', {
-        headers: { Authorization: `Bearer ${token}` },
+      GoogleSignin.configure({
+        scopes: ['https://www.googleapis.com/auth/drive.appdata'],
+        webClientId: WEB_CLIENT_ID,
+        offlineAccess: true,
       });
-      const user = await res.json();
-      // Pass the access token so AppContext can persist it for server-side auth
-      await signIn(
-        { name: user.name || 'User', email: user.email || '', avatar: user.picture },
-        token,
-      );
-      router.replace('/biometric-setup');
-    } catch {
-      setError('Could not fetch profile. Try demo mode below.');
-      setLoading(false);
+    } catch (e) {
+      console.warn('Failed to configure GoogleSignin:', e);
     }
-  }
+  }, []);
 
   async function handleGoogle() {
     setError('');
     setLoading(true);
-    if (!ANDROID_CLIENT_ID && !WEB_CLIENT_ID) {
-      setError('Google client ID not configured. Use demo mode below.');
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      const tokens = await GoogleSignin.getTokens();
+      
+      const user = (response as any).data?.user || (response as any).user;
+      await signIn(
+        {
+          name: user?.name || 'User',
+          email: user?.email || '',
+          avatar: user?.photo || undefined,
+        },
+        tokens.accessToken,
+      );
+      router.replace('/biometric-setup');
+    } catch (err: any) {
+      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled
+      } else if (err.code === statusCodes.IN_PROGRESS) {
+        // in progress
+      } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        setError('Google Play Services is not available or outdated.');
+      } else {
+        setError(err.message || 'Google sign-in failed. Try demo mode below.');
+        console.error('Google Sign-In Error:', err);
+      }
+    } finally {
       setLoading(false);
-      return;
     }
-    await promptAsync();
   }
 
   async function handleDemo() {
@@ -95,7 +90,7 @@ export default function AuthScreen() {
         <TouchableOpacity
           style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={handleGoogle}
-          disabled={loading || !request}
+          disabled={loading}
           activeOpacity={0.8}
         >
           {loading ? (

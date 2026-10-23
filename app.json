@@ -3,17 +3,9 @@
     "name": "Daily 5",
     "slug": "daily5-android",
     "version": "1.0.0",
-    "owner": "REPLACE_WITH_YOUR_EXPO_USERNAME",
+    "owner": "vashishtaparikipandla",
     "runtimeVersion": {
       "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/REPLACE_WITH_YOUR_PROJECT_ID"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "REPLACE_WITH_YOUR_PROJECT_ID"
-      }
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -34,7 +26,13 @@
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#F7F4EF"
       },
-      "package": "app.daily5.android"
+      "package": "app.daily5.android",
+      "versionCode": 3,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "web": {
       "favicon": "./assets/images/icon.png"
@@ -61,11 +59,20 @@
           "faceIDPermission": "Daily 5 uses Face ID so you can unlock your diary quickly."
         }
       ],
-      "expo-updates"
+      "expo-updates",
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": false,
-      "reactCompiler": true
+      "reactCompiler": false
+    },
+    "extra": {
+      "router": {
+        "origin": "https://replit.com/"
+      },
+      "eas": {
+        "projectId": "552303a5-a73e-4163-bc69-27ffb2b55c53"
+      }
     }
   }
 }

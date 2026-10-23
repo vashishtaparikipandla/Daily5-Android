@@ -93,7 +93,7 @@ export default function OnboardingScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad, paddingBottom: botPad }]}>
-      <Animated.View style={[styles.content, fadeStyle]}>
+      <View style={styles.content}>
 
         {/* Phase 0 — DOB */}
         {phase === 0 && (
@@ -184,7 +184,7 @@ export default function OnboardingScreen() {
               {livedWeeks} weeks lived. {Math.max(0, 4160 - livedWeeks)} ahead.
             </Text>
             <TouchableOpacity
-              style={[styles.btn, { backgroundColor: colors.primary }]}
+              style={[styles.btn, { backgroundColor: colors.primary, width: '100%', paddingHorizontal: 24 }]}
               onPress={() => transition(3)}
             >
               <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Got it</Text>
@@ -241,7 +241,7 @@ export default function OnboardingScreen() {
             </View>
           </View>
         )}
-      </Animated.View>
+      </View>
     </View>
   );
 }

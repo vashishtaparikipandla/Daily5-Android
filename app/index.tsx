@@ -29,8 +29,21 @@ export default function SplashScreen() {
     const t = setTimeout(() => {
       splashReady.current = true;
       maybeNavigate();
-    }, 2200);
-    return () => clearTimeout(t);
+    }, 1200);
+
+    // Safety watchdog: ensure navigation never hangs indefinitely
+    const watchdog = setTimeout(() => {
+      if (!navigated.current) {
+        splashReady.current = true;
+        authReady.current = true;
+        maybeNavigate();
+      }
+    }, 3000);
+
+    return () => {
+      clearTimeout(t);
+      clearTimeout(watchdog);
+    };
   }, []);
 
   useEffect(() => {
@@ -42,34 +55,33 @@ export default function SplashScreen() {
 
   async function maybeNavigate() {
     if (!splashReady.current || !authReady.current || navigated.current) return;
+    navigated.current = true;
 
-    if (!hasOnboarded) {
-      navigated.current = true;
-      router.replace('/onboarding');
-      return;
-    }
+    try {
+      if (!hasOnboarded) {
+        router.replace('/onboarding');
+        return;
+      }
 
-    if (!isAuthenticated) {
-      navigated.current = true;
-      router.replace('/auth');
-      return;
-    }
-
-    // User is authenticated — use centralized unlock() which handles biometric challenge
-    if (biometricEnabled) {
-      setStatusText('Unlocking…');
-      const success = await unlock();
-      if (!success) {
-        setStatusText('Biometric failed. Returning to sign-in…');
-        await new Promise(r => setTimeout(r, 1400));
-        navigated.current = true;
+      if (!isAuthenticated) {
         router.replace('/auth');
         return;
       }
-    }
 
-    navigated.current = true;
-    router.replace('/(tabs)');
+      if (biometricEnabled) {
+        setStatusText('Unlocking…');
+        const success = await unlock();
+        if (!success) {
+          router.replace('/auth');
+          return;
+        }
+      }
+
+      router.replace('/(tabs)');
+    } catch (e) {
+      console.warn('Navigation error, fallback to auth:', e);
+      router.replace('/auth');
+    }
   }
 
   const logoStyle = useAnimatedStyle(() => ({
