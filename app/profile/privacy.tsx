@@ -332,14 +332,30 @@ function PrivacyContent() {
 
   function handleDelete() {
     Alert.alert(
-      'Delete account',
-      'This will permanently delete all your diary entries and books. This cannot be undone.',
+      'Delete all diary data?',
+      'This will permanently wipe all local encrypted memories, private keys, and book archives from this device.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete everything',
+          text: 'Proceed with Wipe',
           style: 'destructive',
-          onPress: async () => { await deleteAccount(); router.replace('/auth'); },
+          onPress: () => {
+            Alert.alert(
+              'Final Confirmation',
+              'Are you absolutely sure? Once deleted, without your 64-character recovery key and an exported backup, your journal cannot be recovered.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Erase Everything Now',
+                  style: 'destructive',
+                  onPress: async () => {
+                    await deleteAccount();
+                    router.replace('/auth');
+                  },
+                },
+              ],
+            );
+          },
         },
       ],
     );

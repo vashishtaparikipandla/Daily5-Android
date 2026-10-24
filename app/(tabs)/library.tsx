@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, Platform, Modal, Dimensions, Alert, ActivityIndicator,
+  TextInput, Platform, Modal, Dimensions, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Plus, MagnifyingGlass, X, Sparkle, BookOpen, ShareNetwork, Printer } from 'phosphor-react-native';
@@ -161,31 +161,39 @@ export default function LibraryTab() {
       )}
 
       {/* Filter Chips */}
-      <View style={styles.filterRow}>
-        {(['all', 'monthly', 'custom'] as const).map(tab => {
-          const active = filter === tab;
-          const label = tab === 'all' ? 'All Books' : tab === 'monthly' ? 'Monthly Volumes' : 'Custom Collections';
-          return (
-            <TouchableOpacity
-              key={tab}
-              style={[
-                styles.filterChip,
-                {
-                  backgroundColor: active ? colors.primary : colors.muted,
-                  borderColor: active ? colors.primary : colors.border,
-                },
-              ]}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setFilter(tab);
-              }}
-            >
-              <Text style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.foreground }]}>
-                {label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+      <View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+        >
+          {(['all', 'monthly', 'custom'] as const).map(tab => {
+            const active = filter === tab;
+            const label = tab === 'all' ? 'All Books' : tab === 'monthly' ? 'Monthly Volumes' : 'Custom Collections';
+            return (
+              <TouchableOpacity
+                key={tab}
+                style={[
+                  styles.filterChip,
+                  {
+                    backgroundColor: active ? colors.primary : colors.muted,
+                    borderColor: active ? colors.primary : colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setFilter(tab);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Filter: ${label}`}
+              >
+                <Text style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.foreground }]}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Exploration Callout for Sample Book */}
@@ -222,6 +230,7 @@ export default function LibraryTab() {
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
             const isSharing = sharingKey === item.monthKey;
+            const bookTitle = item.title || item.monthKey;
             return (
               <View style={styles.bookCell}>
                 <BookCover
@@ -238,6 +247,9 @@ export default function LibraryTab() {
                     onPress={() => handleShareBook(item)}
                     disabled={isSharing}
                     activeOpacity={0.75}
+                    hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Share ${bookTitle}`}
                   >
                     {isSharing ? (
                       <ActivityIndicator size="small" color={colors.primary} />
@@ -253,6 +265,9 @@ export default function LibraryTab() {
                     style={[styles.bookActionBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
                     onPress={() => handlePrintBook(item)}
                     activeOpacity={0.75}
+                    hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Order print for ${bookTitle}`}
                   >
                     <Printer size={14} color={colors.primaryForeground} weight="bold" />
                     <Text style={[styles.bookActionText, { color: colors.primaryForeground }]}>Print</Text>
@@ -442,7 +457,7 @@ const styles = StyleSheet.create({
   },
   bookActionBtn: {
     flex: 1,
-    height: 32,
+    height: 36,
     borderRadius: 8,
     borderWidth: 1,
     flexDirection: 'row',

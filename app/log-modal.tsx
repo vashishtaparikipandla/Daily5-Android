@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  ScrollView, Platform, Alert,
+  ScrollView, Platform, Alert, KeyboardAvoidingView,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { X, Lock, WarningCircle, BookmarkSimple, CheckCircle, BookOpen } from 'phosphor-react-native';
@@ -94,6 +94,26 @@ function LogModalContent() {
     }
   }
 
+  function handleDismiss() {
+    const hasUnsaved = slots.some((s, i) => {
+      const orig = existingEntries[i]?.text ?? '';
+      return !s.isImmutable && s.text.trim() !== orig.trim() && s.text.trim().length > 0;
+    });
+
+    if (hasUnsaved) {
+      Alert.alert(
+        'Discard moments?',
+        'You have unsaved writing. Are you sure you want to discard your changes?',
+        [
+          { text: 'Keep Writing', style: 'cancel' },
+          { text: 'Discard', style: 'destructive', onPress: () => router.dismiss() },
+        ],
+      );
+    } else {
+      router.dismiss();
+    }
+  }
+
   async function handleDone() {
     const entries = slots
       .filter(s => s.text.trim().length > 0)
@@ -129,10 +149,18 @@ function LogModalContent() {
   const botPad = insets.bottom + (Platform.OS === 'web' ? 34 : 0);
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={[styles.root, { backgroundColor: colors.background }]}
+    >
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.dismiss()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+        <TouchableOpacity
+          onPress={handleDismiss}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel="Close and discard changes"
+        >
           <X size={22} color={colors.mutedForeground} weight="bold" />
         </TouchableOpacity>
         <View style={styles.headerTitle}>
@@ -147,6 +175,8 @@ function LogModalContent() {
           onPress={handleDone}
           disabled={saving}
           style={[styles.doneBtn, { backgroundColor: colors.primary, opacity: saving ? 0.6 : 1 }]}
+          accessibilityRole="button"
+          accessibilityLabel="Save moments"
         >
           <Text style={[styles.doneBtnText, { color: colors.primaryForeground }]}>Done</Text>
         </TouchableOpacity>
@@ -271,7 +301,7 @@ function LogModalContent() {
           />
         ))}
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -337,6 +367,8 @@ function SlotEditor({ slot, slotNumber, onChange, colors }: SlotEditorProps) {
         editable={!slot.isImmutable}
         maxLength={MAX_CHARS}
         textAlignVertical="top"
+        accessibilityLabel={`Moment ${slotNumber} of 4`}
+        accessibilityHint="Enter up to 120 characters describing this moment"
       />
 
       {/* Micro-hint */}

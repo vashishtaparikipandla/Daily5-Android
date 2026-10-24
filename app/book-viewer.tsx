@@ -85,7 +85,14 @@ export function BookViewerContent() {
 
   async function handleToggleHide(date: string) {
     Haptics.selectionAsync();
+    const willHide = !hiddenDays.includes(date);
     await toggleHideDayInBook(book!.monthKey, date);
+    Alert.alert(
+      willHide ? 'Day Hidden' : 'Day Restored',
+      willHide
+        ? 'This day is hidden from print orders and PDF exports. Your diary memories remain safe.'
+        : 'This day will now be included in print orders and PDF exports.',
+    );
   }
 
   async function handleLock() {
@@ -130,6 +137,8 @@ export function BookViewerContent() {
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           style={styles.headerBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Back to library"
         >
           <ArrowLeft size={22} color={colors.foreground} />
         </TouchableOpacity>
@@ -159,6 +168,8 @@ export function BookViewerContent() {
                   borderColor: isCurrentDayHidden ? colors.primary : colors.border,
                 },
               ]}
+              accessibilityRole="button"
+              accessibilityLabel={isCurrentDayHidden ? "Unhide this day in book" : "Hide this day in book"}
             >
               {isCurrentDayHidden ? (
                 <Eye size={16} color={colors.primaryForeground} weight="fill" />
@@ -218,7 +229,7 @@ export function BookViewerContent() {
           const idx = Math.round(e.nativeEvent.contentOffset.x / PAGE_WIDTH);
           if (idx !== pageIndex) {
             setPageIndex(idx);
-            Haptics.selectionAsync();
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           }
         }}
         renderItem={({ item }) => {
@@ -372,6 +383,8 @@ export function BookViewerContent() {
           style={[styles.navPageBtn, { opacity: pageIndex === 0 ? 0.3 : 1 }]}
           onPress={() => scrollToPage(pageIndex - 1)}
           disabled={pageIndex === 0}
+          accessibilityRole="button"
+          accessibilityLabel="Previous page"
         >
           <CaretLeft size={20} color={colors.foreground} />
           <Text style={[styles.navPageText, { color: colors.foreground }]}>Previous</Text>
@@ -388,6 +401,8 @@ export function BookViewerContent() {
           style={[styles.navPageBtn, { opacity: pageIndex >= pages.length - 1 ? 0.3 : 1 }]}
           onPress={() => scrollToPage(pageIndex + 1)}
           disabled={pageIndex >= pages.length - 1}
+          accessibilityRole="button"
+          accessibilityLabel="Next page"
         >
           <Text style={[styles.navPageText, { color: colors.foreground }]}>Next</Text>
           <CaretRight size={20} color={colors.foreground} />

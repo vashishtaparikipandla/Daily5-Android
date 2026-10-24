@@ -133,6 +133,34 @@ function AddressStep({
   onBack: () => void;
 }) {
   function field(label: string, key: keyof ShippingAddress, placeholder: string, opts?: { half?: boolean }) {
+    let autoCompleteVal: any = 'off';
+    let textContentTypeVal: any = 'none';
+    let keyboardTypeVal: any = 'default';
+
+    if (key === 'name') {
+      autoCompleteVal = 'name';
+      textContentTypeVal = 'name';
+    } else if (key === 'line1') {
+      autoCompleteVal = 'street-address';
+      textContentTypeVal = 'streetAddressLine1';
+    } else if (key === 'line2') {
+      autoCompleteVal = 'street-address';
+      textContentTypeVal = 'streetAddressLine2';
+    } else if (key === 'city') {
+      autoCompleteVal = 'postal-address-locality';
+      textContentTypeVal = 'addressCity';
+    } else if (key === 'state') {
+      autoCompleteVal = 'postal-address-region';
+      textContentTypeVal = 'addressState';
+    } else if (key === 'zip') {
+      autoCompleteVal = 'postal-code';
+      textContentTypeVal = 'postalCode';
+      keyboardTypeVal = 'numeric';
+    } else if (key === 'country') {
+      autoCompleteVal = 'country';
+      textContentTypeVal = 'countryName';
+    }
+
     return (
       <View style={[styles.fieldWrap, opts?.half && { flex: 1 }]}>
         <Text style={[styles.fieldLabel, { color: colors.tertiary }]}>{label}</Text>
@@ -144,6 +172,10 @@ function AddressStep({
           style={[styles.input, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.border }]}
           autoCorrect={false}
           autoCapitalize={key === 'country' || key === 'state' ? 'characters' : 'words'}
+          autoComplete={autoCompleteVal}
+          textContentType={textContentTypeVal}
+          keyboardType={keyboardTypeVal}
+          accessibilityLabel={label}
         />
       </View>
     );
@@ -169,6 +201,9 @@ function AddressStep({
           style={[styles.primaryBtn, { backgroundColor: valid ? colors.primary : colors.border }]}
           onPress={valid ? onNext : undefined}
           activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !valid }}
+          accessibilityLabel="Continue to Payment"
         >
           <Text style={[styles.primaryBtnText, { color: valid ? colors.primaryForeground : colors.mutedForeground }]}>
             Continue to Payment

@@ -4,7 +4,7 @@ import {
   Platform, Dimensions,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { Bell, Fire, Sparkle, ArrowRight } from 'phosphor-react-native';
+import { Bell, Fire, Sparkle, ArrowRight, BookOpen } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { useColors } from '@/hooks/useColors';
@@ -78,7 +78,11 @@ export default function TodayTab() {
                 {dayOfWeek}
               </Text>
               {/* Streak badge */}
-              <View style={[styles.streakBadge, { backgroundColor: colors.accentLight, borderColor: colors.border }]}>
+              <View
+                style={[styles.streakBadge, { backgroundColor: colors.accentLight, borderColor: colors.border }]}
+                accessible={true}
+                accessibilityLabel={`${streakCount > 0 ? streakCount : 0} day streak`}
+              >
                 <Fire size={14} color={colors.primary} weight="fill" />
                 <Text style={[styles.streakText, { color: colors.primary }]}>
                   {streakCount > 0 ? `${streakCount}d Streak` : 'Start Streak'}
@@ -96,8 +100,10 @@ export default function TodayTab() {
               Haptics.selectionAsync();
               router.push('/notifications');
             }}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={`Notifications, ${unreadCount > 0 ? unreadCount : 'no'} unread`}
           >
             <Bell size={20} color={colors.foreground} weight="regular" />
             {unreadCount > 0 && (
@@ -113,17 +119,34 @@ export default function TodayTab() {
         {/* Celebration Banner when 4/4 moments captured */}
         {isComplete && (
           <View style={[styles.celebrationCard, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
-            <View style={[styles.celebrationIconWrap, { backgroundColor: colors.accentLight }]}>
-              <Sparkle size={18} color={colors.primary} weight="fill" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={[styles.celebrationIconWrap, { backgroundColor: colors.accentLight }]}>
+                <Sparkle size={18} color={colors.primary} weight="fill" />
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[styles.celebrationTitle, { color: colors.foreground }]}>
+                  Today's Story is Complete ✨
+                </Text>
+                <Text style={[styles.celebrationSubtitle, { color: colors.mutedForeground }]}>
+                  You captured all 4 fragments. Your daily page has been preserved.
+                </Text>
+              </View>
             </View>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={[styles.celebrationTitle, { color: colors.foreground }]}>
-                Today's Story is Complete ✨
+            <TouchableOpacity
+              style={[styles.flipPageBtn, { backgroundColor: colors.accentLight, borderColor: colors.border }]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push({ pathname: '/book-viewer', params: { monthKey: today.slice(0, 7) } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Flip today's page in book"
+              activeOpacity={0.8}
+            >
+              <BookOpen size={15} color={colors.primary} weight="bold" />
+              <Text style={[styles.flipPageBtnText, { color: colors.primary }]}>
+                Flip Today's Page in Book →
               </Text>
-              <Text style={[styles.celebrationSubtitle, { color: colors.mutedForeground }]}>
-                You captured all 4 fragments. Your daily page has been preserved.
-              </Text>
-            </View>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -134,7 +157,12 @@ export default function TodayTab() {
               <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>
                 {entries.length === 4 ? "Today's 4 Moments" : `${entries.length} of 4 Moments Recorded`}
               </Text>
-              <TouchableOpacity onPress={openLog} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity
+                onPress={openLog}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Edit today's moments"
+              >
                 <Text style={[styles.editLink, { color: colors.primary }]}>Edit</Text>
               </TouchableOpacity>
             </View>
@@ -286,9 +314,7 @@ const styles = StyleSheet.create({
   },
   hairline: { height: 1, marginVertical: 2 },
   celebrationCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    gap: 10,
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
@@ -308,6 +334,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
     lineHeight: 16,
+  },
+  flipPageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  flipPageBtnText: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
   },
   section: { gap: 0 },
   sectionHeaderRow: {

@@ -4,7 +4,7 @@ import {
   Platform, Keyboard, ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
-import { MagnifyingGlass, XCircle, X, Clock, Lightbulb, CaretRight, CalendarBlank } from 'phosphor-react-native';
+import { MagnifyingGlass, XCircle, X, Clock, Lightbulb, CaretRight, CalendarBlank, BookOpen } from 'phosphor-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -186,7 +186,9 @@ export default function SearchTab() {
           {hasQuery && (
             <TouchableOpacity
               onPress={() => setQuery('')}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search text"
             >
               <XCircle size={18} color={colors.tertiary} weight="fill" />
             </TouchableOpacity>
@@ -215,6 +217,8 @@ export default function SearchTab() {
                     },
                   ]}
                   onPress={() => setFilterType(type)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Filter by ${type}, ${count} results`}
                 >
                   <Text
                     style={[
@@ -237,13 +241,14 @@ export default function SearchTab() {
           contentContainerStyle={[styles.scrollContent, { paddingBottom: botPad }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
             <View style={styles.recentSection}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={[styles.sectionHeading, { color: colors.tertiary }]}>Recent Searches</Text>
-                <TouchableOpacity onPress={clearAllRecent}>
+                <TouchableOpacity onPress={clearAllRecent} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
                   <Text style={[styles.clearAllText, { color: colors.primary }]}>Clear</Text>
                 </TouchableOpacity>
               </View>
@@ -259,7 +264,9 @@ export default function SearchTab() {
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => removeRecentSearch(term)}
-                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${term} from search history`}
                     >
                       <X size={13} color={colors.tertiary} weight="bold" />
                     </TouchableOpacity>
@@ -302,6 +309,16 @@ export default function SearchTab() {
           <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
             We couldn't find any memories matching "{query}". Try checking for spelling or searching a broader term.
           </Text>
+          <TouchableOpacity
+            style={[styles.emptyActionBtn, { backgroundColor: colors.accentLight, borderColor: colors.border }]}
+            onPress={() => router.push('/(tabs)/library')}
+            accessibilityRole="button"
+            accessibilityLabel="Explore Library"
+            activeOpacity={0.8}
+          >
+            <BookOpen size={16} color={colors.primary} weight="bold" />
+            <Text style={[styles.emptyActionText, { color: colors.primary }]}>Explore Library</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <FlatList
@@ -322,6 +339,7 @@ export default function SearchTab() {
           }
           contentContainerStyle={[styles.resultsList, { paddingBottom: botPad }]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           renderItem={({ item }) => {
             if (item.type === 'books_header') {
               return (
@@ -539,6 +557,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  emptyActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  emptyActionText: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
   },
   resultsList: {
     padding: 20,

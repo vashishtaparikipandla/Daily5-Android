@@ -249,9 +249,13 @@ export default function AuthScreen() {
           <Text style={[styles.demoBtnText, { color: colors.mutedForeground }]}>Explore with demo account</Text>
         </TouchableOpacity>
 
-        <Text style={[styles.fine, { color: colors.tertiary }]}>
-          Your memories are encrypted locally on this device. Nothing is shared without your permission.
-        </Text>
+        {/* Zero-Knowledge Privacy Badge */}
+        <View style={[styles.privacyBadge, { backgroundColor: colors.accentLight, borderColor: colors.border }]}>
+          <ShieldCheck size={18} color={colors.primary} weight="fill" />
+          <Text style={[styles.privacyBadgeText, { color: colors.foreground }]}>
+            <Text style={{ fontFamily: 'Inter_600SemiBold' }}>Zero-Knowledge Diary:</Text> Your moments are encrypted locally on this device. We never sell, read, or upload your words to cloud servers.
+          </Text>
+        </View>
       </View>
 
       {/* ─── Telegram Login Modal ────────────────────────────────────────── */}
@@ -298,6 +302,7 @@ export default function AuthScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 autoFocus
+                accessibilityLabel="Telegram username"
               />
             </View>
 
@@ -362,6 +367,7 @@ export default function AuthScreen() {
                   value={emailAddress}
                   onChangeText={setEmailAddress}
                   autoFocus
+                  accessibilityLabel="Email address"
                 />
 
                 <TouchableOpacity
@@ -414,10 +420,13 @@ export default function AuthScreen() {
                   placeholder="------"
                   placeholderTextColor={colors.tertiary}
                   keyboardType="number-pad"
+                  textContentType="oneTimeCode"
+                  autoComplete="one-time-code"
                   maxLength={6}
                   value={enteredCode}
                   onChangeText={setEnteredCode}
                   autoFocus
+                  accessibilityLabel="6-digit verification code"
                 />
 
                 <TouchableOpacity
@@ -552,5 +561,20 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontFamily: 'Inter_700Bold',
     letterSpacing: 6,
+  },
+  privacyBadge: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  privacyBadgeText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 16,
   },
 });
