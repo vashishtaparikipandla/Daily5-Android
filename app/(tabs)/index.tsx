@@ -139,16 +139,16 @@ export default function TodayTab() {
           <View style={styles.streakHeaderRow}>
             <View style={styles.streakTitleGroup}>
               <View style={[styles.streakFlameCircle, { backgroundColor: colors.accentLight }]}>
-                <Fire size={18} color={colors.primary} weight="fill" />
+                <Fire size={20} color={colors.primary} weight="fill" />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={[styles.streakTitle, { color: colors.foreground }]}>
                   {streakCount > 0 ? `${streakCount}-Day Streak` : 'Start Your Streak'}
                 </Text>
-                <Text style={[styles.streakSubtitle, { color: colors.mutedForeground }]}>
+                <Text style={[styles.streakSubtitle, { color: colors.mutedForeground }]} numberOfLines={1}>
                   {streakCount > 0
                     ? `${streakCount} day${streakCount === 1 ? '' : 's'} recorded in a row`
-                    : 'Capture 4 moments today to start your streak'}
+                    : 'Capture 4 moments today to start'}
                 </Text>
               </View>
             </View>
@@ -174,12 +174,25 @@ export default function TodayTab() {
                 >
                   {item.label}
                 </Text>
+                <Text
+                  style={[
+                    styles.weekDayDateNum,
+                    { color: item.isToday ? colors.primary : colors.mutedForeground },
+                    item.isToday && { fontFamily: 'Inter_700Bold' },
+                  ]}
+                >
+                  {item.dayNum}
+                </Text>
                 <TouchableOpacity
                   style={[
                     styles.weekDayCircle,
                     { borderColor: colors.border, backgroundColor: colors.muted },
                     item.hasEntry && { backgroundColor: colors.primary, borderColor: colors.primary },
-                    item.isToday && !item.hasEntry && { borderColor: colors.primary, borderWidth: 2, backgroundColor: colors.accentLight },
+                    item.isToday && !item.hasEntry && {
+                      borderColor: colors.primary,
+                      borderWidth: 2,
+                      backgroundColor: colors.accentLight,
+                    },
                     item.isFuture && { opacity: 0.35 },
                   ]}
                   onPress={() => {
@@ -194,20 +207,17 @@ export default function TodayTab() {
                 >
                   {item.hasEntry ? (
                     <Check size={14} color="#FFFFFF" weight="bold" />
-                  ) : (
-                    <Text
-                      style={[
-                        styles.weekDayNum,
-                        { color: item.isToday ? colors.primary : colors.foreground },
-                      ]}
-                    >
-                      {item.dayNum}
-                    </Text>
-                  )}
+                  ) : item.isToday ? (
+                    <View style={[styles.pendingTodayDot, { backgroundColor: colors.primary }]} />
+                  ) : null}
                 </TouchableOpacity>
-                {item.isToday && (
-                  <View style={[styles.todayDot, { backgroundColor: colors.primary }]} />
-                )}
+
+                {/* Reserved height footer so all 7 columns stay pixel-aligned */}
+                <View style={styles.indicatorContainer}>
+                  {item.isToday && (
+                    <View style={[styles.todayDot, { backgroundColor: colors.primary }]} />
+                  )}
+                </View>
               </View>
             ))}
           </View>
@@ -456,6 +466,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Inter_500Medium',
   },
+  weekDayDateNum: {
+    fontSize: 10,
+    fontFamily: 'Inter_500Medium',
+    marginTop: -4,
+    marginBottom: 2,
+  },
   weekDayCircle: {
     width: 34,
     height: 34,
@@ -468,11 +484,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter_600SemiBold',
   },
+  pendingTodayDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
   todayDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
-    marginTop: 1,
+  },
+  indicatorContainer: {
+    height: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
   },
 
   notifBtn: {

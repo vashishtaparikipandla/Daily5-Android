@@ -27,7 +27,7 @@
         "backgroundColor": "#F7F4EF"
       },
       "package": "app.daily5.android",
-      "versionCode": 9,
+      "versionCode": 10,
       "softwareKeyboardLayoutMode": "resize",
       "androidNavigationBar": {
         "barStyle": "dark-content",

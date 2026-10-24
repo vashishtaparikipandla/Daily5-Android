@@ -36,6 +36,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="log-modal" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
       <Stack.Screen name="book-viewer" options={{ headerShown: false }} />
+      <Stack.Screen name="notifications" options={{ headerShown: false }} />
       <Stack.Screen name="profile/edit" options={{ headerShown: false }} />
       <Stack.Screen name="profile/notifications" options={{ headerShown: false }} />
       <Stack.Screen name="profile/appearance" options={{ headerShown: false }} />

@@ -12,74 +12,84 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   PencilSimple,
   BookOpen,
-  Package,
-  ShareNetwork,
-  ArrowLeft,
+  Sparkle,
+  X,
   ArrowRight,
+  ArrowLeft,
   Check,
 } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
-import { useColors } from '@/hooks/useColors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KEYS } from '@/lib/storage';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface FtuoTourProps {
   forceShow?: boolean;
   onClose?: () => void;
 }
 
-const STEPS = [
+interface CoachmarkStep {
+  step: number;
+  total: number;
+  icon: any;
+  iconBg: string;
+  iconColor: string;
+  title: string;
+  body: string;
+  targetDescription: string;
+  // Layout positioning
+  targetPosition: 'top_ribbon' | 'center_card' | 'bottom_tab';
+  pointerDirection: 'up' | 'down';
+  ctaLabel: string;
+}
+
+const TOUR_STEPS: CoachmarkStep[] = [
   {
     step: 1,
-    tag: 'STEP 1 OF 4',
+    total: 3,
     icon: PencilSimple,
-    badgeColor: '#E8593A',
-    badgeBg: 'rgba(232, 89, 58, 0.14)',
-    title: 'Log your 4 memories',
-    body: 'Every evening, capture 4 meaningful moments from your day right on your home screen. Not a highlight reel—just honest, real fragments of your life.',
-    actionLabel: 'Got it',
-    tip: '💡 Tap "Log tonight\'s 4" anytime to write.',
+    iconBg: 'rgba(232, 89, 58, 0.18)',
+    iconColor: '#E8593A',
+    title: "Capture Tonight's 4 Moments",
+    body: 'Every evening, capture 4 meaningful fragments of your day. Photos first, or quiet thoughts—not a highlight reel, but real honest memories.',
+    targetDescription: "Tonight's Archival Entry",
+    targetPosition: 'center_card',
+    pointerDirection: 'down',
+    ctaLabel: 'Next Step →',
   },
   {
     step: 2,
-    tag: 'STEP 2 OF 4',
-    icon: BookOpen,
-    badgeColor: '#C47B3A',
-    badgeBg: 'rgba(196, 123, 58, 0.14)',
-    title: 'Explore monthly books',
-    body: 'At the end of each month, your daily moments are bound into a personal digital book in your Books tab. Flip through your life month by month.',
-    actionLabel: 'Next',
-    tip: '📖 Access anytime via the Books tab below.',
+    total: 3,
+    icon: Sparkle,
+    iconBg: 'rgba(196, 123, 58, 0.18)',
+    iconColor: '#C47B3A',
+    title: 'Build Your 7-Day Habit',
+    body: 'Each day you record fills a circle on your archival ribbon. Watch your streak grow and see your daily entries build momentum.',
+    targetDescription: 'Weekly Archival Streak',
+    targetPosition: 'top_ribbon',
+    pointerDirection: 'up',
+    ctaLabel: 'Next Step →',
   },
   {
     step: 3,
-    tag: 'STEP 3 OF 4',
-    icon: Package,
-    badgeColor: '#2A7B62',
-    badgeBg: 'rgba(42, 123, 98, 0.14)',
-    title: 'Order physical prints',
-    body: 'Turn your digital memories into real, tangible paperbacks. You can order a beautifully printed pocket book delivered right to your door.',
-    actionLabel: 'Next',
-    tip: '📦 Custom linen-bound format with archival paper.',
-  },
-  {
-    step: 4,
-    tag: 'STEP 4 OF 4',
-    icon: ShareNetwork,
-    badgeColor: '#3A7EC4',
-    badgeBg: 'rgba(58, 126, 196, 0.14)',
-    title: 'Share book as PDF',
-    body: 'Export crisp, print-ready PDF editions of any monthly volume. Share your memories with family or keep an offline archive in your Google Drive.',
-    actionLabel: "Let's begin",
-    tip: '📄 Export directly from the book viewer.',
+    total: 3,
+    icon: BookOpen,
+    iconBg: 'rgba(42, 123, 98, 0.18)',
+    iconColor: '#2A7B62',
+    title: 'Your Monthly Photobook',
+    body: 'At the end of every month, your daily pages bind into an interactive hardcover book. Turn pages, switch layouts, and order real physical prints.',
+    targetDescription: 'Monthly Books Library',
+    targetPosition: 'bottom_tab',
+    pointerDirection: 'down',
+    ctaLabel: 'Start Archiving ✨',
   },
 ];
 
 export function FtuoTour({ forceShow = false, onClose }: FtuoTourProps) {
-  const colors = useColors();
+  const insets = useSafeAreaInsets();
   const [visible, setVisible] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
   useEffect(() => {
     async function checkTourStatus() {
@@ -93,7 +103,7 @@ export function FtuoTour({ forceShow = false, onClose }: FtuoTourProps) {
           setVisible(true);
         }
       } catch {
-        // If error, ignore
+        // Ignore error
       }
     }
     checkTourStatus();
@@ -109,8 +119,8 @@ export function FtuoTour({ forceShow = false, onClose }: FtuoTourProps) {
 
   function handleNext() {
     Haptics.selectionAsync();
-    if (currentStep < STEPS.length - 1) {
-      setCurrentStep(s => s + 1);
+    if (currentStepIndex < TOUR_STEPS.length - 1) {
+      setCurrentStepIndex((idx) => idx + 1);
     } else {
       handleDismiss();
     }
@@ -118,14 +128,61 @@ export function FtuoTour({ forceShow = false, onClose }: FtuoTourProps) {
 
   function handlePrev() {
     Haptics.selectionAsync();
-    if (currentStep > 0) {
-      setCurrentStep(s => s - 1);
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex((idx) => idx - 1);
     }
   }
 
   if (!visible) return null;
 
-  const step = STEPS[currentStep];
+  const currentStep = TOUR_STEPS[currentStepIndex];
+  const IconComp = currentStep.icon;
+
+  // Compute spotlight highlight geometry and card placement based on targetPosition
+  let spotlightStyle: any = {};
+  let cardPositionStyle: any = {};
+
+  if (currentStep.targetPosition === 'top_ribbon') {
+    // 7-day streak card near top of screen
+    spotlightStyle = {
+      top: insets.top + 70,
+      left: 18,
+      width: SCREEN_WIDTH - 36,
+      height: 96,
+      borderRadius: 16,
+    };
+    // Card placed below the spotlight
+    cardPositionStyle = {
+      top: insets.top + 180,
+    };
+  } else if (currentStep.targetPosition === 'center_card') {
+    // Tonight's 4 Moments card in middle of screen
+    const targetY = SCREEN_HEIGHT * 0.42;
+    spotlightStyle = {
+      top: targetY,
+      left: 18,
+      width: SCREEN_WIDTH - 36,
+      height: 140,
+      borderRadius: 16,
+    };
+    // Card placed above the spotlight with pointer pointing down
+    cardPositionStyle = {
+      top: Math.max(insets.top + 50, targetY - 240),
+    };
+  } else {
+    // Bottom Tab Bar: Books tab (middle right of tab bar)
+    spotlightStyle = {
+      bottom: Math.max(insets.bottom, 12),
+      left: SCREEN_WIDTH * 0.28,
+      width: SCREEN_WIDTH * 0.24,
+      height: 54,
+      borderRadius: 27,
+    };
+    // Card placed above bottom bar
+    cardPositionStyle = {
+      bottom: Math.max(insets.bottom, 16) + 74,
+    };
+  }
 
   return (
     <Modal
@@ -133,137 +190,105 @@ export function FtuoTour({ forceShow = false, onClose }: FtuoTourProps) {
       animationType="fade"
       visible={visible}
       onRequestClose={handleDismiss}
+      statusBarTranslucent
     >
-      <View style={styles.overlay}>
-        {/* Backdrop touch to dismiss */}
+      <View style={styles.overlayContainer}>
+        {/* Dimmed backdrop */}
         <TouchableOpacity
           style={StyleSheet.absoluteFillObject}
           activeOpacity={1}
           onPress={handleDismiss}
         />
 
-        {/* Focused Card */}
-        <View
-          style={[
-            styles.card,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.borderStrong,
-            },
-          ]}
-        >
-          {/* Top header row */}
-          <View style={styles.topRow}>
-            <View
-              style={[
-                styles.badge,
-                { backgroundColor: step.badgeBg },
-              ]}
-            >
-              <Text style={[styles.badgeText, { color: step.badgeColor }]}>
-                {step.tag}
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={handleDismiss}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <Text style={[styles.skipText, { color: colors.tertiary }]}>
-                Skip tour
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Visual Icon */}
-          <View style={styles.iconContainer}>
-            <View
-              style={[
-                styles.iconBubble,
-                { backgroundColor: step.badgeBg, borderColor: step.badgeColor + '33' },
-              ]}
-            >
-              {React.createElement(step.icon, { size: 36, color: step.badgeColor, weight: 'duotone' })}
-            </View>
-          </View>
-
-          {/* Text Content */}
-          <Text
-            style={[
-              styles.title,
-              { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' },
-            ]}
-          >
-            {step.title}
-          </Text>
-
-          <Text style={[styles.body, { color: colors.mutedForeground }]}>
-            {step.body}
-          </Text>
-
-          {/* Tip callout */}
-          <View
-            style={[
-              styles.tipBox,
-              { backgroundColor: colors.muted, borderColor: colors.border },
-            ]}
-          >
-            <Text style={[styles.tipText, { color: colors.foreground }]}>
-              {step.tip}
+        {/* Spotlight cutout / beacon border */}
+        <View style={[styles.spotlightCutout, spotlightStyle]} pointerEvents="none">
+          <View style={styles.spotlightRingPulse} />
+          <View style={styles.spotlightTargetLabel}>
+            <Text style={styles.spotlightTargetLabelText}>
+              {currentStep.targetDescription}
             </Text>
           </View>
+        </View>
 
-          {/* Progress Dots */}
-          <View style={styles.pipsRow}>
-            {STEPS.map((s, idx) => (
-              <View
-                key={s.step}
-                style={[
-                  styles.pip,
-                  {
-                    backgroundColor:
-                      idx === currentStep ? colors.primary : colors.border,
-                    width: idx === currentStep ? 20 : 6,
-                  },
-                ]}
-              />
-            ))}
-          </View>
+        {/* Floating Coachmark Card */}
+        <View style={[styles.cardContainer, cardPositionStyle]}>
+          {/* Top Arrow Pointer (if pointing up) */}
+          {currentStep.pointerDirection === 'up' && (
+            <View style={styles.pointerUpWrapper}>
+              <View style={styles.pointerUpTriangle} />
+            </View>
+          )}
 
-          {/* Action Buttons */}
-          <View style={styles.buttonRow}>
-            {currentStep > 0 && (
+          {/* Coachmark Box */}
+          <View style={styles.coachmarkCard}>
+            {/* Top Bar with Icon, Title, and Close */}
+            <View style={styles.cardHeaderRow}>
+              <View style={styles.iconTitleRow}>
+                <View style={[styles.stepIconCircle, { backgroundColor: currentStep.iconBg }]}>
+                  <IconComp size={20} color={currentStep.iconColor} weight="duotone" />
+                </View>
+                <Text style={styles.cardTitle}>{currentStep.title}</Text>
+              </View>
               <TouchableOpacity
-                style={[styles.backBtn, { borderColor: colors.border }]}
-                onPress={handlePrev}
-                activeOpacity={0.8}
+                onPress={handleDismiss}
+                style={styles.closeBtn}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <ArrowLeft size={18} color={colors.foreground} />
+                <X size={16} color="#A8A29E" weight="bold" />
               </TouchableOpacity>
-            )}
+            </View>
 
-            <TouchableOpacity
-              style={[
-                styles.actionBtn,
-                { backgroundColor: colors.primary, flex: 1 },
-              ]}
-              onPress={handleNext}
-              activeOpacity={0.85}
-            >
-              <Text
-                style={[
-                  styles.actionBtnText,
-                  { color: colors.primaryForeground },
-                ]}
+            {/* Explanatory Body */}
+            <Text style={styles.cardBody}>{currentStep.body}</Text>
+
+            {/* Bottom Actions Row */}
+            <View style={styles.cardFooterRow}>
+              {/* Skip or Back */}
+              <View style={styles.footerLeftActions}>
+                {currentStepIndex > 0 ? (
+                  <TouchableOpacity
+                    onPress={handlePrev}
+                    style={styles.backButton}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <ArrowLeft size={14} color="#D6D3D1" weight="bold" />
+                    <Text style={styles.backButtonText}>Back</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    onPress={handleDismiss}
+                    style={styles.skipButton}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.skipButtonText}>Skip Tour</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Step indicator counter: e.g. 1 of 3 */}
+              <View style={styles.stepPill}>
+                <Text style={styles.stepPillText}>
+                  {currentStep.step} of {currentStep.total}
+                </Text>
+              </View>
+
+              {/* Primary Next/Done Button */}
+              <TouchableOpacity
+                onPress={handleNext}
+                style={styles.primaryActionButton}
+                activeOpacity={0.85}
               >
-                {step.actionLabel}
-              </Text>
-              {currentStep === STEPS.length - 1 ? (
-                <Check size={18} color={colors.primaryForeground} weight="bold" />
-              ) : (
-                <ArrowRight size={18} color={colors.primaryForeground} />
-              )}
-            </TouchableOpacity>
+                <Text style={styles.primaryActionText}>{currentStep.ctaLabel}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
+
+          {/* Bottom Arrow Pointer (if pointing down) */}
+          {currentStep.pointerDirection === 'down' && (
+            <View style={styles.pointerDownWrapper}>
+              <View style={styles.pointerDownTriangle} />
+            </View>
+          )}
         </View>
       </View>
     </Modal>
@@ -271,115 +296,189 @@ export function FtuoTour({ forceShow = false, onClose }: FtuoTourProps) {
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  overlayContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.72)',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 12, 10, 0.76)',
+  },
+  spotlightCutout: {
+    position: 'absolute',
+    borderWidth: 2,
+    borderColor: '#E8593A',
+    backgroundColor: 'rgba(232, 89, 58, 0.08)',
+    shadowColor: '#E8593A',
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
+  },
+  spotlightRingPulse: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  spotlightTargetLabel: {
+    position: 'absolute',
+    bottom: -10,
+    alignSelf: 'center',
+    backgroundColor: '#E8593A',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  spotlightTargetLabelText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+
+  /* Floating Card */
+  cardContainer: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
     alignItems: 'center',
-    paddingHorizontal: 24,
   },
-  card: {
-    width: Math.min(SCREEN_WIDTH - 40, 380),
-    borderRadius: 24,
-    borderWidth: 1.5,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.35,
+  coachmarkCard: {
+    width: '100%',
+    backgroundColor: '#1C1917',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#292524',
+    padding: 18,
+    gap: 12,
+    shadowColor: '#000000',
+    shadowOpacity: 0.5,
     shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 10,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 12,
   },
-  topRow: {
+  cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
   },
-  badge: {
+  iconTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  stepIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardTitle: {
+    flex: 1,
+    color: '#FAFAF9',
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.2,
+  },
+  closeBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#292524',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardBody: {
+    color: '#D6D3D1',
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 20,
+  },
+  cardFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#292524',
+  },
+  footerLeftActions: {
+    minWidth: 70,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  backButtonText: {
+    color: '#D6D3D1',
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+  },
+  skipButton: {
+    paddingVertical: 4,
+  },
+  skipButtonText: {
+    color: '#78716C',
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+  },
+  stepPill: {
+    backgroundColor: '#292524',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
-  badgeText: {
+  stepPillText: {
+    color: '#A8A29E',
     fontSize: 11,
     fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
   },
-  skipText: {
+  primaryActionButton: {
+    backgroundColor: '#E8593A',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  primaryActionText: {
+    color: '#FFFFFF',
     fontSize: 13,
-    fontFamily: 'Inter_500Medium',
-  },
-  iconContainer: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  iconBubble: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 22,
-    textAlign: 'center',
-    marginBottom: 10,
-    letterSpacing: 0.2,
-  },
-  body: {
-    fontSize: 14,
-    fontFamily: 'Inter_400Regular',
-    lineHeight: 21,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  tipBox: {
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 20,
-  },
-  tipText: {
-    fontSize: 12,
-    fontFamily: 'Inter_500Medium',
-    textAlign: 'center',
-  },
-  pipsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 20,
-  },
-  pip: {
-    height: 6,
-    borderRadius: 3,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-  },
-  backBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionBtn: {
-    height: 48,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  actionBtnText: {
-    fontSize: 15,
     fontFamily: 'Inter_600SemiBold',
+  },
+
+  /* Caret / Pointer Triangles */
+  pointerUpWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: -1,
+    zIndex: 2,
+  },
+  pointerUpTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderBottomWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#1C1917',
+  },
+  pointerDownWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: -1,
+    zIndex: 2,
+  },
+  pointerDownTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderTopWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#1C1917',
   },
 });

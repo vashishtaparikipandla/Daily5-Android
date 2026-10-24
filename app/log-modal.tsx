@@ -16,7 +16,6 @@ import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiary } from '@/contexts/DiaryContext';
 import { CategoryPicker } from '@/components/CategoryPicker';
-import { VisualLayoutPicker } from '@/components/VisualLayoutPicker';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
 import { randomPrompt } from '@/constants/placeholders';
 import { uid, todayStr, formatFullDate } from '@/lib/data';
@@ -247,21 +246,6 @@ function LogModalContent() {
         automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
         showsVerticalScrollIndicator={false}
       >
-        {/* Subtle Layout Pill - tap opens More sheet to customize */}
-        <TouchableOpacity
-          style={[styles.layoutIndicatorChip, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => {
-            Haptics.selectionAsync();
-            setShowMoreModal(true);
-          }}
-          activeOpacity={0.8}
-        >
-          <Sparkle size={13} color={colors.primary} weight="fill" />
-          <Text style={[styles.layoutIndicatorText, { color: colors.foreground }]}>
-            Page Layout: {selectedLayout.toUpperCase()} · Tap to customize
-          </Text>
-        </TouchableOpacity>
-
         {/* 4 Hierarchical Photo-First Memory Slots */}
         {slots.map((slot, i) => (
           <SlotEditor
@@ -282,14 +266,23 @@ function LogModalContent() {
         onRequestClose={() => setShowMoreModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.moreSheet, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
+          <View
+            style={[
+              styles.moreSheet,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.borderStrong,
+                paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16) + 16,
+              },
+            ]}
+          >
             <View style={styles.moreSheetHeader}>
               <View>
                 <Text style={[styles.moreSheetTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
                   Day Options
                 </Text>
                 <Text style={[styles.moreSheetSub, { color: colors.mutedForeground }]}>
-                  Page layout, collections & day actions
+                  Collections, favorites & actions
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setShowMoreModal(false)}>
@@ -298,19 +291,7 @@ function LogModalContent() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 16 }}>
-              {/* 1. Change Page Layout with Visual Wireframes */}
-              <View style={styles.moreSection}>
-                <Text style={[styles.moreSectionLabel, { color: colors.tertiary }]}>PHOTOPAGE LAYOUT STYLE</Text>
-                <VisualLayoutPicker
-                  selected={selectedLayout}
-                  onSelect={(l) => {
-                    setSelectedLayout(l);
-                  }}
-                  horizontal={true}
-                />
-              </View>
-
-              {/* 2. Add to Collection Book */}
+              {/* 1. Add to Collection Book */}
               <View style={styles.moreSection}>
                 <View style={styles.moreSectionHeaderRow}>
                   <Text style={[styles.moreSectionLabel, { color: colors.tertiary }]}>ADD TO COLLECTION BOOK</Text>

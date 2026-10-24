@@ -3,11 +3,10 @@ import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
   Platform, TextInput, Modal, Alert, KeyboardAvoidingView, ScrollView,
 } from 'react-native';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { router } from 'expo-router';
 import {
-  GoogleLogo,
-  TelegramLogo,
   EnvelopeSimple,
   Sparkle,
   X,
@@ -19,6 +18,41 @@ import * as Haptics from 'expo-haptics';
 import { useApp } from '@/contexts/AppContext';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+function GoogleIcon({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 48 48">
+      <Path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      />
+      <Path
+        fill="#4285F4"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      />
+      <Path
+        fill="#FBBC05"
+        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+      />
+      <Path
+        fill="#34A853"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      />
+    </Svg>
+  );
+}
+
+function TelegramIcon({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 48 48">
+      <Circle cx="24" cy="24" r="24" fill="#24A1DE" />
+      <Path
+        fill="#FFFFFF"
+        d="M34.64 12.33c-.31-.03-.63.03-.9.18L10.34 22.02c-.88.35-.86 1.6.03 1.94l6.02 2.29 2.33 7.39c.27.87 1.4.99 1.83.21l3.52-4.4 6.78 5.03c.75.56 1.82.16 1.99-.75l4.33-20.33c.12-.58-.27-1.14-.84-1.24-.12-.02-.24-.03-.36-.03zm-16.1 13.1l13.16-8.24c.2-.13.38.16.19.31l-10.74 9.77-.38 4.2-2.23-6.04z"
+      />
+    </Svg>
+  );
+}
 
 const WEB_CLIENT_ID = '205619709770-c7cabrrdedn0nnndifceo9cbo387llcd.apps.googleusercontent.com';
 
@@ -198,7 +232,7 @@ export default function AuthScreen() {
             <ActivityIndicator size="small" color={colors.primary} />
           ) : (
             <>
-              <GoogleLogo size={20} color="#4285F4" weight="bold" />
+              <GoogleIcon size={20} />
               <Text style={[styles.btnText, { color: colors.foreground }]}>Continue with Google</Text>
             </>
           )}
@@ -214,7 +248,7 @@ export default function AuthScreen() {
           disabled={loading}
           activeOpacity={0.8}
         >
-          <TelegramLogo size={20} color="#229ED9" weight="fill" />
+          <TelegramIcon size={20} />
           <Text style={[styles.btnText, { color: colors.foreground }]}>Continue with Telegram</Text>
         </TouchableOpacity>
 
@@ -281,7 +315,7 @@ export default function AuthScreen() {
 
           <ScrollView contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
             <View style={styles.modalHeroBadge}>
-              <TelegramLogo size={44} color="#229ED9" weight="fill" />
+              <TelegramIcon size={44} />
             </View>
 
             <Text style={[styles.modalHeading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>

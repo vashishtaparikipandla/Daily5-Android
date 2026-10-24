@@ -180,3 +180,35 @@ Each day spread in a book supports 5 distinct layout reflow options:
 2. **Visual-First Controls:** Never list layout or typography options as text descriptions. Render miniature wireframes or live font specimens.
 3. **No Redundant Microcopy:** Do not add repetitive disclaimers (e.g. "This caption is printed under the photo"). High-quality visual hierarchy makes the output self-evident.
 4. **Haptic Feedback:** Pair light impacts (`ImpactFeedbackStyle.Light`) with page flips, selection ticks with toggles, and notification success haptics with completed milestones.
+
+---
+
+## 9. Onboarding Composition & Coachmark Walkthrough Standards
+
+1. **Predefined Birth Date & Smart Formatting:**
+   - Pre-fills a standard default (`2000-01-01`) allowing immediate progression.
+   - Smart auto-masking extracts digits and inserts hyphens on the fly (`YYYY-MM-DD`).
+   - Quick generational preset chips (`Gen Z 2002`, `Millennial 1995`, `90s Kid 1990`, `Gen X 1980`) enable 1-tap population.
+   - Dynamic live stat banner displays age, weeks lived, and weeks remaining in real time.
+
+2. **Life in 4,160 Weeks Tapestry:**
+   - Replaces floating micro-boxes with a full-screen, museum-grade archival composition.
+   - Framed tapestry with subtle borders and axis markers: Top (`Wk 1 → Wk 52`) and Left milestones (`Age 0, 20, 40, 60, 80`).
+   - Sticky CTA with `insets.bottom` clearance ensures effortless, comfortable thumb access above Android navigation bars.
+
+3. **Golden-Ratio Onboarding Carousel:**
+   - Top bar contains a circular back button (on slides > 0), a step indicator pill (`X of 4`), and a capsule Skip button.
+   - Centered visual stage (height 200dp) with breathing animations.
+   - Centered serif headlines and readable body text with unified pill pagination.
+
+4. **Contextual Spotlight Walkthrough (FTUO):**
+   - Eliminates generic centered modal carousels.
+   - Uses a dimmed backdrop (`rgba(15, 12, 10, 0.76)`) with illuminated spotlight frames highlighting live screen elements:
+     - Step 1: Tonight's Moments Prompt
+     - Step 2: 7-Day Archival Streak Ribbon
+     - Step 3: Books Tab in Bottom Navigation
+   - Floating dark cards (`#1C1917`) with pointer triangles/carets pointing directly to targets, step pills (`1 of 3`), Back/Skip actions, and clear primary CTAs.
+
+5. **Authentic Vector Branding:**
+   - Third-party auth providers must use official vector assets (4-color Google "G" SVG and official circular Telegram paper airplane badge) rather than monochrome or generic approximations.
+

@@ -566,7 +566,16 @@ export function BookViewerContent() {
         onRequestClose={() => setShowLayoutModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
+          <View
+            style={[
+              styles.modalSheet,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.borderStrong,
+                paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16) + 24,
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
               <View>
                 <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>

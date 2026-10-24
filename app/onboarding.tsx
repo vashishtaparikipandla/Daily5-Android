@@ -20,6 +20,8 @@ import {
   Airplane,
   BookOpen,
   ArrowLeft,
+  CalendarBlank,
+  Sparkle,
 } from 'phosphor-react-native';
 import { router } from 'expo-router';
 import { useApp } from '@/contexts/AppContext';
@@ -32,22 +34,22 @@ const { width: SW } = Dimensions.get('window');
 const SLIDES = [
   {
     title: 'Life is short.',
-    body: 'The moments that matter most are the ones you almost forgot.',
+    body: 'The moments that matter most are often the ones you almost forgot. Capture them before they fade into the background.',
     visual: 'lamp',
   },
   {
     title: 'Every night,\nchoose 4.',
-    body: "Not because the rest don't count — but because some things deserve to be remembered.",
+    body: "Not because the rest don't count — but because focused curation turns passing days into enduring stories.",
     visual: 'dots',
   },
   {
     title: 'Not just\nthe good days.',
-    body: 'Hard days, small victories, twisted ankles. Every moment belongs.',
+    body: 'Hard days, small victories, quiet coffees, twisted ankles. Every real human chapter belongs in your book.',
     visual: 'icons',
   },
   {
     title: 'Every month\nbecomes a book.',
-    body: 'A real, physical record you can hold, share, or print.',
+    body: 'A real, tangible volume you can flip through with hardcover elegance, share as a PDF, or order into physical print.',
     visual: 'book',
   },
 ];
@@ -58,6 +60,13 @@ const CATEGORY_CHIPS = [
   { icon: Heart, color: '#E83A7A', label: 'Love' },
   { icon: Airplane, color: '#3A7EC4', label: 'Travel' },
   { icon: BookOpen, color: '#C43A6F', label: 'Learn' },
+];
+
+const GENERATION_PRESETS = [
+  { label: 'Gen Z', year: '2002', date: '2002-01-01' },
+  { label: 'Millennial', year: '1995', date: '1995-01-01' },
+  { label: '90s Kid', year: '1990', date: '1990-01-01' },
+  { label: 'Gen X', year: '1980', date: '1980-01-01' },
 ];
 
 // ─── Slide 0: Glowing Floating Lamp ──────────────────────────────────────────
@@ -82,7 +91,6 @@ function LampVisual() {
 
   return (
     <View style={visualStyles.centerBox}>
-      {/* Amber radial aura */}
       <View style={visualStyles.lampGlow} />
       <Animated.View style={[visualStyles.lampContainer, animatedStyle]}>
         <View style={visualStyles.lampCircle}>
@@ -146,7 +154,7 @@ function DotsVisual() {
 function CategoryChipsVisual() {
   return (
     <View style={visualStyles.chipsWrap}>
-      {CATEGORY_CHIPS.map((chip, i) => {
+      {CATEGORY_CHIPS.map((chip) => {
         const IconComp = chip.icon;
         return (
           <View
@@ -196,10 +204,7 @@ function BookVisual() {
   return (
     <View style={visualStyles.bookOuter}>
       <Animated.View style={[visualStyles.bookWrap, animatedStyle]}>
-        {/* Book spine highlight */}
         <View style={visualStyles.bookSpine} />
-
-        {/* Book Cover */}
         <View style={visualStyles.bookCover}>
           <Text style={visualStyles.bookMonth}>July 2026</Text>
           <View style={visualStyles.bookPattern}>
@@ -210,8 +215,6 @@ function BookVisual() {
           </View>
           <Text style={visualStyles.bookBrand}>DEAR DAY</Text>
         </View>
-
-        {/* Book paper pages on the side */}
         <View style={visualStyles.bookPages} />
       </Animated.View>
     </View>
@@ -246,6 +249,67 @@ function LifeGrid({ livedWeeks }: { livedWeeks: number }) {
   return <Svg width={COLS * STEP} height={ROWS * STEP}>{rects}</Svg>;
 }
 
+// ─── Smart DOB Masking & Calculation Helpers ─────────────────────────────────
+
+function formatDobInput(raw: string): string {
+  // Normalize slashes and dots to dashes
+  const clean = raw.replace(/[./]/g, '-');
+  const digits = clean.replace(/\D/g, '');
+
+  if (digits.length <= 4) {
+    return digits;
+  } else if (digits.length <= 6) {
+    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+  } else {
+    return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+  }
+}
+
+function parseDobDate(s: string): Date | null {
+  if (!s || s.length < 8) return null;
+  const clean = s.replace(/\//g, '-');
+  const parts = clean.split('-');
+
+  let year = 0;
+  let month = 0;
+  let day = 0;
+
+  if (parts.length === 3) {
+    // If entered as YYYY-MM-DD
+    if (parts[0].length === 4) {
+      year = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10);
+      day = parseInt(parts[2], 10);
+    } else if (parts[2].length === 4) {
+      // If entered as DD-MM-YYYY
+      year = parseInt(parts[2], 10);
+      month = parseInt(parts[1], 10);
+      day = parseInt(parts[0], 10);
+    }
+  }
+
+  if (!year || isNaN(year) || isNaN(month) || isNaN(day)) {
+    const d = new Date(clean + 'T12:00:00');
+    if (isNaN(d.getTime())) return null;
+    return d;
+  }
+
+  if (year < 1910 || year > new Date().getFullYear()) return null;
+  if (month < 1 || month > 12) return null;
+  if (day < 1 || day > 31) return null;
+
+  const d = new Date(year, month - 1, day, 12, 0, 0);
+  if (isNaN(d.getTime()) || d > new Date()) return null;
+  return d;
+}
+
+function calculateWeeksLived(dobDate: Date | null): number {
+  if (!dobDate) return 0;
+  const msDiff = Date.now() - dobDate.getTime();
+  const weeks = Math.floor(msDiff / (7 * 24 * 60 * 60 * 1000));
+  return Math.min(Math.max(0, weeks), 4160);
+}
+
 // ─── Main Onboarding Screen ──────────────────────────────────────────────────
 
 export default function OnboardingScreen() {
@@ -254,12 +318,17 @@ export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
 
   const [phase, setPhase] = useState(0);
-  const [dob, setDob] = useState('');
+  // Default predefined birth date: 2000-01-01 (Gen Z / Young Millennial)
+  const [dob, setDob] = useState('2000-01-01');
   const [dobError, setDobError] = useState('');
   const [recalledDays, setRecalledDays] = useState<number | null>(null);
-  const [livedWeeks, setLivedWeeks] = useState(0);
+  const [livedWeeks, setLivedWeeks] = useState(1350);
   const [slide, setSlide] = useState(0);
   const slideRef = useRef<FlatList>(null);
+
+  const parsedDate = parseDobDate(dob);
+  const currentCalculatedWeeks = parsedDate ? calculateWeeksLived(parsedDate) : 0;
+  const currentAge = parsedDate ? Math.floor(currentCalculatedWeeks / 52) : null;
 
   const fadeVal = useSharedValue(1);
   const fadeStyle = useAnimatedStyle(() => ({ opacity: fadeVal.value }));
@@ -271,24 +340,16 @@ export default function OnboardingScreen() {
     setTimeout(() => setPhase(next), 180);
   }
 
-  function parseDob(s: string): Date | null {
-    const clean = s.replace(/\//g, '-');
-    const d = new Date(clean + 'T12:00:00');
-    if (isNaN(d.getTime())) return null;
-    if (d.getFullYear() < 1900 || d > new Date()) return null;
-    return d;
-  }
-
   function handleDobContinue() {
-    const date = parseDob(dob);
+    const date = parseDobDate(dob);
     if (!date) {
-      setDobError('Enter a valid date (YYYY-MM-DD)');
+      setDobError('Please enter a valid birth date (YYYY-MM-DD)');
       return;
     }
-    const weeks = Math.floor((Date.now() - date.getTime()) / (7 * 24 * 60 * 60 * 1000));
-    setLivedWeeks(Math.min(weeks, 4160));
+    const weeks = calculateWeeksLived(date);
+    setLivedWeeks(weeks);
     setDobError('');
-    completeOnboarding().catch(() => {});
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     transition(1);
   }
 
@@ -298,67 +359,142 @@ export default function OnboardingScreen() {
   }
 
   async function handleStart() {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await completeOnboarding();
     router.replace('/auth');
   }
 
-  const topPad = insets.top + (Platform.OS === 'web' ? 67 : 0);
-  const botPad = insets.bottom + (Platform.OS === 'web' ? 34 : 0);
+  const topPad = insets.top + (Platform.OS === 'web' ? 40 : 12);
+  const botPad = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad, paddingBottom: botPad }]}>
       <Animated.View style={[styles.content, fadeStyle]}>
 
-        {/* Phase 0 — DOB */}
+        {/* Phase 0 — Predefined & Smart DOB Input */}
         {phase === 0 && (
-          <View style={styles.phase}>
-            <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-              When were you born?
-            </Text>
-            <Text style={[styles.sub, { color: colors.mutedForeground }]}>
-              We'll show you something honest about time.
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: colors.muted,
-                  color: colors.foreground,
-                  borderColor: dobError ? colors.destructive : colors.border,
-                },
-              ]}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.tertiary}
-              value={dob}
-              onChangeText={(t) => {
-                setDob(t);
-                setDobError('');
-              }}
-              keyboardType="numeric"
-              maxLength={10}
-              autoFocus
-            />
-            {!!dobError && <Text style={[styles.error, { color: colors.destructive }]}>{dobError}</Text>}
+          <View style={styles.phaseCenter}>
+            <View style={styles.phaseHeader}>
+              <View style={[styles.phaseIconCircle, { backgroundColor: colors.accentLight }]}>
+                <CalendarBlank size={32} color={colors.primary} weight="duotone" />
+              </View>
+              <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+                When were you born?
+              </Text>
+              <Text style={[styles.sub, { color: colors.mutedForeground }]}>
+                We'll illuminate your life's tapestry in weeks. Pre-filled with an example below.
+              </Text>
+            </View>
+
+            {/* Generational Quick Presets */}
+            <View style={styles.presetWrap}>
+              <Text style={[styles.presetTitle, { color: colors.tertiary }]}>QUICK SELECTION</Text>
+              <View style={styles.presetChipsRow}>
+                {GENERATION_PRESETS.map((item) => {
+                  const isSelected = dob === item.date;
+                  return (
+                    <TouchableOpacity
+                      key={item.label}
+                      style={[
+                        styles.presetChip,
+                        {
+                          backgroundColor: isSelected ? colors.primary : colors.muted,
+                          borderColor: isSelected ? colors.primary : colors.border,
+                        },
+                      ]}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setDob(item.date);
+                        setDobError('');
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.presetChipText,
+                          {
+                            color: isSelected ? '#FFFFFF' : colors.foreground,
+                            fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_400Regular',
+                          },
+                        ]}
+                      >
+                        {item.label} ({item.year})
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Input field with smart auto-formatting */}
+            <View style={styles.inputWrap}>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.card,
+                    color: colors.foreground,
+                    borderColor: dobError ? colors.destructive : colors.borderStrong,
+                  },
+                ]}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.tertiary}
+                value={dob}
+                onChangeText={(t) => {
+                  const formatted = formatDobInput(t);
+                  setDob(formatted);
+                  setDobError('');
+                }}
+                keyboardType="numeric"
+                maxLength={10}
+              />
+
+              {/* Dynamic Live Calculation Card */}
+              {parsedDate && currentAge !== null && (
+                <View style={[styles.dynamicStatBadge, { backgroundColor: colors.accentLight, borderColor: colors.border }]}>
+                  <Sparkle size={15} color={colors.primary} weight="fill" />
+                  <Text style={[styles.dynamicStatText, { color: colors.foreground }]}>
+                    <Text style={{ fontFamily: 'Inter_700Bold', color: colors.primary }}>{currentAge} years old</Text>
+                    {' · '}
+                    {currentCalculatedWeeks.toLocaleString()} weeks lived
+                    {' · '}
+                    {Math.max(0, 4160 - currentCalculatedWeeks).toLocaleString()} ahead
+                  </Text>
+                </View>
+              )}
+
+              {!!dobError && <Text style={[styles.error, { color: colors.destructive }]}>{dobError}</Text>}
+            </View>
+
             <TouchableOpacity
-              style={[styles.btn, { backgroundColor: colors.primary, opacity: dob.length < 8 ? 0.5 : 1 }]}
+              style={[
+                styles.btn,
+                { backgroundColor: colors.primary, opacity: dob.length < 8 ? 0.5 : 1, marginTop: 12 },
+              ]}
               onPress={handleDobContinue}
               disabled={dob.length < 8}
+              activeOpacity={0.85}
             >
-              <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Continue</Text>
+              <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Continue →</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* Phase 1 — Recalled days */}
         {phase === 1 && (
-          <View style={styles.phase}>
-            <TouchableOpacity onPress={() => transition(0)} style={styles.backBtn}>
+          <View style={styles.phaseCenter}>
+            <TouchableOpacity onPress={() => transition(0)} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <ArrowLeft size={22} color={colors.foreground} />
             </TouchableOpacity>
-            <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-              How many days do you remember from last week?
-            </Text>
-            <Text style={[styles.sub, { color: colors.mutedForeground }]}>Be honest.</Text>
+            <View style={styles.phaseHeader}>
+              <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+                How many days do you remember from last week?
+              </Text>
+              <Text style={[styles.sub, { color: colors.mutedForeground }]}>
+                Be completely honest with yourself.
+              </Text>
+            </View>
+
             <View style={styles.chips}>
               {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
                 <TouchableOpacity
@@ -367,123 +503,203 @@ export default function OnboardingScreen() {
                   style={[
                     styles.chip,
                     {
-                      backgroundColor: recalledDays === n ? colors.primary : colors.muted,
+                      backgroundColor: recalledDays === n ? colors.primary : colors.card,
                       borderColor: recalledDays === n ? colors.primary : colors.border,
                     },
                   ]}
                 >
-                  <Text style={[styles.chipText, { color: recalledDays === n ? colors.primaryForeground : colors.foreground }]}>
+                  <Text style={[styles.chipText, { color: recalledDays === n ? '#FFFFFF' : colors.foreground }]}>
                     {n}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
+
             {recalledDays !== null && (
-              <Text style={[styles.sub, { color: colors.mutedForeground, marginTop: 8 }]}>
-                {recalledDays <= 2
-                  ? "That's honest. Most people can't either."
-                  : recalledDays <= 4
-                  ? 'Better than average. Still a lot that faded.'
-                  : "That's exceptional. Dear Day will make it permanent."}
-              </Text>
+              <View style={[styles.recallFeedbackCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.recallFeedbackText, { color: colors.foreground }]}>
+                  {recalledDays <= 2
+                    ? "That's completely normal. The human brain discards routine days automatically."
+                    : recalledDays <= 4
+                    ? "Better than average, but nearly half the week's memories already dissolved."
+                    : "Impressive recall! Dear Day turns those memories into an everlasting photobook."}
+                </Text>
+              </View>
             )}
+
             <TouchableOpacity
-              style={[styles.btn, { backgroundColor: colors.primary, opacity: recalledDays === null ? 0.4 : 1, marginTop: 24 }]}
+              style={[
+                styles.btn,
+                { backgroundColor: colors.primary, opacity: recalledDays === null ? 0.4 : 1, marginTop: 20 },
+              ]}
               onPress={() => transition(2)}
               disabled={recalledDays === null}
+              activeOpacity={0.85}
             >
-              <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Show me</Text>
+              <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Reveal My Life Grid →</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Phase 2 — Life viz */}
+        {/* Phase 2 — Life in Weeks: Full-screen, balanced, composed layout */}
         {phase === 2 && (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.lifePhase}>
-            <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-              Your life in weeks
-            </Text>
-            <Text style={[styles.sub, { color: colors.mutedForeground, textAlign: 'center' }]}>
-              An 80-year life has 4,160 weeks. The warm ones are already behind you.
-            </Text>
-            <View style={styles.gridWrap}>
-              <LifeGrid livedWeeks={livedWeeks} />
-            </View>
-            <View style={styles.revealStats}>
-              <Text style={[styles.revealText, { color: colors.foreground }]}>
-                You've already lived <Text style={{ color: colors.accent, fontWeight: '700' }}>{livedWeeks}</Text> weeks.
+          <View style={styles.lifeFullContainer}>
+            {/* Header section */}
+            <View style={styles.lifeHeader}>
+              <TouchableOpacity onPress={() => transition(1)} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                <ArrowLeft size={20} color={colors.foreground} />
+              </TouchableOpacity>
+              <Text style={[styles.headingLife, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+                Your Life in 4,160 Weeks
               </Text>
-              <Text style={[styles.revealSub, { color: colors.mutedForeground }]}>
-                How many of them do you remember?
+              <Text style={[styles.subLife, { color: colors.mutedForeground }]}>
+                An 80-year lifespan rendered dot by dot. The terracotta squares are behind you.
               </Text>
             </View>
-            <TouchableOpacity
-              style={[styles.btn, { backgroundColor: colors.primary, width: '100%', paddingHorizontal: 24 }]}
-              onPress={() => transition(3)}
-            >
-              <Text style={[styles.btnText, { color: colors.primaryForeground }]}>
-                Enter Dear Day →
+
+            {/* Framed Archival Grid Tapestry with Age Milestones */}
+            <View style={[styles.tapestryFrame, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
+              {/* Top Axis: Weeks 1 to 52 */}
+              <View style={styles.tapestryTopAxis}>
+                <Text style={[styles.axisText, { color: colors.tertiary }]}>WK 1</Text>
+                <Text style={[styles.axisText, { color: colors.tertiary }]}>52 WEEKS / YR</Text>
+                <Text style={[styles.axisText, { color: colors.tertiary }]}>WK 52</Text>
+              </View>
+
+              <View style={styles.tapestryBodyRow}>
+                {/* Left Milestone Markers: Age 0 to 80 */}
+                <View style={styles.ageMilestonesCol}>
+                  <Text style={[styles.axisText, { color: colors.tertiary }]}>0</Text>
+                  <Text style={[styles.axisText, { color: colors.tertiary }]}>20</Text>
+                  <Text style={[styles.axisText, { color: colors.tertiary }]}>40</Text>
+                  <Text style={[styles.axisText, { color: colors.tertiary }]}>60</Text>
+                  <Text style={[styles.axisText, { color: colors.tertiary }]}>80</Text>
+                </View>
+
+                {/* SVG Dot Matrix */}
+                <View style={styles.gridCanvasWrap}>
+                  <LifeGrid livedWeeks={livedWeeks} />
+                </View>
+              </View>
+            </View>
+
+            {/* Stat Banner Callout */}
+            <View style={[styles.statBanner, { backgroundColor: colors.accentLight, borderColor: colors.border }]}>
+              <View style={styles.statBannerTop}>
+                <Sparkle size={16} color={colors.primary} weight="fill" />
+                <Text style={[styles.statBannerTitle, { color: colors.foreground }]}>
+                  You've lived <Text style={{ color: colors.primary, fontFamily: 'Inter_700Bold' }}>{livedWeeks.toLocaleString()}</Text> weeks ({Math.round((livedWeeks / 4160) * 100)}%)
+                </Text>
+              </View>
+              <Text style={[styles.statBannerSub, { color: colors.mutedForeground }]}>
+                {Math.max(0, 4160 - livedWeeks).toLocaleString()} weeks remain to be written. Make every memory count.
               </Text>
-            </TouchableOpacity>
-          </ScrollView>
+            </View>
+
+            {/* Sticky Safe Bottom Action */}
+            <View style={styles.lifeBottomAction}>
+              <TouchableOpacity
+                style={[styles.btn, { backgroundColor: colors.primary }]}
+                onPress={() => transition(3)}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.btnText, { color: colors.primaryForeground }]}>
+                  Enter Dear Day →
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
 
-        {/* Phase 3 — Visual Carousel */}
+        {/* Phase 3 — Balanced Golden-Ratio Visual Carousel */}
         {phase === 3 && (
-          <View style={styles.carousel}>
-            {/* Top row skip */}
-            <View style={styles.topBar}>
-              <View style={{ flex: 1 }} />
-              <TouchableOpacity onPress={handleStart} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <Text style={[styles.skip, { color: colors.tertiary }]}>Skip</Text>
+          <View style={styles.carouselContainer}>
+            {/* Top Navigation Bar with Back & Skip Pill */}
+            <View style={styles.topNavRow}>
+              {slide > 0 ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    const prev = slide - 1;
+                    setSlide(prev);
+                    slideRef.current?.scrollToIndex({ index: prev, animated: true });
+                  }}
+                  style={[styles.circleBackBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <ArrowLeft size={16} color={colors.foreground} />
+                </TouchableOpacity>
+              ) : (
+                <View style={{ width: 36 }} />
+              )}
+
+              {/* Step indicator */}
+              <View style={[styles.stepPill, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                <Text style={[styles.stepPillText, { color: colors.foreground }]}>
+                  {slide + 1} of {SLIDES.length}
+                </Text>
+              </View>
+
+              {/* Polished Skip Pill */}
+              <TouchableOpacity
+                onPress={handleStart}
+                style={[styles.skipPill, { backgroundColor: colors.muted, borderColor: colors.border }]}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.skipPillText, { color: colors.mutedForeground }]}>Skip</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Visual Zone for current slide */}
-            <View style={styles.visualZone}>
+            {/* Centered Graphic Zone */}
+            <View style={styles.visualStage}>
               {slide === 0 && <LampVisual />}
               {slide === 1 && <DotsVisual />}
               {slide === 2 && <CategoryChipsVisual />}
               {slide === 3 && <BookVisual />}
             </View>
 
-            {/* Carousel Content */}
-            <FlatList
-              ref={slideRef}
-              data={SLIDES}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              scrollEnabled={false}
-              keyExtractor={(_, i) => String(i)}
-              renderItem={({ item }) => (
-                <View style={[styles.slide, { width: SW - 56 }]}>
-                  <Text style={[styles.slideTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-                    {item.title}
-                  </Text>
-                  <Text style={[styles.slideBody, { color: colors.mutedForeground }]}>{item.body}</Text>
-                </View>
-              )}
-            />
+            {/* Synchronized Typography Carousel */}
+            <View style={styles.typographyStage}>
+              <FlatList
+                ref={slideRef}
+                data={SLIDES}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                scrollEnabled={false}
+                keyExtractor={(_, i) => String(i)}
+                renderItem={({ item }) => (
+                  <View style={[styles.slideCard, { width: SW - 48 }]}>
+                    <Text style={[styles.slideTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+                      {item.title}
+                    </Text>
+                    <Text style={[styles.slideBody, { color: colors.mutedForeground }]}>
+                      {item.body}
+                    </Text>
+                  </View>
+                )}
+              />
+            </View>
 
-            {/* Dots */}
-            <View style={styles.pips}>
+            {/* Pagination Pips */}
+            <View style={styles.pipsRow}>
               {SLIDES.map((_, i) => (
                 <View
                   key={i}
                   style={[
-                    styles.pip,
+                    styles.pipDot,
                     {
                       backgroundColor: i === slide ? colors.primary : colors.border,
-                      width: i === slide ? 20 : 6,
+                      width: i === slide ? 22 : 6,
                     },
                   ]}
                 />
               ))}
             </View>
 
-            {/* Bottom Navigation */}
-            <View style={styles.slideNav}>
+            {/* Bottom Primary CTA */}
+            <View style={styles.bottomCtaRow}>
               {slide < SLIDES.length - 1 ? (
                 <TouchableOpacity
                   style={[styles.btn, { backgroundColor: colors.primary, flex: 1 }]}
@@ -493,59 +709,64 @@ export default function OnboardingScreen() {
                     setSlide(next);
                     slideRef.current?.scrollToIndex({ index: next, animated: true });
                   }}
+                  activeOpacity={0.85}
                 >
-                  <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Next</Text>
+                  <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Next →</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   style={[styles.btn, { backgroundColor: colors.primary, flex: 1 }]}
                   onPress={handleStart}
+                  activeOpacity={0.85}
                 >
-                  <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Get Started</Text>
+                  <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Get Started ✨</Text>
                 </TouchableOpacity>
               )}
             </View>
           </View>
         )}
+
       </Animated.View>
     </View>
   );
 }
 
+// ─── Visual Styles ───────────────────────────────────────────────────────────
+
 const visualStyles = StyleSheet.create({
   centerBox: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 180,
+    height: 190,
     position: 'relative',
   },
   lampGlow: {
     position: 'absolute',
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    backgroundColor: 'rgba(232, 89, 58, 0.15)',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(232, 89, 58, 0.16)',
   },
   lampContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   lampCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 104,
+    height: 104,
+    borderRadius: 52,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(232, 89, 58, 0.08)',
     borderWidth: 1.5,
-    borderColor: 'rgba(232, 89, 58, 0.25)',
+    borderColor: 'rgba(232, 89, 58, 0.3)',
   },
   dotsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 18,
-    height: 180,
+    height: 190,
   },
   obDot: {
     width: 44,
@@ -553,7 +774,7 @@ const visualStyles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: '#E8593A',
     shadowColor: '#E8593A',
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.35,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
@@ -565,7 +786,7 @@ const visualStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 16,
-    height: 180,
+    height: 190,
   },
   categoryChip: {
     flexDirection: 'row',
@@ -581,7 +802,7 @@ const visualStyles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
   },
   bookOuter: {
-    height: 190,
+    height: 195,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -590,7 +811,7 @@ const visualStyles = StyleSheet.create({
     height: 180,
     position: 'relative',
     shadowColor: '#000',
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 4, height: 8 },
     elevation: 8,
@@ -653,47 +874,262 @@ const visualStyles = StyleSheet.create({
   },
 });
 
+// ─── Main Screen Styles ───────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: { flex: 1, paddingHorizontal: 28 },
-  phase: { flex: 1, justifyContent: 'center', gap: 16 },
-  backBtn: { marginBottom: 12 },
-  heading: { fontSize: 28, lineHeight: 36, letterSpacing: 0.2 },
-  sub: { fontSize: 15, fontFamily: 'Inter_400Regular', lineHeight: 22 },
-  input: {
-    height: 52, borderRadius: 12, paddingHorizontal: 16,
-    fontSize: 17, fontFamily: 'Inter_400Regular',
-    borderWidth: 1, marginTop: 8,
+  content: { flex: 1, paddingHorizontal: 24 },
+  phaseCenter: { flex: 1, justifyContent: 'center', gap: 18 },
+  phaseHeader: { gap: 8, alignItems: 'center' },
+  phaseIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
   },
-  error: { fontSize: 13, fontFamily: 'Inter_400Regular' },
-  btn: {
-    height: 52, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center',
-    marginTop: 8,
-  },
-  btnText: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
-  chip: {
-    width: 56, height: 56, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center',
+  backBtn: { alignSelf: 'flex-start', padding: 6, marginBottom: 4 },
+  heading: { fontSize: 27, lineHeight: 34, textAlign: 'center', letterSpacing: -0.3 },
+  sub: { fontSize: 14, fontFamily: 'Inter_400Regular', lineHeight: 21, textAlign: 'center' },
+
+  presetWrap: { gap: 8, marginTop: 4 },
+  presetTitle: { fontSize: 11, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.8 },
+  presetChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  presetChip: {
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 18,
     borderWidth: 1,
   },
-  chipText: { fontSize: 20, fontFamily: 'Inter_600SemiBold' },
-  lifePhase: { alignItems: 'center', paddingVertical: 20, gap: 16 },
-  gridWrap: { alignItems: 'center', marginVertical: 8 },
-  revealStats: { alignItems: 'center', gap: 6, marginVertical: 4 },
-  revealText: { fontSize: 17, fontFamily: 'Inter_500Medium' },
-  revealSub: { fontSize: 15, fontFamily: 'Inter_400Regular' },
+  presetChipText: { fontSize: 12 },
 
-  /* Carousel */
-  carousel: { flex: 1, justifyContent: 'space-between', paddingBottom: 16 },
-  topBar: { height: 40, flexDirection: 'row', alignItems: 'center' },
-  visualZone: { height: 200, justifyContent: 'center', alignItems: 'center' },
-  slide: { gap: 12, paddingHorizontal: 4 },
-  slideTitle: { fontSize: 28, letterSpacing: 0.2, lineHeight: 36 },
-  slideBody: { fontSize: 16, fontFamily: 'Inter_400Regular', lineHeight: 24 },
-  pips: { flexDirection: 'row', gap: 6, justifyContent: 'center', marginVertical: 12 },
-  pip: { height: 6, borderRadius: 3 },
-  slideNav: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  skip: { fontSize: 15, fontFamily: 'Inter_500Medium', padding: 4 },
+  inputWrap: { gap: 8, marginTop: 4 },
+  input: {
+    height: 52,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 18,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 1.5,
+    textAlign: 'center',
+    borderWidth: 1.5,
+  },
+  dynamicStatBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  dynamicStatText: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+  },
+  error: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'center' },
+
+  btn: {
+    height: 52,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
+  btnText: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
+
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center', marginTop: 12 },
+  chip: {
+    width: 62,
+    height: 62,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+  },
+  chipText: { fontSize: 20, fontFamily: 'Inter_600SemiBold' },
+  recallFeedbackCard: {
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 6,
+  },
+  recallFeedbackText: {
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+    lineHeight: 19,
+    textAlign: 'center',
+  },
+
+  /* Phase 2: Life in Weeks Full Screen Composition */
+  lifeFullContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  lifeHeader: {
+    gap: 4,
+    alignItems: 'center',
+  },
+  headingLife: {
+    fontSize: 24,
+    lineHeight: 30,
+    textAlign: 'center',
+    letterSpacing: -0.2,
+  },
+  subLife: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 18,
+    textAlign: 'center',
+    paddingHorizontal: 8,
+  },
+  tapestryFrame: {
+    alignSelf: 'center',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  tapestryTopAxis: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 22,
+    marginBottom: 6,
+  },
+  axisText: {
+    fontSize: 9,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.4,
+  },
+  tapestryBodyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  ageMilestonesCol: {
+    height: 320,
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    paddingVertical: 2,
+  },
+  gridCanvasWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statBanner: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 4,
+    alignItems: 'center',
+  },
+  statBannerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statBannerTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+  },
+  statBannerSub: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    textAlign: 'center',
+  },
+  lifeBottomAction: {
+    width: '100%',
+  },
+
+  /* Phase 3: Carousel */
+  carouselContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingBottom: 4,
+  },
+  topNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 44,
+  },
+  circleBackBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  stepPillText: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.5,
+  },
+  skipPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  skipPillText: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+  },
+  visualStage: {
+    height: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typographyStage: {
+    alignItems: 'center',
+  },
+  slideCard: {
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 6,
+  },
+  slideTitle: {
+    fontSize: 27,
+    lineHeight: 34,
+    textAlign: 'center',
+    letterSpacing: -0.2,
+  },
+  slideBody: {
+    fontSize: 15,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 23,
+    textAlign: 'center',
+  },
+  pipsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  pipDot: {
+    height: 6,
+    borderRadius: 3,
+  },
+  bottomCtaRow: {
+    width: '100%',
+  },
 });
