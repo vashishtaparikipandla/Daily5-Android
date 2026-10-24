@@ -1,10 +1,10 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Platform, Dimensions,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { Bell, Fire, Sparkle, ArrowRight, BookOpen } from 'phosphor-react-native';
+import { Bell, Fire, Sparkle, ArrowRight, BookOpen, Check } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { useColors } from '@/hooks/useColors';
@@ -25,7 +25,7 @@ const CELEBRATION_COLORS = ['#E8593A', '#C47B3A', '#2D3F2A', '#D8B4C0', '#F2E8DC
 export default function TodayTab() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { getTodayLog, getOnThisDay, streakCount } = useDiary();
+  const { getTodayLog, getDayLog, getOnThisDay, streakCount } = useDiary();
   const [unreadCount, setUnreadCount] = useState(0);
   const [celebrate, setCelebrate] = useState(false);
   const confettiRef = useRef<any>(null);
@@ -52,6 +52,39 @@ export default function TodayTab() {
     }
   }, [isComplete]);
 
+  // Compute Monday–Sunday for current week with logging status
+  const weekDays = useMemo(() => {
+    const now = new Date(today + 'T12:00:00');
+    const dayIndex = now.getDay(); // 0 = Sunday, 1 = Monday, ...
+    const diffToMonday = (dayIndex + 6) % 7; // Monday = 0, Sunday = 6
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - diffToMonday);
+
+    const days = [];
+    const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const log = getDayLog(dateStr);
+      const hasEntry = (log?.entries.length ?? 0) > 0;
+      const isToday = dateStr === today;
+      const isFuture = dateStr > today;
+      const dayNum = d.getDate();
+
+      days.push({
+        dateStr,
+        label: dayLabels[i],
+        dayNum,
+        hasEntry,
+        isToday,
+        isFuture,
+      });
+    }
+    return days;
+  }, [today, getDayLog]);
+
   const dayOfWeek = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' });
   const fullDate = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
@@ -70,25 +103,12 @@ export default function TodayTab() {
         contentContainerStyle={[styles.content, { paddingTop: topPad + 12, paddingBottom: botPad }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Date header + Streak badge + Notification Bell */}
+        {/* Date header + Notification Bell */}
         <View style={styles.headerRow}>
           <View style={styles.dateHeader}>
-            <View style={styles.dateTitleRow}>
-              <Text style={[styles.dayOfWeek, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-                {dayOfWeek}
-              </Text>
-              {/* Streak badge */}
-              <View
-                style={[styles.streakBadge, { backgroundColor: colors.accentLight, borderColor: colors.border }]}
-                accessible={true}
-                accessibilityLabel={`${streakCount > 0 ? streakCount : 0} day streak`}
-              >
-                <Fire size={14} color={colors.primary} weight="fill" />
-                <Text style={[styles.streakText, { color: colors.primary }]}>
-                  {streakCount > 0 ? `${streakCount}d Streak` : 'Start Streak'}
-                </Text>
-              </View>
-            </View>
+            <Text style={[styles.dayOfWeek, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+              {dayOfWeek}
+            </Text>
             <Text style={[styles.fullDate, { color: colors.mutedForeground, fontFamily: 'PlayfairDisplay_400Regular' }]}>
               {fullDate}
             </Text>
@@ -112,6 +132,85 @@ export default function TodayTab() {
               </View>
             )}
           </TouchableOpacity>
+        </View>
+
+        {/* 7-Day Habit Tracker Card */}
+        <View style={[styles.streakCard, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
+          <View style={styles.streakHeaderRow}>
+            <View style={styles.streakTitleGroup}>
+              <View style={[styles.streakFlameCircle, { backgroundColor: colors.accentLight }]}>
+                <Fire size={18} color={colors.primary} weight="fill" />
+              </View>
+              <View>
+                <Text style={[styles.streakTitle, { color: colors.foreground }]}>
+                  {streakCount > 0 ? `${streakCount}-Day Streak` : 'Start Your Streak'}
+                </Text>
+                <Text style={[styles.streakSubtitle, { color: colors.mutedForeground }]}>
+                  {streakCount > 0
+                    ? `${streakCount} day${streakCount === 1 ? '' : 's'} recorded in a row`
+                    : 'Capture 4 moments today to start your streak'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={[styles.streakMilestoneBadge, { backgroundColor: colors.accentLight, borderColor: colors.border }]}>
+              <Sparkle size={11} color={colors.primary} weight="fill" />
+              <Text style={[styles.streakMilestoneText, { color: colors.primary }]}>
+                {weekDays.filter(d => d.hasEntry).length}/7 DAYS
+              </Text>
+            </View>
+          </View>
+
+          {/* 7 Day Pills Ribbon */}
+          <View style={styles.weekRibbon}>
+            {weekDays.map(item => (
+              <View key={item.dateStr} style={styles.weekDayCol}>
+                <Text
+                  style={[
+                    styles.weekDayLabel,
+                    { color: item.isToday ? colors.primary : colors.tertiary },
+                    item.isToday && { fontFamily: 'Inter_700Bold' },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.weekDayCircle,
+                    { borderColor: colors.border, backgroundColor: colors.muted },
+                    item.hasEntry && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    item.isToday && !item.hasEntry && { borderColor: colors.primary, borderWidth: 2, backgroundColor: colors.accentLight },
+                    item.isFuture && { opacity: 0.35 },
+                  ]}
+                  onPress={() => {
+                    if (!item.isFuture) {
+                      Haptics.selectionAsync();
+                      router.push({ pathname: '/log-modal', params: { date: item.dateStr } });
+                    }
+                  }}
+                  disabled={item.isFuture}
+                  activeOpacity={0.7}
+                  accessibilityLabel={`${item.label} ${item.dayNum}: ${item.hasEntry ? 'completed' : 'not recorded'}`}
+                >
+                  {item.hasEntry ? (
+                    <Check size={14} color="#FFFFFF" weight="bold" />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.weekDayNum,
+                        { color: item.isToday ? colors.primary : colors.foreground },
+                      ]}
+                    >
+                      {item.dayNum}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+                {item.isToday && (
+                  <View style={[styles.todayDot, { backgroundColor: colors.primary }]} />
+                )}
+              </View>
+            ))}
+          </View>
         </View>
 
         <View style={[styles.hairline, { backgroundColor: colors.border }]} />
@@ -287,6 +386,95 @@ const styles = StyleSheet.create({
   },
   dayOfWeek: { fontSize: 26, letterSpacing: 0.2 },
   fullDate: { fontSize: 16 },
+
+  /* 7-Day Habit Tracker Card */
+  streakCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  streakHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  streakTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  streakFlameCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  streakTitle: {
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.2,
+  },
+  streakSubtitle: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    marginTop: 1,
+  },
+  streakMilestoneBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  streakMilestoneText: {
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.5,
+  },
+  weekRibbon: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+  weekDayCol: {
+    alignItems: 'center',
+    gap: 6,
+    width: 38,
+  },
+  weekDayLabel: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+  },
+  weekDayCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekDayNum: {
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  todayDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 1,
+  },
+
   notifBtn: {
     position: 'relative',
     width: 40,

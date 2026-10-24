@@ -212,8 +212,8 @@ export default function SearchTab() {
                   style={[
                     styles.filterChip,
                     {
-                      backgroundColor: active ? colors.primary : colors.accentLight,
-                      borderColor: active ? colors.primary : colors.border,
+                      backgroundColor: active ? colors.primary : colors.muted,
+                      borderColor: active ? colors.primary : colors.borderStrong,
                     },
                   ]}
                   onPress={() => setFilterType(type)}
@@ -283,8 +283,9 @@ export default function SearchTab() {
               {POPULAR_SUGGESTIONS.map(term => (
                 <TouchableOpacity
                   key={term}
-                  style={[styles.suggestChip, { backgroundColor: colors.accentLight, borderColor: colors.border }]}
+                  style={[styles.suggestChip, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}
                   onPress={() => handleSelectTerm(term)}
+                  activeOpacity={0.75}
                 >
                   <Text style={[styles.suggestChipText, { color: colors.foreground }]}>{term}</Text>
                 </TouchableOpacity>
@@ -292,8 +293,18 @@ export default function SearchTab() {
             </View>
           </View>
 
-          {/* Helper notice */}
-          <View style={[styles.helperNotice, { backgroundColor: colors.accentLight, borderColor: colors.border }]}>
+          {/* Helper notice — distinct archival parchment callout */}
+          <View
+            style={[
+              styles.helperNotice,
+              {
+                backgroundColor: colors.backgroundAlt || '#F4EFEA',
+                borderColor: colors.border,
+                borderLeftColor: colors.primary,
+                borderLeftWidth: 3.5,
+              },
+            ]}
+          >
             <Lightbulb size={20} color={colors.primary} weight="regular" />
             <Text style={[styles.helperText, { color: colors.mutedForeground }]}>
               Search across your entire life archive by keywords, emotions, dates, travel spots, or people.
@@ -302,15 +313,15 @@ export default function SearchTab() {
         </ScrollView>
       ) : totalResults === 0 ? (
         <View style={styles.emptyState}>
-          <View style={[styles.emptyIconCircle, { backgroundColor: colors.accentLight }]}>
-            <MagnifyingGlass size={36} color={colors.tertiary} weight="regular" />
+          <View style={[styles.emptyIconCircle, { backgroundColor: colors.muted }]}>
+            <MagnifyingGlass size={32} color={colors.tertiary} weight="regular" />
           </View>
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No moments found</Text>
           <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
             We couldn't find any memories matching "{query}". Try checking for spelling or searching a broader term.
           </Text>
           <TouchableOpacity
-            style={[styles.emptyActionBtn, { backgroundColor: colors.accentLight, borderColor: colors.border }]}
+            style={[styles.emptyActionBtn, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}
             onPress={() => router.push('/(tabs)/library')}
             accessibilityRole="button"
             accessibilityLabel="Explore Library"

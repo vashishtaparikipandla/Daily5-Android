@@ -5,6 +5,7 @@ import { Tabs, Redirect } from 'expo-router';
 import {
   BookOpen,
   Books,
+  Compass,
   MagnifyingGlass,
   User,
   Lock,
@@ -93,6 +94,9 @@ export default function TabLayout() {
     return <BiometricLock onUnlock={unlock} />;
   }
 
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, Platform.OS === 'android' ? 14 : 8);
+
   return (
     <Tabs
       screenOptions={{
@@ -100,13 +104,12 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
         tabBarStyle: {
-          position: 'absolute',
           backgroundColor: isIOS ? 'transparent' : colors.card,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.border,
-          elevation: 0,
-          height: 60,
-          paddingBottom: 8,
+          elevation: 10,
+          height: 54 + bottomPad,
+          paddingBottom: bottomPad,
           paddingTop: 6,
         },
         tabBarBackground: () =>
@@ -121,7 +124,7 @@ export default function TabLayout() {
           ) : undefined,
         tabBarLabelStyle: {
           fontFamily: 'Inter_500Medium',
-          fontSize: 11,
+          fontSize: 10.5,
           letterSpacing: 0.2,
         },
       }}
@@ -141,6 +144,15 @@ export default function TabLayout() {
           title: 'Library',
           tabBarIcon: ({ color, focused }) => (
             <Books size={22} color={color} weight={focused ? 'fill' : 'regular'} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="discover"
+        options={{
+          title: 'Discover',
+          tabBarIcon: ({ color, focused }) => (
+            <Compass size={22} color={color} weight={focused ? 'fill' : 'regular'} />
           ),
         }}
       />

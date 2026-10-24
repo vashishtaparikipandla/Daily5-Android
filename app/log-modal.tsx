@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, Platform, Alert, KeyboardAvoidingView, Image,
+  Share, Modal,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
   X, Lock, WarningCircle, BookmarkSimple, CheckCircle, BookOpen,
-  Camera, TrashSimple, Sparkle, Check,
+  Camera, TrashSimple, Sparkle, Check, DotsThreeVertical, Star,
+  ShareNetwork, Export,
 } from 'phosphor-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
@@ -14,19 +16,11 @@ import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiary } from '@/contexts/DiaryContext';
 import { CategoryPicker } from '@/components/CategoryPicker';
-import { PhotoPicker } from '@/components/PhotoPicker';
+import { VisualLayoutPicker } from '@/components/VisualLayoutPicker';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
 import { randomPrompt } from '@/constants/placeholders';
 import { uid, todayStr, formatFullDate } from '@/lib/data';
 import type { Entry, CategoryId, PageLayoutType } from '@/lib/data';
-
-const LAYOUT_OPTIONS: { id: PageLayoutType; name: string; tag: string }[] = [
-  { id: 'quad', name: '2×2 Quad', tag: 'Figma Ref' },
-  { id: 'strips', name: 'Filmstrips', tag: 'Figma Ref' },
-  { id: 'hero', name: 'Hero + 3', tag: 'Editorial' },
-  { id: 'magazine', name: 'Magazine', tag: 'Split 2×2' },
-  { id: 'polaroid', name: 'Polaroid', tag: 'Scrapbook' },
-];
 
 const MAX_CHARS = 120;
 const COUNTER_THRESHOLD = Math.floor(MAX_CHARS * 0.75);
@@ -81,6 +75,8 @@ function LogModalContent() {
   const [newBookTitle, setNewBookTitle] = useState('');
   const [saving, setSaving] = useState(false);
   const [lockedError, setLockedError] = useState(false);
+  const [showMoreModal, setShowMoreModal] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   function updateSlot(index: number, updates: Partial<SlotState>) {
     if (slots[index].isImmutable && updates.text !== undefined) {
@@ -168,7 +164,7 @@ function LogModalContent() {
   }
 
   const topPad = insets.top + (Platform.OS === 'web' ? 67 : 0);
-  const botPad = insets.bottom + (Platform.OS === 'web' ? 34 : 0);
+  const botPad = insets.bottom + (Platform.OS === 'web' ? 34 : 16);
 
   return (
     <KeyboardAvoidingView
@@ -190,18 +186,32 @@ function LogModalContent() {
             {formatFullDate(targetDate)}
           </Text>
           <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-            {isPast ? 'Fill empty moments' : "Tonight's 4"}
+            {isPast ? 'Fill empty moments' : "Tonight's 4 Moments"}
           </Text>
         </View>
-        <TouchableOpacity
-          onPress={handleDone}
-          disabled={saving}
-          style={[styles.doneBtn, { backgroundColor: colors.primary, opacity: saving ? 0.6 : 1 }]}
-          accessibilityRole="button"
-          accessibilityLabel="Save moments"
-        >
-          <Text style={[styles.doneBtnText, { color: colors.primaryForeground }]}>Done</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={() => {
+              Haptics.selectionAsync();
+              setShowMoreModal(true);
+            }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={[styles.moreBtn, { backgroundColor: colors.muted }]}
+            accessibilityRole="button"
+            accessibilityLabel="More options"
+          >
+            <DotsThreeVertical size={18} color={colors.foreground} weight="bold" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleDone}
+            disabled={saving}
+            style={[styles.doneBtn, { backgroundColor: colors.primary, opacity: saving ? 0.6 : 1 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Save moments"
+          >
+            <Text style={[styles.doneBtnText, { color: colors.primaryForeground }]}>Done</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Immutability Banner for Past Days */}
@@ -232,146 +242,25 @@ function LogModalContent() {
       {/* Content */}
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: botPad + 30 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: botPad + 280 }]}
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
         showsVerticalScrollIndicator={false}
       >
-        {/* Custom Books Assignment Section */}
-        <View style={[styles.collectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.collectionHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <BookmarkSimple size={16} color={colors.primary} weight="bold" />
-              <Text style={[styles.collectionTitle, { color: colors.foreground }]}>
-                Add to Collection Book
-              </Text>
-            </View>
-            <TouchableOpacity onPress={() => setShowNewBookInput(s => !s)}>
-              <Text style={[styles.addBookLink, { color: colors.primary }]}>
-                {showNewBookInput ? 'Cancel' : '+ New Book'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={[styles.collectionSub, { color: colors.tertiary }]}>
-            Assign this day to a travel trip, annual best, or keepsake book. It stays in your monthly book too!
+        {/* Subtle Layout Pill - tap opens More sheet to customize */}
+        <TouchableOpacity
+          style={[styles.layoutIndicatorChip, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => {
+            Haptics.selectionAsync();
+            setShowMoreModal(true);
+          }}
+          activeOpacity={0.8}
+        >
+          <Sparkle size={13} color={colors.primary} weight="fill" />
+          <Text style={[styles.layoutIndicatorText, { color: colors.foreground }]}>
+            Page Layout: {selectedLayout.toUpperCase()} · Tap to customize
           </Text>
-
-          {/* Quick Create Book Input */}
-          {showNewBookInput && (
-            <View style={styles.quickCreateRow}>
-              <TextInput
-                style={[styles.quickInput, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
-                placeholder="e.g. Japan Trip 2026, Best Memories..."
-                placeholderTextColor={colors.tertiary}
-                value={newBookTitle}
-                onChangeText={setNewBookTitle}
-                autoFocus
-              />
-              <TouchableOpacity
-                style={[styles.quickCreateBtn, { backgroundColor: colors.primary }]}
-                onPress={handleCreateQuickBook}
-              >
-                <Text style={[styles.quickCreateBtnText, { color: colors.primaryForeground }]}>Create</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Chips list of custom books */}
-          <View style={styles.bookChips}>
-            {customBooks.map(cb => {
-              const active = selectedBooks.includes(cb.monthKey);
-              return (
-                <TouchableOpacity
-                  key={cb.monthKey}
-                  style={[
-                    styles.bookChip,
-                    {
-                      backgroundColor: active ? colors.primary : colors.muted,
-                      borderColor: active ? colors.primary : colors.border,
-                    },
-                  ]}
-                  onPress={() => toggleBook(cb.monthKey)}
-                  activeOpacity={0.8}
-                >
-                  {active ? (
-                    <CheckCircle size={14} color={colors.primaryForeground} weight="fill" />
-                  ) : (
-                    <BookOpen size={14} color={colors.foreground} weight="regular" />
-                  )}
-                  <Text
-                    style={[
-                      styles.bookChipText,
-                      { color: active ? colors.primaryForeground : colors.foreground },
-                    ]}
-                  >
-                    {cb.title || cb.monthKey}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* Photobook Page Layout Selector */}
-        <View style={[styles.layoutSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.layoutSectionHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Sparkle size={16} color={colors.primary} weight="bold" />
-              <Text style={[styles.layoutSectionTitle, { color: colors.foreground }]}>
-                Photobook Page Layout
-              </Text>
-            </View>
-            <Text style={[styles.layoutSectionSub, { color: colors.tertiary }]}>
-              Reflows today's 4 photos on the printed page
-            </Text>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.layoutChipsRow}
-          >
-            {LAYOUT_OPTIONS.map(lo => {
-              const active = selectedLayout === lo.id;
-              return (
-                <TouchableOpacity
-                  key={lo.id}
-                  style={[
-                    styles.layoutChip,
-                    {
-                      backgroundColor: active ? colors.accentLight : colors.muted,
-                      borderColor: active ? colors.primary : colors.border,
-                    },
-                  ]}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setSelectedLayout(lo.id);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  {active ? (
-                    <Check size={14} color={colors.primary} weight="bold" />
-                  ) : null}
-                  <Text
-                    style={[
-                      styles.layoutChipName,
-                      { color: active ? colors.primary : colors.foreground },
-                    ]}
-                  >
-                    {lo.name}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.layoutChipTag,
-                      { color: active ? colors.primary : colors.tertiary },
-                    ]}
-                  >
-                    {lo.tag}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
+        </TouchableOpacity>
 
         {/* 4 Hierarchical Photo-First Memory Slots */}
         {slots.map((slot, i) => (
@@ -384,6 +273,191 @@ function LogModalContent() {
           />
         ))}
       </ScrollView>
+
+      {/* ── More Options Bottom Sheet ─────────────────────────────────────────── */}
+      <Modal
+        visible={showMoreModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowMoreModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.moreSheet, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
+            <View style={styles.moreSheetHeader}>
+              <View>
+                <Text style={[styles.moreSheetTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+                  Day Options
+                </Text>
+                <Text style={[styles.moreSheetSub, { color: colors.mutedForeground }]}>
+                  Page layout, collections & day actions
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowMoreModal(false)}>
+                <X size={22} color={colors.mutedForeground} weight="bold" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 16 }}>
+              {/* 1. Change Page Layout with Visual Wireframes */}
+              <View style={styles.moreSection}>
+                <Text style={[styles.moreSectionLabel, { color: colors.tertiary }]}>PHOTOPAGE LAYOUT STYLE</Text>
+                <VisualLayoutPicker
+                  selected={selectedLayout}
+                  onSelect={(l) => {
+                    setSelectedLayout(l);
+                  }}
+                  horizontal={true}
+                />
+              </View>
+
+              {/* 2. Add to Collection Book */}
+              <View style={styles.moreSection}>
+                <View style={styles.moreSectionHeaderRow}>
+                  <Text style={[styles.moreSectionLabel, { color: colors.tertiary }]}>ADD TO COLLECTION BOOK</Text>
+                  <TouchableOpacity onPress={() => setShowNewBookInput(s => !s)}>
+                    <Text style={[styles.addBookLink, { color: colors.primary }]}>
+                      {showNewBookInput ? 'Cancel' : '+ New Book'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {showNewBookInput && (
+                  <View style={styles.quickCreateRow}>
+                    <TextInput
+                      style={[styles.quickInput, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
+                      placeholder="e.g. Japan Trip 2026, Best of 2025"
+                      placeholderTextColor={colors.tertiary}
+                      value={newBookTitle}
+                      onChangeText={setNewBookTitle}
+                      autoFocus
+                    />
+                    <TouchableOpacity
+                      style={[styles.quickCreateBtn, { backgroundColor: colors.primary }]}
+                      onPress={handleCreateQuickBook}
+                    >
+                      <Text style={[styles.quickCreateBtnText, { color: colors.primaryForeground }]}>Create</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                <View style={styles.bookChips}>
+                  {customBooks.map(cb => {
+                    const active = selectedBooks.includes(cb.monthKey);
+                    return (
+                      <TouchableOpacity
+                        key={cb.monthKey}
+                        style={[
+                          styles.bookChip,
+                          {
+                            backgroundColor: active ? colors.primary : colors.muted,
+                            borderColor: active ? colors.primary : colors.border,
+                          },
+                        ]}
+                        onPress={() => toggleBook(cb.monthKey)}
+                        activeOpacity={0.8}
+                      >
+                        {active ? (
+                          <CheckCircle size={14} color={colors.primaryForeground} weight="fill" />
+                        ) : (
+                          <BookOpen size={14} color={colors.foreground} weight="regular" />
+                        )}
+                        <Text
+                          style={[
+                            styles.bookChipText,
+                            { color: active ? colors.primaryForeground : colors.foreground },
+                          ]}
+                        >
+                          {cb.title || cb.monthKey}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {customBooks.length === 0 && !showNewBookInput && (
+                    <Text style={[styles.noCustomText, { color: colors.tertiary }]}>
+                      No collection books yet. Tap "+ New Book" to create one.
+                    </Text>
+                  )}
+                </View>
+              </View>
+
+              {/* 3. Action Rows: Favorites, Share, Export */}
+              <View style={[styles.actionRowsCard, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                {/* Favorite */}
+                <TouchableOpacity
+                  style={styles.actionRow}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setIsFavorite(f => !f);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <Star size={18} color={isFavorite ? '#E5A93C' : colors.foreground} weight={isFavorite ? 'fill' : 'regular'} />
+                    <Text style={[styles.actionRowText, { color: colors.foreground }]}>
+                      {isFavorite ? 'Saved to Favorites' : 'Add this day to Favorites'}
+                    </Text>
+                  </View>
+                  {isFavorite && <Check size={16} color={colors.primary} weight="bold" />}
+                </TouchableOpacity>
+
+                <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
+
+                {/* Share this day */}
+                <TouchableOpacity
+                  style={styles.actionRow}
+                  onPress={async () => {
+                    Haptics.selectionAsync();
+                    try {
+                      await Share.share({
+                        title: `Dear Day — ${formatFullDate(targetDate)}`,
+                        message: `Check out my memories from ${formatFullDate(targetDate)} on Dear Day: https://dearday.app/d/${targetDate}`,
+                      });
+                    } catch {}
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <ShareNetwork size={18} color={colors.foreground} weight="bold" />
+                    <Text style={[styles.actionRowText, { color: colors.foreground }]}>
+                      Share this Day
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
+
+                {/* Export as PDF */}
+                <TouchableOpacity
+                  style={styles.actionRow}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setShowMoreModal(false);
+                    Alert.alert('Export Day', 'Exporting single day spread as archival PDF...');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <Export size={18} color={colors.foreground} weight="bold" />
+                    <Text style={[styles.actionRowText, { color: colors.foreground }]}>
+                      Export Day (PDF / Image)
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              {/* Close CTA */}
+              <TouchableOpacity
+                style={[styles.moreDoneBtn, { backgroundColor: colors.primary }]}
+                onPress={() => setShowMoreModal(false)}
+              >
+                <Text style={[styles.moreDoneBtnText, { color: colors.primaryForeground }]}>
+                  Apply & Back to Writing ✓
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -543,7 +617,7 @@ function SlotEditor({ slot, slotNumber, onChange, colors }: SlotEditorProps) {
               fontFamily: 'PlayfairDisplay_400Regular',
             },
           ]}
-          placeholder={slot.placeholder || 'Write a 1–2 line caption under this photo...'}
+          placeholder="Write a caption..."
           placeholderTextColor={colors.tertiary}
           value={slot.text}
           onChangeText={t => onChange({ text: t.slice(0, MAX_CHARS) })}
@@ -553,11 +627,6 @@ function SlotEditor({ slot, slotNumber, onChange, colors }: SlotEditorProps) {
           textAlignVertical="top"
           accessibilityLabel={`Caption for photo ${slotNumber}`}
         />
-        <View style={styles.captionFooter}>
-          <Text style={[styles.microHint, { color: colors.tertiary }]}>
-            Archival caption printed under photo in book
-          </Text>
-        </View>
       </View>
 
       {/* Category Picker */}
@@ -591,6 +660,18 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1 },
   headerDate: { fontSize: 18, letterSpacing: 0.2 },
   headerSub: { fontSize: 12, fontFamily: 'Inter_400Regular', marginTop: 1 },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  moreBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   doneBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   doneBtnText: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
   immutabilityBanner: {
@@ -866,5 +947,101 @@ const styles = StyleSheet.create({
   slotMeta: {
     gap: 10,
     marginTop: 2,
+  },
+
+  /* Layout Indicator Chip */
+  layoutIndicatorChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 4,
+  },
+  layoutIndicatorText: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.3,
+  },
+
+  /* More Options Bottom Sheet */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+  },
+  moreSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    padding: 22,
+    maxHeight: '85%',
+    gap: 14,
+  },
+  moreSheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  moreSheetTitle: {
+    fontSize: 20,
+    letterSpacing: 0.2,
+  },
+  moreSheetSub: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    marginTop: 2,
+  },
+  moreSection: {
+    gap: 8,
+  },
+  moreSectionLabel: {
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.8,
+  },
+  moreSectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  noCustomText: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    fontStyle: 'italic',
+    paddingVertical: 6,
+  },
+  actionRowsCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  actionRowText: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  actionDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginHorizontal: 16,
+  },
+  moreDoneBtn: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  moreDoneBtnText: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
   },
 });

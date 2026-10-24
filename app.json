@@ -27,7 +27,12 @@
         "backgroundColor": "#F7F4EF"
       },
       "package": "app.daily5.android",
-      "versionCode": 8,
+      "versionCode": 9,
+      "softwareKeyboardLayoutMode": "resize",
+      "androidNavigationBar": {
+        "barStyle": "dark-content",
+        "backgroundColor": "#F7F4EF"
+      },
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.USE_BIOMETRIC",
