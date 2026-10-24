@@ -47,7 +47,7 @@ export default function BiometricSetup() {
         </Text>
         <Text style={[styles.body, { color: colors.mutedForeground }]}>
           {available
-            ? 'Use your fingerprint or face to open Daily 5 without typing anything.'
+            ? 'Use your fingerprint or face to open Dear Day without typing anything.'
             : 'Biometric authentication is not set up on this device. You can enable it later in Profile → Data & Privacy.'}
         </Text>
         {!!error && (

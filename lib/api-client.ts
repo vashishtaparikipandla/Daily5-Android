@@ -1,5 +1,5 @@
 /**
- * API client for the Daily 5 API server.
+ * API client for the Dear Day API server.
  * All requests go to the same Replit domain as the app, at the /api prefix.
  */
 

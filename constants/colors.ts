@@ -1,5 +1,5 @@
 /**
- * Daily 5 design tokens — derived from the sibling web artifact's index.css
+ * Dear Day design tokens — derived from the sibling web artifact's index.css
  * Warm paper palette (light) / dark ink palette (dark).
  */
 const colors = {

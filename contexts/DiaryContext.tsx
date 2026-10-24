@@ -19,8 +19,15 @@ interface DiaryContextValue {
   getTodayBook: () => Book | undefined;
   getTodayLog: () => DayLog | undefined;
   getDayLog: (date: string) => DayLog | undefined;
+  customBooks: Book[];
+  sampleBooks: Book[];
+  monthlyBooks: Book[];
+  createCustomBook: (title: string, description?: string, coverColor?: string) => Promise<Book>;
+  deleteCustomBook: (monthKey: string) => Promise<void>;
+  addDayToCustomBook: (customMonthKey: string, date: string, entries?: Entry[]) => Promise<boolean>;
+  toggleHideDayInBook: (bookMonthKey: string, date: string) => Promise<void>;
   /** Returns false (and does nothing) if the target book is locked. */
-  upsertDayEntries: (date: string, entries: Entry[], extras?: Entry[]) => Promise<boolean>;
+  upsertDayEntries: (date: string, entries: Entry[], extras?: Entry[], customBookKeys?: string[]) => Promise<boolean>;
   lockCurrentMonth: () => Promise<void>;
   getOnThisDay: () => { book: Book; day: DayLog }[];
   totalMoments: number;
@@ -67,7 +74,7 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
           // Prompt user — this fires after the splash, so the UI is ready
           Alert.alert(
             'Backup found',
-            'A Daily 5 backup was found on this device. Would you like to restore your diary?',
+            'A Dear Day backup was found on this device. Would you like to restore your diary?',
             [
               {
                 text: 'Restore',
@@ -176,32 +183,136 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
     return undefined;
   }
 
+  const customBooks = books.filter(b => b.isCustom && !b.isSample);
+  const sampleBooks = books.filter(b => b.isSample);
+  const monthlyBooks = books.filter(b => !b.isCustom);
+
+  async function createCustomBook(title: string, description?: string, coverColor?: string): Promise<Book> {
+    const id = uid();
+    const newBook: Book = {
+      monthKey: `custom_${id}`,
+      id,
+      title: title.trim(),
+      description: description?.trim(),
+      coverColor: coverColor || '#3D2A2F',
+      isCustom: true,
+      locked: false,
+      days: [],
+      hiddenDays: [],
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [newBook, ...books];
+    await saveBooks(updated);
+    setBooks(updated);
+    if (backupEnabled) performBackup(updated).catch(() => {});
+    return newBook;
+  }
+
+  async function deleteCustomBook(monthKey: string): Promise<void> {
+    const updated = books.filter(b => b.monthKey !== monthKey);
+    await saveBooks(updated);
+    setBooks(updated);
+    if (backupEnabled) performBackup(updated).catch(() => {});
+  }
+
+  async function toggleHideDayInBook(bookMonthKey: string, date: string): Promise<void> {
+    const updated = books.map(b => {
+      if (b.monthKey !== bookMonthKey) return b;
+      const currentHidden = b.hiddenDays ?? [];
+      const isHidden = currentHidden.includes(date);
+      const nextHidden = isHidden ? currentHidden.filter(d => d !== date) : [...currentHidden, date];
+      return { ...b, hiddenDays: nextHidden };
+    });
+    await saveBooks(updated);
+    setBooks(updated);
+    if (backupEnabled) performBackup(updated).catch(() => {});
+  }
+
+  async function addDayToCustomBook(customMonthKey: string, date: string, customEntries?: Entry[]): Promise<boolean> {
+    const targetBook = books.find(b => b.monthKey === customMonthKey);
+    if (!targetBook) return false;
+
+    // Resolve entries from dayLog if not passed explicitly
+    const entriesToAdd = customEntries ?? getDayLog(date)?.entries ?? [];
+    if (entriesToAdd.length === 0) return false;
+
+    const updated = books.map(b => {
+      if (b.monthKey !== customMonthKey) return b;
+      const existingDayIndex = b.days.findIndex(d => d.date === date);
+      if (existingDayIndex >= 0) {
+        const nextDays = [...b.days];
+        nextDays[existingDayIndex] = { date, entries: entriesToAdd, extras: [] };
+        return { ...b, days: nextDays };
+      }
+      return { ...b, days: [...b.days, { date, entries: entriesToAdd, extras: [] }] };
+    });
+
+    await saveBooks(updated);
+    setBooks(updated);
+    if (backupEnabled) performBackup(updated).catch(() => {});
+    return true;
+  }
+
   async function upsertDayEntries(
     date: string,
     entries: Entry[],
     extras: Entry[] = [],
+    customBookKeys?: string[],
   ): Promise<boolean> {
     const mk = date.slice(0, 7);
+    const today = todayStr();
+    const isPast = date < today;
 
-    // Reject writes to locked books
+    // Reject writes to locked monthly books
     const existingBook = books.find(b => b.monthKey === mk);
     if (existingBook?.locked) {
       console.warn('[DiaryContext] upsertDayEntries: book is locked', mk);
       return false;
     }
 
-    let updated = books.map(b => {
-      if (b.monthKey !== mk) return b;
-      const hasDay = b.days.some(d => d.date === date);
-      if (hasDay) {
-        return { ...b, days: b.days.map(d => d.date === date ? { ...d, entries, extras } : d) };
+    // Immutability enforcement for past days:
+    // If date is in the past, existing non-empty memories cannot be overwritten or deleted.
+    // The user can only fill empty slots!
+    let finalEntries = entries;
+    if (isPast && existingBook) {
+      const existingDay = existingBook.days.find(d => d.date === date);
+      if (existingDay && existingDay.entries.length > 0) {
+        finalEntries = entries.map((newEntry, idx) => {
+          const oldEntry = existingDay.entries[idx];
+          if (oldEntry && oldEntry.text.trim().length > 0) {
+            // Preserve the original immutable memory
+            return oldEntry;
+          }
+          return newEntry;
+        });
       }
-      return { ...b, days: [...b.days, { date, entries, extras }] };
+    }
+
+    let updated = books.map(b => {
+      // 1. Update standard monthly volume
+      if (b.monthKey === mk) {
+        const hasDay = b.days.some(d => d.date === date);
+        if (hasDay) {
+          return { ...b, days: b.days.map(d => d.date === date ? { ...d, entries: finalEntries, extras } : d) };
+        }
+        return { ...b, days: [...b.days, { date, entries: finalEntries, extras }] };
+      }
+
+      // 2. Also sync to any selected custom books
+      if (customBookKeys && customBookKeys.includes(b.monthKey)) {
+        const hasDay = b.days.some(d => d.date === date);
+        if (hasDay) {
+          return { ...b, days: b.days.map(d => d.date === date ? { ...d, entries: finalEntries, extras } : d) };
+        }
+        return { ...b, days: [...b.days, { date, entries: finalEntries, extras }] };
+      }
+
+      return b;
     });
 
     // Create book for this month if none exists
     if (!updated.find(b => b.monthKey === mk)) {
-      updated = [...updated, { monthKey: mk, locked: false, days: [{ date, entries, extras }] }];
+      updated = [...updated, { monthKey: mk, locked: false, days: [{ date, entries: finalEntries, extras }] }];
     }
 
     await saveBooks(updated);
@@ -233,6 +344,7 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
     const currentYear = now.getFullYear();
     const result: { book: Book; day: DayLog }[] = [];
     for (const book of books) {
+      if (book.isCustom) continue; // Only compare against past monthly books
       if (parseInt(book.monthKey.slice(0, 4)) >= currentYear) continue;
       for (const day of book.days) {
         if (day.date.slice(5) === mmdd) result.push({ book, day });
@@ -254,6 +366,8 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
     <DiaryContext.Provider value={{
       books, isLoading, refresh,
       getBook, getTodayBook, getTodayLog, getDayLog,
+      customBooks, sampleBooks, monthlyBooks,
+      createCustomBook, deleteCustomBook, addDayToCustomBook, toggleHideDayInBook,
       upsertDayEntries, lockCurrentMonth, getOnThisDay,
       totalMoments, totalDays,
       performBackup: () => performBackup(),

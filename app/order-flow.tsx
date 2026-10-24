@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
 import { useOrders } from '@/contexts/OrdersContext';
 import { useDiary } from '@/contexts/DiaryContext';
-import { monthLabel, estimatedPages } from '@/lib/data';
+import { monthLabel, estimatedPages, bookDisplayName } from '@/lib/data';
 import { ShippingAddress, formatTotalCents, formatDeliveryDate } from '@/lib/orders';
 import { createCheckoutSession, uploadOrderPdf, pollOrderStatus, type CheckoutSessionResponse } from '@/lib/api-client';
 import { generateBookPdf } from '@/lib/pdfExport';
@@ -56,7 +56,7 @@ function PreviewStep({
         <View style={[styles.bookSpine, { backgroundColor: colors.primary }]} />
         <View style={styles.bookInfo}>
           <Text style={[styles.bookTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-            {monthLabel(monthKey)}
+            {book ? bookDisplayName(book) : monthLabel(monthKey)}
           </Text>
           <Text style={[styles.bookMeta, { color: colors.mutedForeground }]}>
             {activeDays} days · ~{pages} pages · Softcover
@@ -215,7 +215,7 @@ function PaymentStep({
           <View style={{ flex: 1 }}>
             <Text style={[styles.featureText, { color: colors.foreground }]}>Secure card payment via Stripe</Text>
             <Text style={[styles.smallNote, { color: colors.mutedForeground }]}>
-              You'll be taken to Stripe's secure checkout. Your card details are never stored by Daily 5.
+              You'll be taken to Stripe's secure checkout. Your card details are never stored by Dear Day.
             </Text>
           </View>
         </View>

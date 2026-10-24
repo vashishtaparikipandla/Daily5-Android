@@ -6,7 +6,7 @@
 
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { monthLabel, formatFullDate } from './data';
+import { monthLabel, formatFullDate, bookDisplayName } from './data';
 import { getCategoryById } from '@/constants/categories';
 import type { Book, DayLog, Entry } from './data';
 
@@ -33,9 +33,15 @@ const COVER_PALETTES = [
   { bg: '#2A3A2A', fg: '#EAF4EA', accent: '#7AE87A' },
 ];
 
-function coverPalette(monthKey: string) {
-  const [, m] = monthKey.split('-');
-  return COVER_PALETTES[(parseInt(m, 10) - 1) % COVER_PALETTES.length];
+function coverPalette(book: Book) {
+  if (book.coverColor) {
+    return { bg: book.coverColor, fg: '#FFFFFF', accent: '#F4C27A' };
+  }
+  let hash = 0;
+  for (let i = 0; i < book.monthKey.length; i++) {
+    hash = (hash * 31 + book.monthKey.charCodeAt(i)) % COVER_PALETTES.length;
+  }
+  return COVER_PALETTES[hash];
 }
 
 // ─── HTML helpers ─────────────────────────────────────────────────────────────
@@ -69,7 +75,7 @@ function emptySlotHtml(slot: number): string {
 }
 
 function dayPageHtml(day: DayLog, book: Book): string {
-  const slots = Array.from({ length: 5 }, (_, i) => day.entries[i] ?? null);
+  const slots = Array.from({ length: 4 }, (_, i) => day.entries[i] ?? null);
   const hasExtras = day.extras.length > 0;
   return `
     <div class="page day-page">
@@ -88,21 +94,24 @@ function dayPageHtml(day: DayLog, book: Book): string {
 }
 
 function coverPageHtml(book: Book): string {
-  const pal   = coverPalette(book.monthKey);
-  const label = monthLabel(book.monthKey);
-  const activeDays = book.days.filter(d => d.entries.length > 0).length;
-  const totalMoments = book.days.reduce((s, d) => s + d.entries.length, 0);
+  const pal   = coverPalette(book);
+  const label = bookDisplayName(book);
+  const hidden = book.hiddenDays ?? [];
+  const activeDays = book.days.filter(d => d.entries.length > 0 && !hidden.includes(d.date)).length;
+  const totalMoments = book.days
+    .filter(d => !hidden.includes(d.date))
+    .reduce((s, d) => s + d.entries.length, 0);
 
   return `
     <div class="page cover-page" style="background:${pal.bg};">
       <div class="cover-spine" style="background:${pal.accent};"></div>
       <div class="cover-body">
         <div class="cover-dots">
-          ${Array.from({ length: 25 }, (_, i) =>
-            `<div class="dot" style="opacity:${0.08 + (i % 5) * 0.04};background:${pal.fg}"></div>`
+          ${Array.from({ length: 16 }, (_, i) =>
+            `<div class="dot" style="opacity:${0.08 + (i % 4) * 0.05};background:${pal.fg}"></div>`
           ).join('')}
         </div>
-        <p class="cover-app" style="color:${pal.accent}">Daily 5</p>
+        <p class="cover-app" style="color:${pal.accent}">Dear Day</p>
         <h1 class="cover-title" style="color:${pal.fg}">${label}</h1>
         <p class="cover-meta" style="color:${pal.fg}88">
           ${activeDays} days · ${totalMoments} moments
@@ -116,8 +125,9 @@ function coverPageHtml(book: Book): string {
 // ─── Full HTML document ───────────────────────────────────────────────────────
 
 function buildHtml(book: Book): string {
+  const hidden = book.hiddenDays ?? [];
   const sortedDays = [...book.days]
-    .filter(d => d.entries.length > 0)
+    .filter(d => d.entries.length > 0 && !hidden.includes(d.date))
     .sort((a, b) => a.date.localeCompare(b.date));
 
   const pages = [
@@ -130,7 +140,7 @@ function buildHtml(book: Book): string {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${monthLabel(book.monthKey)} — Daily 5</title>
+<title>${bookDisplayName(book)} — Dear Day</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;700&display=swap');
 

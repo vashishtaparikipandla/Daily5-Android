@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Platform,
-  Alert, Switch, ActivityIndicator, ScrollView,
+  Alert, Switch, ActivityIndicator, ScrollView, Modal,
 } from 'react-native';
 import { router } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,11 +14,7 @@ import { useDriveBackup, DriveSchedule } from '@/contexts/DriveBackupContext';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
 import { exportBackupFile, importBackupFromFilePicker } from '@/lib/backup';
 
-// Required by expo-auth-session to finalise the OAuth redirect
-WebBrowser.maybeCompleteAuthSession();
-
-const ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '';
-const WEB_CLIENT_ID     = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '';
+const WEB_CLIENT_ID = '205619709770-c7cabrrdedn0nnndifceo9cbo387llcd.apps.googleusercontent.com';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -102,7 +97,7 @@ function PrivacyContent() {
   const insets = useSafeAreaInsets();
   const { user, biometricEnabled, setBiometricEnabled, deleteAccount, backupEnabled, setBackupEnabled,
           driveConnected, driveAccount, setDriveConnection, disconnectGoogleDrive, getDriveToken } = useApp();
-  const { performBackup, restoreFromBackup, lastBackupTime, refreshBackupTime } = useDiary();
+  const { performBackup, restoreFromBackup, restoreFromData, lastBackupTime, refreshBackupTime } = useDiary();
   const {
     driveWorking, lastDriveBackupTime, driveSchedule,
     setDriveSchedule, backupToDrive, restoreFromDrive, refreshDriveBackupTime,
@@ -117,39 +112,11 @@ function PrivacyContent() {
   const [connectingDrive,   setConnectingDrive]    = useState(false);
   const [driveTokenValid,   setDriveTokenValid]    = useState(false);
 
-  // ── Drive OAuth request (drive.appdata scope) ──────────────────────────
-  const [, driveResponse, drivePromptAsync] = Google.useAuthRequest({
-    androidClientId: ANDROID_CLIENT_ID,
-    webClientId:     WEB_CLIENT_ID,
-    scopes: ['https://www.googleapis.com/auth/drive.appdata'],
-  });
-
   // Resolve token validity whenever Drive connection state changes
   useEffect(() => {
     if (!driveConnected) { setDriveTokenValid(false); return; }
     getDriveToken().then(tok => setDriveTokenValid(!!tok));
   }, [driveConnected]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!driveResponse) return;
-    if (driveResponse.type === 'success') {
-      const tok = driveResponse.authentication?.accessToken ?? '';
-      const expiresIn = (driveResponse.authentication as { expiresIn?: number } | null)?.expiresIn ?? 3600;
-      const expiry = Date.now() + expiresIn * 1000 - 60_000; // 1-min buffer
-      const email = user?.email ?? driveAccount ?? '';
-      setDriveConnection(email, tok, expiry)
-        .then(() => {
-          setDriveTokenValid(true);
-          setConnectingDrive(false);
-          Alert.alert('Google Drive connected', 'Your diary can now be backed up to your Google Drive.');
-        });
-    } else if (driveResponse.type === 'error') {
-      Alert.alert('Connection failed', 'Could not connect to Google Drive. Please try again.');
-      setConnectingDrive(false);
-    } else {
-      setConnectingDrive(false);
-    }
-  }, [driveResponse]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     refreshBackupTime();
@@ -216,11 +183,13 @@ function PrivacyContent() {
     catch (e: unknown) { Alert.alert('Export failed', e instanceof Error ? e.message : 'Unknown error'); }
   }
 
+  const [showTransferModal, setShowTransferModal] = useState(false);
+
   async function handleImport() {
     if (importing) return;
     Alert.alert(
-      'Import backup',
-      'This will replace your current diary with the contents of the backup file.',
+      'Import backup file',
+      'This will restore your memories and books from the selected backup file (.d5b). If you are switching devices, ensure you entered your 64-character recovery key first.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -229,30 +198,66 @@ function PrivacyContent() {
             setImporting(true);
             const data = await importBackupFromFilePicker();
             setImporting(false);
-            if (!data) { Alert.alert('Import failed', 'Could not decrypt the backup. Make sure you are using the correct recovery key.'); return; }
-            const ok = await restoreFromBackup();
-            Alert.alert(ok ? 'Restored' : 'Restore failed', ok ? 'Your diary has been restored.' : 'The backup data was invalid.');
+            if (!data) {
+              Alert.alert(
+                'Import failed',
+                'Could not decrypt the backup. Make sure you have entered your 64-character recovery key in "Recovery key" first.',
+              );
+              return;
+            }
+            const ok = await restoreFromData(data as any);
+            if (ok) {
+              await performBackup();
+              await refreshBackupTime();
+              Alert.alert('Restored successfully', 'Your diary entries and books have been restored from your backup!');
+            } else {
+              Alert.alert('Restore failed', 'The backup file contained invalid data.');
+            }
           },
         },
       ],
     );
   }
 
-  // ── Drive handlers ─────────────────────────────────────────────────────
-
   async function handleConnectDrive() {
     if (connectingDrive) return;
-    if (!ANDROID_CLIENT_ID && !WEB_CLIENT_ID) {
-      Alert.alert('Not configured', 'Google client IDs are not set. Add EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID and EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to connect Google Drive.');
-      return;
-    }
     setConnectingDrive(true);
-    await drivePromptAsync();
+    try {
+      GoogleSignin.configure({
+        scopes: ['https://www.googleapis.com/auth/drive.appdata'],
+        webClientId: WEB_CLIENT_ID,
+        offlineAccess: true,
+      });
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      const tokens = await GoogleSignin.getTokens();
+      const gUser = (response as any).data?.user || (response as any).user;
+      const email = gUser?.email || user?.email || driveAccount || 'Google User';
+
+      if (tokens.accessToken) {
+        const expiry = Date.now() + 3600 * 1000;
+        await setDriveConnection(email, tokens.accessToken, expiry);
+        setDriveTokenValid(true);
+        Alert.alert('Google Drive connected', 'Your diary can now be backed up to your Google Drive.');
+      } else {
+        Alert.alert('Connection failed', 'Could not obtain Google Drive access token. Please try again.');
+      }
+    } catch (err: any) {
+      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+        // User cancelled sign-in
+      } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert('Google Play Services unavailable', 'Google Play Services is required to connect Google Drive.');
+      } else {
+        console.error('Google Drive Connection Error:', err);
+        Alert.alert('Connection failed', err?.message || 'Could not connect to Google Drive. Please try again.');
+      }
+    } finally {
+      setConnectingDrive(false);
+    }
   }
 
   async function handleReconnectDrive() {
-    setConnectingDrive(true);
-    await drivePromptAsync();
+    await handleConnectDrive();
   }
 
   async function handleDisconnectDrive() {
@@ -266,6 +271,9 @@ function PrivacyContent() {
           style: 'destructive',
           onPress: async () => {
             await disconnectGoogleDrive();
+            try {
+              await GoogleSignin.signOut();
+            } catch {}
             setDriveTokenValid(false);
           },
         },
@@ -366,12 +374,12 @@ function PrivacyContent() {
         {/* Local encrypted backup */}
         <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>Local Encrypted Backup</Text>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.row, { borderBottomWidth: backupEnabled ? StyleSheet.hairlineWidth : 0, borderBottomColor: colors.border }]}>
-            <Ionicons name="phone-portrait-outline" size={20} color={colors.mutedForeground} />
+          <View style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
+            <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
             <View style={styles.rowMeta}>
-              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Back up to this device</Text>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Automatic device backup</Text>
               <Text style={[styles.rowSub, { color: colors.tertiary }]}>
-                {backupEnabled ? `Last backup: ${formatTime(lastBackupTime)}` : 'Encrypted backup saved locally'}
+                {backupEnabled ? `Saved: ${formatTime(lastBackupTime)}` : 'Keep diary encrypted on device'}
               </Text>
             </View>
             {togglingBackup
@@ -381,51 +389,73 @@ function PrivacyContent() {
                   trackColor={{ true: colors.primary, false: colors.border }} />}
           </View>
 
-          {backupEnabled && (<>
-            <TouchableOpacity style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
-              onPress={handleBackupNow} disabled={backingUp}>
-              <Ionicons name="refresh-outline" size={20} color={colors.mutedForeground} />
-              <Text style={[styles.rowLabel, { color: colors.foreground, flex: 1 }]}>Back up now</Text>
-              {backingUp ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />}
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
-              onPress={() => router.push('/profile/backup-key')}>
-              <Ionicons name="key-outline" size={20} color={colors.mutedForeground} />
-              <View style={styles.rowMeta}>
-                <Text style={[styles.rowLabel, { color: colors.foreground }]}>Recovery key</Text>
-                <Text style={[styles.rowSub, { color: colors.tertiary }]}>Save this to restore on a new device</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
-              onPress={handleExport}>
-              <Ionicons name="share-outline" size={20} color={colors.mutedForeground} />
-              <View style={styles.rowMeta}>
-                <Text style={[styles.rowLabel, { color: colors.foreground }]}>Export backup file</Text>
-                <Text style={[styles.rowSub, { color: colors.tertiary }]}>Share to another location</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.row} onPress={handleImport} disabled={importing}>
-              <Ionicons name="download-outline" size={20} color={colors.mutedForeground} />
-              <View style={styles.rowMeta}>
-                <Text style={[styles.rowLabel, { color: colors.foreground }]}>Import backup file</Text>
-                <Text style={[styles.rowSub, { color: colors.tertiary }]}>Restore from an exported backup</Text>
-              </View>
-              {importing ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />}
-            </TouchableOpacity>
-          </>)}
+          <TouchableOpacity
+            style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
+            onPress={handleBackupNow}
+            disabled={backingUp}
+          >
+            <Ionicons name="refresh-outline" size={20} color={colors.mutedForeground} />
+            <View style={styles.rowMeta}>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Back up now</Text>
+              <Text style={[styles.rowSub, { color: colors.tertiary }]}>
+                {lastBackupTime ? `Last saved: ${formatTime(lastBackupTime)}` : 'Create instant encrypted copy'}
+              </Text>
+            </View>
+            {backingUp ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />}
+          </TouchableOpacity>
 
-          {!backupEnabled && (
-            <TouchableOpacity style={styles.row} onPress={() => router.push('/profile/backup-key')}>
-              <Ionicons name="key-outline" size={20} color={colors.mutedForeground} />
-              <View style={styles.rowMeta}>
-                <Text style={[styles.rowLabel, { color: colors.foreground }]}>Enter recovery key</Text>
-                <Text style={[styles.rowSub, { color: colors.tertiary }]}>Import a key from another device</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
+            onPress={() => router.push('/profile/backup-key')}
+          >
+            <Ionicons name="key-outline" size={20} color={colors.mutedForeground} />
+            <View style={styles.rowMeta}>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Recovery key</Text>
+              <Text style={[styles.rowSub, { color: colors.tertiary }]}>64-character key required to restore on new device</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
+            onPress={handleExport}
+          >
+            <Ionicons name="share-outline" size={20} color={colors.mutedForeground} />
+            <View style={styles.rowMeta}>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Export backup file (.d5b)</Text>
+              <Text style={[styles.rowSub, { color: colors.tertiary }]}>Share or save to cloud/storage</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
+            onPress={handleImport}
+            disabled={importing}
+          >
+            <Ionicons name="download-outline" size={20} color={colors.mutedForeground} />
+            <View style={styles.rowMeta}>
+              <Text style={[styles.rowLabel, { color: colors.foreground }]}>Import backup file</Text>
+              <Text style={[styles.rowSub, { color: colors.tertiary }]}>Restore memories from a .d5b file</Text>
+            </View>
+            {importing ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => setShowTransferModal(true)}
+          >
+            <Ionicons name="swap-horizontal-outline" size={20} color={colors.primary} />
+            <View style={styles.rowMeta}>
+              <Text style={[styles.rowLabel, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>
+                Switching devices? Read guide
+              </Text>
+              <Text style={[styles.rowSub, { color: colors.tertiary }]}>
+                Step-by-step instructions for transferring data
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+          </TouchableOpacity>
         </View>
 
         {/* Google Drive backup */}
@@ -557,6 +587,90 @@ function PrivacyContent() {
           Drive backups are stored in a private app folder — not visible in your Drive file browser.
         </Text>
       </ScrollView>
+
+      {/* Device Transfer Modal */}
+      <Modal
+        visible={showTransferModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowTransferModal(false)}
+      >
+        <View style={[styles.modalRoot, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+              Transfer to a New Phone
+            </Text>
+            <TouchableOpacity onPress={() => setShowTransferModal(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <Ionicons name="close" size={24} color={colors.foreground} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
+            <View style={[styles.guideStep, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.stepNumberBadge, { backgroundColor: colors.primary }]}>
+                <Text style={styles.stepNumberText}>1</Text>
+              </View>
+              <View style={styles.stepInfo}>
+                <Text style={[styles.stepTitle, { color: colors.foreground }]}>Copy your Recovery Key</Text>
+                <Text style={[styles.stepDesc, { color: colors.mutedForeground }]}>
+                  Your diary is protected by a 64-character encryption key known only to you. Go to Recovery Key and tap "Copy Key". Keep it safe.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.stepActionBtn, { borderColor: colors.border }]}
+                  onPress={() => {
+                    setShowTransferModal(false);
+                    router.push('/profile/backup-key');
+                  }}
+                >
+                  <Text style={[styles.stepActionText, { color: colors.primary }]}>Open Recovery Key →</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={[styles.guideStep, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.stepNumberBadge, { backgroundColor: colors.primary }]}>
+                <Text style={styles.stepNumberText}>2</Text>
+              </View>
+              <View style={styles.stepInfo}>
+                <Text style={[styles.stepTitle, { color: colors.foreground }]}>Export your Backup File (.d5b)</Text>
+                <Text style={[styles.stepDesc, { color: colors.mutedForeground }]}>
+                  Tap "Export backup file" to send the encrypted `.d5b` file to your new phone via Google Drive, Nearby Share, or email.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.stepActionBtn, { borderColor: colors.border }]}
+                  onPress={() => {
+                    setShowTransferModal(false);
+                    handleExport();
+                  }}
+                >
+                  <Text style={[styles.stepActionText, { color: colors.primary }]}>Export Backup Now →</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={[styles.guideStep, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.stepNumberBadge, { backgroundColor: colors.primary }]}>
+                <Text style={styles.stepNumberText}>3</Text>
+              </View>
+              <View style={styles.stepInfo}>
+                <Text style={[styles.stepTitle, { color: colors.foreground }]}>Restore on your New Device</Text>
+                <Text style={[styles.stepDesc, { color: colors.mutedForeground }]}>
+                  Install Dear Day on your new device. In Data & Privacy:{"\n\n"}
+                  a) Tap "Recovery Key" → "Enter recovery key" and paste your 64-character key.{"\n\n"}
+                  b) Tap "Import backup file" and pick the `.d5b` file. All your daily moments and books will decrypt instantly.
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.modalCloseBtn, { backgroundColor: colors.primary }]}
+              onPress={() => setShowTransferModal(false)}
+            >
+              <Text style={[styles.modalCloseBtnText, { color: colors.primaryForeground }]}>Got it</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -597,4 +711,51 @@ const styles = StyleSheet.create({
     fontSize: 12, fontFamily: 'Inter_400Regular', lineHeight: 18,
     textAlign: 'center', paddingHorizontal: 8,
   },
+  modalRoot: { flex: 1 },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  modalTitle: { fontSize: 20 },
+  modalContent: { padding: 20, gap: 16, paddingBottom: 40 },
+  guideStep: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+  },
+  stepNumberBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumberText: { color: '#fff', fontSize: 14, fontFamily: 'Inter_600SemiBold' },
+  stepInfo: { flex: 1, gap: 6 },
+  stepTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
+  stepDesc: { fontSize: 14, fontFamily: 'Inter_400Regular', lineHeight: 20 },
+  stepActionBtn: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+    marginTop: 6,
+  },
+  stepActionText: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  modalCloseBtn: {
+    borderRadius: 12,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  modalCloseBtnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
 });

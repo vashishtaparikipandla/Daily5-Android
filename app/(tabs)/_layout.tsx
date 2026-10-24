@@ -41,7 +41,7 @@ function BiometricLock({ onUnlock }: { onUnlock: () => Promise<boolean> }) {
           <Ionicons name="lock-closed" size={36} color={colors.primary} />
         </View>
         <Text style={[styles.lockTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-          Daily 5 is locked
+          Dear Day is locked
         </Text>
         {error ? (
           <Text style={[styles.lockError, { color: colors.destructive }]}>{error}</Text>
@@ -136,11 +136,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="discover"
+        name="search"
         options={{
-          title: 'Discover',
+          title: 'Search',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'time' : 'time-outline'} size={23} color={color} />
+            <Ionicons name={focused ? 'search' : 'search-outline'} size={23} color={color} />
           ),
         }}
       />

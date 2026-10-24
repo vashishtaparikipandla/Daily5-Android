@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Daily 5",
+    "name": "Dear Day",
     "slug": "daily5-android",
     "version": "1.0.0",
     "owner": "vashishtaparikipandla",
@@ -27,11 +27,12 @@
         "backgroundColor": "#F7F4EF"
       },
       "package": "app.daily5.android",
-      "versionCode": 3,
+      "versionCode": 5,
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -49,18 +50,25 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Daily 5 needs access to your photos to attach them to diary entries.",
-          "cameraPermission": "Daily 5 needs access to your camera to take photos for diary entries."
+          "photosPermission": "Dear Day needs access to your photos to attach them to diary entries.",
+          "cameraPermission": "Dear Day needs access to your camera to take photos for diary entries."
         }
       ],
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Daily 5 uses Face ID so you can unlock your diary quickly."
+          "faceIDPermission": "Dear Day uses Face ID so you can unlock your diary quickly."
         }
       ],
       "expo-updates",
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#E8593A"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false,

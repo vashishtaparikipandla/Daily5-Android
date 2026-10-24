@@ -1,10 +1,10 @@
 /**
- * Encrypted backup for Daily 5 diary data.
+ * Encrypted backup for Dear Day diary data.
  *
- * Encryption: AES-256-GCM via Web Crypto API (available in Hermes RN 0.71+).
+ * Encryption: AES-256 via CryptoJS (runs natively in Hermes on Android & iOS).
  * Key storage: expo-secure-store (backed up to iCloud Keychain on iOS and
  *   Android Backup Service on Android — survives reinstall on the same account).
- * File storage: expo-file-system v19 legacy API, documents directory (backed
+ * File storage: expo-file-system legacy API, documents directory (backed
  *   up to iCloud on iOS and Android Auto Backup on Android automatically).
  *
  * Cross-device recovery: The encryption key is stored in SecureStore which the
@@ -14,31 +14,15 @@
 
 import * as SecureStore from 'expo-secure-store';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as Crypto from 'expo-crypto';
+import CryptoJS from 'crypto-js';
+import { Platform } from 'react-native';
 
 const BACKUP_KEY_STORE_KEY = 'daily5_backup_aes_key_v1';
-const BACKUP_FILE_NAME = 'daily5_backup.d5b';
-const BACKUP_VERSION = 1;
+const BACKUP_FILE_NAME = 'dearday_backup.d5b';
+const BACKUP_VERSION = 2;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-function ab2b64(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
-
-function b642ab(b64: string): ArrayBuffer {
-  const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes.buffer as ArrayBuffer;
-}
-
-function hexToBytes(hex: string): Uint8Array {
-  const pairs = hex.match(/.{2}/g) ?? [];
-  return new Uint8Array(pairs.map(b => parseInt(b, 16)));
-}
 
 function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -46,38 +30,30 @@ function bytesToHex(bytes: Uint8Array): string {
 
 /** Returns the backup file path in the app's documents directory. */
 export function getBackupFilePath(): string {
-  return `${FileSystem.documentDirectory ?? ''}${BACKUP_FILE_NAME}`;
+  const dir = FileSystem.documentDirectory ?? FileSystem.cacheDirectory ?? '';
+  return `${dir}${BACKUP_FILE_NAME}`;
 }
 
 // ─── Key management ─────────────────────────────────────────────────────────
 
 async function generateAndStoreKey(): Promise<string> {
-  const key = await crypto.subtle.generateKey(
-    { name: 'AES-GCM', length: 256 },
-    true,
-    ['encrypt', 'decrypt'],
-  );
-  const exported = await crypto.subtle.exportKey('raw', key);
-  const hex = bytesToHex(new Uint8Array(exported));
-  await SecureStore.setItemAsync(BACKUP_KEY_STORE_KEY, hex);
+  const bytes = await Crypto.getRandomBytesAsync(32);
+  const hex = bytesToHex(bytes);
+  if (Platform.OS !== 'web') {
+    await SecureStore.setItemAsync(BACKUP_KEY_STORE_KEY, hex);
+  }
   return hex;
-}
-
-async function getOrCreateCryptoKey(): Promise<CryptoKey> {
-  let hex = await SecureStore.getItemAsync(BACKUP_KEY_STORE_KEY);
-  if (!hex) hex = await generateAndStoreKey();
-  // Use Array.from to produce a plain ArrayBuffer (avoids SharedArrayBuffer type mismatch)
-  const rawBytes = Array.from(hexToBytes(hex));
-  const buf = new Uint8Array(rawBytes).buffer as ArrayBuffer;
-  return crypto.subtle.importKey('raw', buf, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
 }
 
 /**
  * Returns the 64-char hex recovery key, creating one if none exists.
  */
 export async function getOrCreateRecoveryKey(): Promise<string> {
+  if (Platform.OS === 'web') return '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
   let hex = await SecureStore.getItemAsync(BACKUP_KEY_STORE_KEY);
-  if (!hex) hex = await generateAndStoreKey();
+  if (!hex || hex.length !== 64) {
+    hex = await generateAndStoreKey();
+  }
   return hex;
 }
 
@@ -94,11 +70,9 @@ export async function importRecoveryKey(input: string): Promise<boolean> {
   try {
     const clean = input.trim().toLowerCase().replace(/[\s\-]/g, '');
     if (!/^[0-9a-f]{64}$/.test(clean)) return false;
-    // Validate it can actually be used as an AES-256 key before storing
-    const rawBytes = Array.from(hexToBytes(clean));
-    const buf = new Uint8Array(rawBytes).buffer as ArrayBuffer;
-    await crypto.subtle.importKey('raw', buf, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
-    await SecureStore.setItemAsync(BACKUP_KEY_STORE_KEY, clean);
+    if (Platform.OS !== 'web') {
+      await SecureStore.setItemAsync(BACKUP_KEY_STORE_KEY, clean);
+    }
     return true;
   } catch {
     return false;
@@ -109,40 +83,39 @@ export async function importRecoveryKey(input: string): Promise<boolean> {
 
 export interface BackupPayload {
   version: number;
+  appName: string;
   createdAt: string;
   platform: string;
-  iv: string;
-  data: string; // base64 AES-GCM ciphertext
+  data: string; // AES ciphertext
 }
 
 export async function encryptBackup(data: unknown): Promise<BackupPayload> {
-  const { Platform } = await import('react-native');
-  const key = await getOrCreateCryptoKey();
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encoded = new TextEncoder().encode(JSON.stringify(data));
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    encoded,
-  );
+  const keyHex = await getOrCreateRecoveryKey();
+  const rawJson = JSON.stringify(data);
+  const encrypted = CryptoJS.AES.encrypt(rawJson, keyHex).toString();
+
   return {
     version: BACKUP_VERSION,
+    appName: 'Dear Day',
     createdAt: new Date().toISOString(),
     platform: Platform.OS,
-    iv: ab2b64(iv.buffer as ArrayBuffer),
-    data: ab2b64(encrypted),
+    data: encrypted,
   };
 }
 
-export async function decryptBackup(payload: BackupPayload): Promise<unknown> {
-  if (payload.version !== BACKUP_VERSION) {
-    throw new Error(`Unsupported backup version: ${payload.version}`);
+export async function decryptBackup(payload: any): Promise<unknown> {
+  if (!payload || !payload.data) {
+    throw new Error('Invalid backup payload');
   }
-  const key = await getOrCreateCryptoKey();
-  const iv = b642ab(payload.iv);
-  const ciphertext = b642ab(payload.data);
-  const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
-  return JSON.parse(new TextDecoder().decode(decrypted));
+  const keyHex = await getOrCreateRecoveryKey();
+  const bytes = CryptoJS.AES.decrypt(payload.data, keyHex);
+  const decryptedUtf8 = bytes.toString(CryptoJS.enc.Utf8);
+
+  if (!decryptedUtf8) {
+    throw new Error('Decryption failed. Incorrect recovery key or corrupt backup file.');
+  }
+
+  return JSON.parse(decryptedUtf8);
 }
 
 // ─── File operations ────────────────────────────────────────────────────────
@@ -150,9 +123,10 @@ export async function decryptBackup(payload: BackupPayload): Promise<unknown> {
 /** Write an encrypted backup of `data` to the documents directory. */
 export async function saveBackupToFile(data: unknown): Promise<void> {
   const payload = await encryptBackup(data);
+  const filePath = getBackupFilePath();
   await FileSystem.writeAsStringAsync(
-    getBackupFilePath(),
-    JSON.stringify(payload),
+    filePath,
+    JSON.stringify(payload, null, 2),
     { encoding: FileSystem.EncodingType.UTF8 },
   );
 }
@@ -179,9 +153,10 @@ export async function loadBackupFromFile(): Promise<unknown | null> {
       getBackupFilePath(),
       { encoding: FileSystem.EncodingType.UTF8 },
     );
-    const payload: BackupPayload = JSON.parse(json);
+    const payload = JSON.parse(json);
     return await decryptBackup(payload);
-  } catch {
+  } catch (err) {
+    console.warn('[backup] loadBackupFromFile failed:', err);
     return null;
   }
 }
@@ -195,8 +170,8 @@ export async function getLastBackupTime(): Promise<Date | null> {
       getBackupFilePath(),
       { encoding: FileSystem.EncodingType.UTF8 },
     );
-    const payload: BackupPayload = JSON.parse(json);
-    return new Date(payload.createdAt);
+    const payload = JSON.parse(json);
+    return payload.createdAt ? new Date(payload.createdAt) : null;
   } catch {
     return null;
   }
@@ -215,13 +190,18 @@ export async function deleteBackupFile(): Promise<void> {
 /** Share the backup file via the OS sharing sheet. */
 export async function exportBackupFile(): Promise<void> {
   const exists = await backupFileExists();
-  if (!exists) throw new Error('No backup file found. Please create a backup first.');
+  if (!exists) {
+    throw new Error('No local backup file found. Tap "Back up now" first to generate one.');
+  }
   const Sharing = await import('expo-sharing');
   const isAvailable = await Sharing.isAvailableAsync();
-  if (!isAvailable) throw new Error('Sharing is not available on this device');
+  if (!isAvailable) {
+    throw new Error('File sharing is not available on this device.');
+  }
+
   await Sharing.shareAsync(getBackupFilePath(), {
     mimeType: 'application/octet-stream',
-    dialogTitle: 'Save Daily 5 Backup',
+    dialogTitle: 'Save Dear Day Encrypted Backup',
     UTI: 'public.data',
   });
 }
@@ -237,12 +217,13 @@ export async function importBackupFromFilePicker(): Promise<unknown | null> {
       type: '*/*',
       copyToCacheDirectory: true,
     });
-    if (result.canceled) return null;
+    if (result.canceled || !result.assets || result.assets.length === 0) return null;
     const uri = result.assets[0].uri;
     const json = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.UTF8 });
-    const payload: BackupPayload = JSON.parse(json);
+    const payload = JSON.parse(json);
     return await decryptBackup(payload);
-  } catch {
+  } catch (err) {
+    console.warn('[backup] importBackupFromFilePicker failed:', err);
     return null;
   }
 }

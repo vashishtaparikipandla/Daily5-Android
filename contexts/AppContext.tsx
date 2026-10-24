@@ -182,7 +182,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   async function getDriveToken(): Promise<string | null> {
     if (!driveConnected) return null;
     // Buffer of 60 s so we don't use a token that will expire mid-request
-    if (!driveTokenExpiry || Date.now() + 60_000 >= driveTokenExpiry) return null;
+    if (!driveTokenExpiry || Date.now() + 60_000 >= driveTokenExpiry) {
+      if (Platform.OS !== 'web') {
+        try {
+          const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
+          const tokens = await GoogleSignin.getTokens();
+          if (tokens.accessToken) {
+            const newExpiry = Date.now() + 3600 * 1000;
+            await setDriveConnection(driveAccount || '', tokens.accessToken, newExpiry);
+            return tokens.accessToken;
+          }
+        } catch {
+          // Silent refresh failed
+        }
+      }
+      return null;
+    }
     if (Platform.OS === 'web') return null;
     try {
       return await SecureStore.getItemAsync(DRIVE_TOKEN_STORE_KEY);

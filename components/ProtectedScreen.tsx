@@ -53,7 +53,7 @@ function BiometricLock({ onUnlock }: { onUnlock: () => Promise<boolean> }) {
           <Ionicons name="lock-closed" size={36} color={colors.primary} />
         </View>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-          Daily 5 is locked
+          Dear Day is locked
         </Text>
         {error ? (
           <Text style={[styles.error, { color: colors.destructive }]}>{error}</Text>

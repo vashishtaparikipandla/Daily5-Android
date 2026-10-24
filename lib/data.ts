@@ -7,19 +7,29 @@ export interface Entry {
   text: string;
   category?: CategoryId;
   photos?: string[]; // URIs (local file or remote for demo seed)
+  bookIds?: string[]; // IDs of custom books this entry is assigned to
 }
 
 export interface DayLog {
   date: string;    // YYYY-MM-DD
   entries: Entry[];
   extras: Entry[];
+  bookIds?: string[]; // IDs of custom books this day is assigned to
 }
 
 export interface Book {
-  monthKey: string; // YYYY-MM
+  monthKey: string; // YYYY-MM or 'custom_<id>'
+  id?: string;
+  title?: string;
+  description?: string;
+  coverColor?: string;
+  isCustom?: boolean;
+  isSample?: boolean; // Demo exploration volume
   locked: boolean;
   days: DayLog[];
+  hiddenDays?: string[]; // dates (YYYY-MM-DD) hidden from printing/viewing in this book
   isAnnual?: boolean;
+  createdAt?: string;
 }
 
 export function uid(): string {
@@ -36,9 +46,20 @@ export function monthKey(date: Date = new Date()): string {
 }
 
 export function monthLabel(mk: string): string {
-  const [y, m] = mk.split('-');
-  return new Date(parseInt(y), parseInt(m) - 1, 1)
-    .toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  if (mk.startsWith('custom_')) {
+    return 'Custom Collection';
+  }
+  const parts = mk.split('-');
+  if (parts.length < 2) return mk;
+  const [y, m] = parts;
+  const d = new Date(parseInt(y), parseInt(m) - 1, 1);
+  if (isNaN(d.getTime())) return mk;
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+export function bookDisplayName(book: Book): string {
+  if (book.title) return book.title;
+  return monthLabel(book.monthKey);
 }
 
 export function formatFullDate(dateStr: string): string {
@@ -59,7 +80,11 @@ export function formatYear(dateStr: string): string {
 
 /** Days in a YYYY-MM monthKey */
 export function daysInMonth(mk: string): number {
+  if (mk.startsWith('custom_') || !mk.includes('-')) {
+    return 30;
+  }
   const [y, m] = mk.split('-').map(Number);
+  if (isNaN(y) || isNaN(m)) return 30;
   return new Date(y, m, 0).getDate();
 }
 

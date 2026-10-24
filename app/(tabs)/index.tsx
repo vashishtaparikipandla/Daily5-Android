@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Platform,
@@ -12,12 +12,24 @@ import { useDiary } from '@/contexts/DiaryContext';
 import { PaperBackground } from '@/components/PaperBackground';
 import { TonightCard } from '@/components/TonightCard';
 import { EntrySlot } from '@/components/EntrySlot';
-import { todayStr, formatFullDate, formatShortDate, monthKey } from '@/lib/data';
+import { FtuoTour } from '@/components/FtuoTour';
+import { todayStr } from '@/lib/data';
+
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { getUnreadNotificationCount } from '@/lib/notifications';
 
 export default function TodayTab() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { getTodayLog, getOnThisDay, books } = useDiary();
+  const { getTodayLog, getOnThisDay } = useDiary();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      getUnreadNotificationCount().then(setUnreadCount);
+    }, [])
+  );
 
   const today = todayStr();
   const todayLog = getTodayLog();
@@ -28,7 +40,7 @@ export default function TodayTab() {
   const fullDate = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
   const topPad = insets.top + (Platform.OS === 'web' ? 67 : 0);
-  const botPad = insets.bottom + (Platform.OS === 'web' ? 84 : 84); // tab bar height
+  const botPad = insets.bottom + 90; // room for tab bar
 
   function openLog() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -42,28 +54,40 @@ export default function TodayTab() {
         contentContainerStyle={[styles.content, { paddingTop: topPad + 20, paddingBottom: botPad }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Date header */}
-        <View style={styles.dateHeader}>
-          <Text style={[styles.dayOfWeek, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-            {dayOfWeek}
-          </Text>
-          <Text style={[styles.fullDate, { color: colors.mutedForeground, fontFamily: 'PlayfairDisplay_400Regular' }]}>
-            {fullDate}
-          </Text>
+        {/* Date header + Notification Bell */}
+        <View style={styles.headerRow}>
+          <View style={styles.dateHeader}>
+            <Text style={[styles.dayOfWeek, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+              {dayOfWeek}
+            </Text>
+            <Text style={[styles.fullDate, { color: colors.mutedForeground, fontFamily: 'PlayfairDisplay_400Regular' }]}>
+              {fullDate}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.notifBtn}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/notifications');
+            }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="notifications-outline" size={24} color={colors.foreground} />
+            {unreadCount > 0 && (
+              <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
+                <Text style={styles.unreadBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
 
         <View style={[styles.hairline, { backgroundColor: colors.borderStrong }]} />
-
-        {/* Tonight card — always show if fewer than 5 entries */}
-        {entries.length < 5 && (
-          <TonightCard onPress={openLog} entryCount={entries.length} />
-        )}
 
         {/* Logged entries for today */}
         {entries.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>
-              {entries.length === 5 ? "Today's 5" : `${entries.length} of 5 moments`}
+              {entries.length === 4 ? "Today's 4" : `${entries.length} of 4 moments`}
             </Text>
             {entries.map((entry, i) => (
               <EntrySlot
@@ -76,37 +100,72 @@ export default function TodayTab() {
           </View>
         )}
 
-        {/* On This Day */}
+        {/* Tonight card / Add remaining CTA — at bottom of added memories */}
+        {entries.length < 4 && (
+          <TonightCard onPress={openLog} entryCount={entries.length} />
+        )}
+
+        {/* On This Day — Archival & Distinct Time Capsule Styling */}
         {onThisDay.length > 0 && (
-          <View style={[styles.section, { marginTop: 24 }]}>
-            <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>On this day</Text>
-            {onThisDay.slice(0, 3).map(({ book, day }) => (
-              <TouchableOpacity
-                key={day.date}
-                style={[styles.otdCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={() => router.push({ pathname: '/book-viewer', params: { monthKey: book.monthKey } })}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.otdYear, { color: colors.tertiary }]}>{day.date.slice(0, 4)}</Text>
-                {day.entries.slice(0, 2).map(e => (
-                  <Text key={e.id} style={[styles.otdText, { color: colors.foreground }]} numberOfLines={2}>
-                    {e.text}
+          <View style={styles.otdSection}>
+            <View style={styles.otdHeaderRow}>
+              <View style={[styles.otdHeaderDot, { backgroundColor: colors.accent }]} />
+              <Text style={[styles.otdHeaderTitle, { color: colors.accent }]}>
+                MEMORY TIME CAPSULE
+              </Text>
+            </View>
+
+            {onThisDay.slice(0, 3).map(({ book, day }) => {
+              const year = day.date.slice(0, 4);
+              return (
+                <TouchableOpacity
+                  key={day.date}
+                  style={[
+                    styles.otdCard,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.borderStrong,
+                    },
+                  ]}
+                  onPress={() => router.push({ pathname: '/book-viewer', params: { monthKey: book.monthKey } })}
+                  activeOpacity={0.85}
+                >
+                  {/* Vintage stamp badge */}
+                  <View style={styles.otdCardTop}>
+                    <View style={styles.otdBadge}>
+                      <Ionicons name="sparkles" size={12} color="#C47B3A" />
+                      <Text style={styles.otdBadgeText}>{year} · THIS DAY</Text>
+                    </View>
+                    <Ionicons name="arrow-forward" size={14} color={colors.tertiary} />
+                  </View>
+
+                  {/* Memories recorded on that day */}
+                  <View style={styles.otdEntries}>
+                    {day.entries.slice(0, 2).map((e) => (
+                      <View key={e.id} style={styles.otdEntryRow}>
+                        <Text style={[styles.otdBullet, { color: colors.accent }]}>•</Text>
+                        <Text
+                          style={[styles.otdText, { color: colors.foreground }]}
+                          numberOfLines={2}
+                        >
+                          {e.text}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  <Text style={[styles.otdFooter, { color: colors.tertiary }]}>
+                    Open {book.title} volume →
                   </Text>
-                ))}
-              </TouchableOpacity>
-            ))}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
       </ScrollView>
 
-      {/* FAB */}
-      <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.primary, bottom: botPad - 56 }]}
-        onPress={openLog}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="add" size={28} color={colors.primaryForeground} />
-      </TouchableOpacity>
+      {/* First-time User Onboarding Spotlight Tour */}
+      <FtuoTour />
     </PaperBackground>
   );
 }
@@ -114,23 +173,110 @@ export default function TodayTab() {
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingLeft: 72, paddingRight: 20, gap: 20 },
-  dateHeader: { gap: 4, marginBottom: 4 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  dateHeader: { gap: 4 },
+  notifBtn: {
+    position: 'relative',
+    padding: 8,
+    borderRadius: 20,
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  unreadBadgeText: {
+    fontSize: 9,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#fff',
+  },
   dayOfWeek: { fontSize: 28, letterSpacing: 0.2 },
   fullDate: { fontSize: 20 },
   hairline: { height: 1, marginBottom: 4 },
   section: { gap: 0 },
   sectionLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 },
-  otdCard: {
-    borderRadius: 12, borderWidth: StyleSheet.hairlineWidth,
-    padding: 14, gap: 6, marginBottom: 8,
+
+  /* On This Day / Archival styling */
+  otdSection: { marginTop: 12, gap: 12 },
+  otdHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  otdYear: { fontSize: 11, fontFamily: 'Inter_500Medium', letterSpacing: 0.5 },
-  otdText: { fontSize: 14, fontFamily: 'Inter_400Regular', lineHeight: 20 },
-  fab: {
-    position: 'absolute', right: 20,
-    width: 56, height: 56, borderRadius: 28,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+  otdHeaderDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  otdHeaderTitle: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  otdCard: {
+    borderRadius: 16,
+    borderWidth: 1.5,
+    padding: 16,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  otdCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  otdBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(196, 123, 58, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  otdBadgeText: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#C47B3A',
+    letterSpacing: 0.6,
+  },
+  otdEntries: {
+    gap: 6,
+  },
+  otdEntryRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  otdBullet: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  otdText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 20,
+  },
+  otdFooter: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    marginTop: 2,
   },
 });

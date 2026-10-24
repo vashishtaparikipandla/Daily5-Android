@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, Platform, Alert,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
@@ -17,7 +17,7 @@ import { uid, todayStr, formatFullDate } from '@/lib/data';
 import type { Entry, CategoryId } from '@/lib/data';
 
 const MAX_CHARS = 120;
-const COUNTER_THRESHOLD = Math.floor(MAX_CHARS * 0.8);
+const COUNTER_THRESHOLD = Math.floor(MAX_CHARS * 0.75);
 
 interface SlotState {
   id: string;
@@ -25,35 +25,73 @@ interface SlotState {
   category?: CategoryId;
   photos: string[];
   placeholder: string;
+  isImmutable?: boolean; // locked because it is a past day's existing memory
 }
 
-function makeSlot(entry?: Entry): SlotState {
+function makeSlot(entry?: Entry, isPast = false): SlotState {
+  const hasText = !!entry?.text && entry.text.trim().length > 0;
   return {
     id: entry?.id ?? uid(),
     text: entry?.text ?? '',
     category: entry?.category,
     photos: entry?.photos ?? [],
     placeholder: randomPrompt(),
+    isImmutable: isPast && hasText,
   };
 }
 
 function LogModalContent() {
+  const { date: paramDate } = useLocalSearchParams<{ date?: string }>();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { getTodayLog, upsertDayEntries } = useDiary();
+  const { getDayLog, upsertDayEntries, customBooks, createCustomBook } = useDiary();
+
+  const targetDate = paramDate || todayStr();
   const today = todayStr();
+  const isPast = targetDate < today;
+
+  const existingLog = getDayLog(targetDate);
+  const existingEntries = existingLog?.entries ?? [];
 
   const [slots, setSlots] = useState<SlotState[]>(() => {
-    const existing = getTodayLog()?.entries ?? [];
-    return Array.from({ length: 5 }, (_, i) => makeSlot(existing[i]));
+    return Array.from({ length: 4 }, (_, i) => makeSlot(existingEntries[i], isPast));
   });
+
+  const [selectedBooks, setSelectedBooks] = useState<string[]>(() => {
+    return existingLog?.bookIds ?? [];
+  });
+
+  const [showNewBookInput, setShowNewBookInput] = useState(false);
+  const [newBookTitle, setNewBookTitle] = useState('');
   const [saving, setSaving] = useState(false);
   const [lockedError, setLockedError] = useState(false);
 
   function updateSlot(index: number, updates: Partial<SlotState>) {
-    setSlots(prev => prev.map((s, i) => i === index ? { ...s, ...updates } : s));
-    // Clear locked error when user modifies content
+    if (slots[index].isImmutable && updates.text !== undefined) {
+      return; // immutable past memory
+    }
+    setSlots(prev => prev.map((s, i) => (i === index ? { ...s, ...updates } : s)));
     if (lockedError) setLockedError(false);
+  }
+
+  function toggleBook(monthKey: string) {
+    Haptics.selectionAsync();
+    setSelectedBooks(prev =>
+      prev.includes(monthKey) ? prev.filter(k => k !== monthKey) : [...prev, monthKey]
+    );
+  }
+
+  async function handleCreateQuickBook() {
+    if (!newBookTitle.trim()) return;
+    try {
+      const book = await createCustomBook(newBookTitle.trim());
+      setSelectedBooks(prev => [...prev, book.monthKey]);
+      setNewBookTitle('');
+      setShowNewBookInput(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert('Error', 'Could not create book.');
+    }
   }
 
   async function handleDone() {
@@ -64,6 +102,7 @@ function LogModalContent() {
         text: s.text.trim(),
         category: s.category,
         photos: s.photos,
+        bookIds: selectedBooks,
       }));
 
     if (entries.length === 0) {
@@ -72,10 +111,9 @@ function LogModalContent() {
     }
 
     setSaving(true);
-    const success = await upsertDayEntries(today, entries);
+    const success = await upsertDayEntries(targetDate, entries, [], selectedBooks);
 
     if (!success) {
-      // Book is locked — keep modal open, show error, do not discard draft
       setSaving(false);
       setLockedError(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -94,15 +132,15 @@ function LogModalContent() {
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.dismiss()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity onPress={() => router.dismiss()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
           <Ionicons name="close" size={24} color={colors.mutedForeground} />
         </TouchableOpacity>
         <View style={styles.headerTitle}>
           <Text style={[styles.headerDate, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-            {formatFullDate(today)}
+            {formatFullDate(targetDate)}
           </Text>
           <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-            Tonight's 5
+            {isPast ? 'Fill empty moments' : "Tonight's 4"}
           </Text>
         </View>
         <TouchableOpacity
@@ -114,23 +152,115 @@ function LogModalContent() {
         </TouchableOpacity>
       </View>
 
-      {/* Locked error banner */}
+      {/* Immutability Banner for Past Days */}
+      {isPast && (
+        <View style={[styles.immutabilityBanner, { backgroundColor: colors.accentLight, borderColor: colors.borderStrong }]}>
+          <Ionicons name="lock-closed" size={16} color={colors.accent} style={{ marginTop: 2 }} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[styles.bannerTitle, { color: colors.foreground }]}>
+              Permanent Ink
+            </Text>
+            <Text style={[styles.bannerText, { color: colors.mutedForeground }]}>
+              Memories from past days cannot be edited or deleted once the day is past. You can still fill in any empty moments.
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Locked Book error */}
       {lockedError && (
         <View style={[styles.errorBanner, { backgroundColor: colors.destructive }]}>
-          <Ionicons name="lock-closed" size={14} color="#fff" />
+          <Ionicons name="alert-circle" size={16} color="#fff" />
           <Text style={styles.errorBannerText}>
-            This month is locked and can no longer accept new entries. Your draft is safe — close to discard.
+            This volume has been locked and can no longer be edited.
           </Text>
         </View>
       )}
 
-      {/* Slots */}
+      {/* Content */}
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: botPad + 20 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: botPad + 30 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* Custom Books Assignment Section */}
+        <View style={[styles.collectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.collectionHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="bookmark-outline" size={16} color={colors.primary} />
+              <Text style={[styles.collectionTitle, { color: colors.foreground }]}>
+                Add to Collection Book
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => setShowNewBookInput(s => !s)}>
+              <Text style={[styles.addBookLink, { color: colors.primary }]}>
+                {showNewBookInput ? 'Cancel' : '+ New Book'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={[styles.collectionSub, { color: colors.tertiary }]}>
+            Assign this day to a travel trip, annual best, or keepsake book. It stays in your monthly book too!
+          </Text>
+
+          {/* Quick Create Book Input */}
+          {showNewBookInput && (
+            <View style={styles.quickCreateRow}>
+              <TextInput
+                style={[styles.quickInput, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
+                placeholder="e.g. Japan Trip 2026, Best Memories..."
+                placeholderTextColor={colors.tertiary}
+                value={newBookTitle}
+                onChangeText={setNewBookTitle}
+                autoFocus
+              />
+              <TouchableOpacity
+                style={[styles.quickCreateBtn, { backgroundColor: colors.primary }]}
+                onPress={handleCreateQuickBook}
+              >
+                <Text style={[styles.quickCreateBtnText, { color: colors.primaryForeground }]}>Create</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Chips list of custom books */}
+          <View style={styles.bookChips}>
+            {customBooks.map(cb => {
+              const active = selectedBooks.includes(cb.monthKey);
+              return (
+                <TouchableOpacity
+                  key={cb.monthKey}
+                  style={[
+                    styles.bookChip,
+                    {
+                      backgroundColor: active ? colors.primary : colors.muted,
+                      borderColor: active ? colors.primary : colors.border,
+                    },
+                  ]}
+                  onPress={() => toggleBook(cb.monthKey)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={active ? 'checkmark-circle' : 'book-outline'}
+                    size={14}
+                    color={active ? colors.primaryForeground : colors.foreground}
+                  />
+                  <Text
+                    style={[
+                      styles.bookChipText,
+                      { color: active ? colors.primaryForeground : colors.foreground },
+                    ]}
+                  >
+                    {cb.title || cb.monthKey}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* 4 Hierarchical Memory Slots */}
         {slots.map((slot, i) => (
           <SlotEditor
             key={slot.id}
@@ -157,29 +287,70 @@ function SlotEditor({ slot, slotNumber, onChange, colors }: SlotEditorProps) {
   const charsLeft = MAX_CHARS - slot.text.length;
 
   return (
-    <View style={[styles.slot, { borderBottomColor: colors.border }]}>
+    <View
+      style={[
+        styles.slotCard,
+        {
+          backgroundColor: colors.card,
+          borderColor: slot.isImmutable ? colors.border : colors.borderStrong,
+          opacity: slot.isImmutable ? 0.92 : 1,
+        },
+      ]}
+    >
+      {/* Slot Header */}
       <View style={styles.slotHeader}>
-        <Text style={[styles.slotNum, { color: colors.tertiary }]}>{slotNumber}</Text>
-        {showCounter && (
+        <View style={styles.slotBadgeRow}>
+          <View style={[styles.slotBadge, { backgroundColor: colors.muted }]}>
+            <Text style={[styles.slotBadgeText, { color: colors.primary }]}>
+              MOMENT {String(slotNumber).padStart(2, '0')}
+            </Text>
+          </View>
+          {slot.isImmutable && (
+            <View style={styles.lockedTag}>
+              <Ionicons name="lock-closed" size={11} color={colors.tertiary} />
+              <Text style={[styles.lockedTagText, { color: colors.tertiary }]}>Locked</Text>
+            </View>
+          )}
+        </View>
+
+        {!slot.isImmutable && showCounter && (
           <Text style={[styles.counter, { color: charsLeft <= 10 ? colors.destructive : colors.tertiary }]}>
             {slot.text.length}/{MAX_CHARS}
           </Text>
         )}
       </View>
+
+      {/* Prominent, 20% larger bold text input */}
       <TextInput
-        style={[styles.textInput, { color: colors.foreground }]}
+        style={[
+          styles.textInput,
+          {
+            color: colors.foreground,
+            backgroundColor: slot.isImmutable ? colors.muted + '44' : 'transparent',
+          },
+        ]}
         placeholder={slot.placeholder}
         placeholderTextColor={colors.tertiary}
         value={slot.text}
         onChangeText={t => onChange({ text: t.slice(0, MAX_CHARS) })}
         multiline
+        editable={!slot.isImmutable}
         maxLength={MAX_CHARS}
         textAlignVertical="top"
       />
-      <View style={styles.slotMeta}>
-        <CategoryPicker selected={slot.category} onChange={cat => onChange({ category: cat })} />
-        <PhotoPicker photos={slot.photos} onChange={photos => onChange({ photos })} maxPhotos={2} />
-      </View>
+
+      {/* Micro-hint */}
+      <Text style={[styles.microHint, { color: colors.tertiary }]}>
+        1–2 lines formatted under photo in physical book
+      </Text>
+
+      {/* Category & Photo Pickers */}
+      {!slot.isImmutable && (
+        <View style={styles.slotMeta}>
+          <CategoryPicker selected={slot.category} onChange={cat => onChange({ category: cat })} />
+          <PhotoPicker photos={slot.photos} onChange={photos => onChange({ photos })} maxPhotos={2} />
+        </View>
+      )}
     </View>
   );
 }
@@ -195,8 +366,11 @@ export default function LogModal() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 20, paddingBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerTitle: { flex: 1 },
@@ -204,27 +378,160 @@ const styles = StyleSheet.create({
   headerSub: { fontSize: 12, fontFamily: 'Inter_400Regular', marginTop: 1 },
   doneBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   doneBtnText: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
-  errorBanner: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    paddingHorizontal: 16, paddingVertical: 12,
-  },
-  errorBannerText: {
-    flex: 1, color: '#fff', fontSize: 13,
-    fontFamily: 'Inter_400Regular', lineHeight: 18,
-  },
-  scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20 },
-  slot: {
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  immutabilityBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: 10,
+    marginHorizontal: 20,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
   },
-  slotHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  slotNum: { fontSize: 12, fontFamily: 'Inter_500Medium' },
-  counter: { fontSize: 11, fontFamily: 'Inter_400Regular' },
+  bannerTitle: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  bannerText: { fontSize: 12, fontFamily: 'Inter_400Regular', lineHeight: 17 },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+  },
+  errorBannerText: { flex: 1, color: '#fff', fontSize: 13, fontFamily: 'Inter_500Medium' },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 16, gap: 16 },
+
+  /* Collection card */
+  collectionCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 8,
+  },
+  collectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  collectionTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  collectionSub: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 16,
+  },
+  addBookLink: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  quickCreateRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 6,
+  },
+  quickInput: {
+    flex: 1,
+    height: 40,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    fontSize: 14,
+    borderWidth: 1,
+  },
+  quickCreateBtn: {
+    paddingHorizontal: 14,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickCreateBtnText: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  bookChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  bookChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  bookChipText: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+  },
+
+  /* Slot Card */
+  slotCard: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    padding: 16,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  slotHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  slotBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  slotBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  slotBadgeText: {
+    fontSize: 11,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.8,
+  },
+  lockedTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  lockedTagText: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+  },
+  counter: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+  },
   textInput: {
-    fontSize: 15, fontFamily: 'Inter_400Regular', lineHeight: 22,
-    minHeight: 66,
+    fontSize: 18, // 20% larger than original 15px
+    fontFamily: 'Inter_600SemiBold',
+    lineHeight: 26,
+    minHeight: 56,
+    borderRadius: 8,
+    paddingVertical: 4,
   },
-  slotMeta: { gap: 10 },
+  microHint: {
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
+    fontStyle: 'italic',
+  },
+  slotMeta: {
+    gap: 10,
+    marginTop: 4,
+  },
 });

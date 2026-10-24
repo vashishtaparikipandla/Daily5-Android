@@ -47,7 +47,7 @@ function HelpContent() {
           ))}
         </View>
         <View style={styles.versionBlock}>
-          <Text style={[styles.appName, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>Daily 5</Text>
+          <Text style={[styles.appName, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>Dear Day</Text>
           <Text style={[styles.version, { color: colors.tertiary }]}>Version {version}</Text>
           <Text style={[styles.tagline, { color: colors.tertiary }]}>your days, remembered</Text>
         </View>

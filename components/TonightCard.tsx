@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useDiary } from '@/contexts/DiaryContext';
-import { todayStr, monthKey, formatFullDate, estimatedPages, daysInMonth } from '@/lib/data';
+import { monthKey, daysInMonth } from '@/lib/data';
 
 interface Props {
   onPress: () => void;
@@ -11,62 +12,70 @@ interface Props {
 
 export function TonightCard({ onPress, entryCount = 0 }: Props) {
   const colors = useColors();
-  const { books, getTodayLog } = useDiary();
+  const { books } = useDiary();
 
-  const today = todayStr();
   const mk = monthKey();
-  const currentBook = books.find(b => b.monthKey === mk);
+  const currentBook = books.find(b => b.monthKey === mk && !b.isCustom);
 
   // Page progress
-  const currentDay = new Date().getDate();
   const totalPages = daysInMonth(mk);
   const filledDays = currentBook?.days.filter(d => d.entries.length > 0).length ?? 0;
 
-  // Recall cue — look at yesterday
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yd = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
-  const yLog = books.reduce<{ entries: any[] } | undefined>((found, b) => found ?? b.days.find(d => d.date === yd), undefined);
-  const recallCue = yLog?.entries.length
-    ? `You logged ${yLog.entries.length} moment${yLog.entries.length > 1 ? 's' : ''} yesterday.`
-    : 'No entry logged yesterday.';
-
-  const [, mm] = today.split('-');
-  const dayOfWeek = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' });
-  const fullDate = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-
-  const remaining = 5 - entryCount;
+  const remaining = 4 - entryCount;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.dateBlock}>
-        <Text style={[styles.dayOfWeek, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-          {dayOfWeek}
-        </Text>
-        <Text style={[styles.date, { color: colors.mutedForeground, fontFamily: 'PlayfairDisplay_400Regular' }]}>
-          {fullDate}
-        </Text>
-      </View>
-
-      <Text style={[styles.cue, { color: colors.mutedForeground }]}>{recallCue}</Text>
-
-      <View style={styles.progress}>
-        <Text style={[styles.progressLabel, { color: colors.tertiary }]}>
-          Page {filledDays} of ~{totalPages} this month
-        </Text>
-        <View style={[styles.progressTrack, { backgroundColor: colors.muted }]}>
-          <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${Math.min((filledDays / totalPages) * 100, 100)}%` }]} />
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
+      <View style={styles.headerRow}>
+        <View style={styles.iconCircle}>
+          <Ionicons name="pencil" size={16} color={colors.primary} />
+        </View>
+        <View style={styles.headerTextWrap}>
+          <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+            {entryCount === 0 ? "Tonight's 4 moments" : 'Add remaining moments'}
+          </Text>
+          <Text style={[styles.sub, { color: colors.mutedForeground }]}>
+            {entryCount === 0
+              ? 'Pause before sleep to capture four honest fragments of today.'
+              : `${remaining} of 4 moments left to complete today’s page.`}
+          </Text>
         </View>
       </View>
 
+      {/* Progress track */}
+      <View style={styles.progress}>
+        <View style={styles.progressLabelRow}>
+          <Text style={[styles.progressLabel, { color: colors.tertiary }]}>
+            Volume progress · Page {filledDays} of ~{totalPages}
+          </Text>
+          <Text style={[styles.progressPercent, { color: colors.primary }]}>
+            {Math.round((filledDays / totalPages) * 100)}%
+          </Text>
+        </View>
+        <View style={[styles.progressTrack, { backgroundColor: colors.muted }]}>
+          <View
+            style={[
+              styles.progressFill,
+              {
+                backgroundColor: colors.primary,
+                width: `${Math.max(4, Math.min((filledDays / totalPages) * 100, 100))}%`,
+              },
+            ]}
+          />
+        </View>
+      </View>
+
+      {/* Primary CTA */}
       <TouchableOpacity
         style={[styles.btn, { backgroundColor: colors.primary }]}
         onPress={onPress}
         activeOpacity={0.85}
       >
         <Text style={[styles.btnText, { color: colors.primaryForeground }]}>
-          {entryCount === 0 ? "Log tonight's 5" : `Add ${remaining} more moment${remaining > 1 ? 's' : ''}`}
+          {entryCount === 0
+            ? "Log tonight's 4"
+            : `Add remaining (${remaining} left)`}
         </Text>
+        <Ionicons name="arrow-forward" size={16} color={colors.primaryForeground} />
       </TouchableOpacity>
     </View>
   );
@@ -74,22 +83,80 @@ export function TonightCard({ onPress, entryCount = 0 }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16, borderWidth: StyleSheet.hairlineWidth,
-    padding: 20, gap: 14,
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    padding: 18,
+    gap: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  dateBlock: { gap: 2 },
-  dayOfWeek: { fontSize: 26, letterSpacing: 0.3 },
-  date: { fontSize: 18 },
-  cue: { fontSize: 13, fontFamily: 'Inter_400Regular', lineHeight: 18 },
-  progress: { gap: 6 },
-  progressLabel: { fontSize: 12, fontFamily: 'Inter_400Regular' },
-  progressTrack: { height: 3, borderRadius: 2, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 2 },
-  btn: {
-    paddingVertical: 13, paddingHorizontal: 20, borderRadius: 12,
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  iconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(232, 89, 58, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  headerTextWrap: {
+    flex: 1,
+    gap: 4,
+  },
+  title: {
+    fontSize: 18,
+    letterSpacing: 0.2,
+  },
+  sub: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 18,
+  },
+  progress: {
+    gap: 6,
+  },
+  progressLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  btnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.2 },
+  progressLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+  },
+  progressPercent: {
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  progressTrack: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  btn: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  btnText: {
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.2,
+  },
 });

@@ -17,7 +17,7 @@ export async function authenticateWithBiometric(): Promise<boolean> {
   try {
     const LocalAuth = await import('expo-local-authentication');
     const result = await LocalAuth.authenticateAsync({
-      promptMessage: 'Unlock Daily 5',
+      promptMessage: 'Unlock Dear Day',
       cancelLabel: 'Cancel',
       disableDeviceFallback: false,
     });

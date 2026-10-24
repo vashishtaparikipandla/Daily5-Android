@@ -1,7 +1,7 @@
 /**
  * DriveBackupContext
  *
- * Handles encrypted Google Drive backup and restore for Daily 5.
+ * Handles encrypted Google Drive backup and restore for Dear Day.
  *
  * Architecture:
  *   - All Drive API calls go through lib/gdrive.ts with the access token
@@ -121,7 +121,7 @@ export function DriveBackupProvider({ children }: { children: React.ReactNode })
       );
       Alert.alert(
         'Backup found on Google Drive',
-        `A Daily 5 backup from ${backupDate} was found in your Google Drive. Would you like to restore your diary?`,
+        `A Dear Day backup from ${backupDate} was found in your Google Drive. Would you like to restore your diary?`,
         [
           {
             text: 'Restore',

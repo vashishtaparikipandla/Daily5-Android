@@ -14,8 +14,7 @@ export default function SplashScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const navigated = useRef(false);
-  const splashReady = useRef(false);
-  const authReady = useRef(false);
+  const [minSplashDone, setMinSplashDone] = useState(false);
   const [statusText, setStatusText] = useState('');
 
   const opacity = useSharedValue(0);
@@ -26,63 +25,47 @@ export default function SplashScreen() {
     opacity.value = withTiming(1, { duration: 700, easing: Easing.out(Easing.cubic) });
     scale.value = withTiming(1, { duration: 700, easing: Easing.out(Easing.cubic) });
     taglineOpacity.value = withDelay(350, withTiming(1, { duration: 500 }));
+
     const t = setTimeout(() => {
-      splashReady.current = true;
-      maybeNavigate();
+      setMinSplashDone(true);
     }, 1200);
 
-    // Safety watchdog: ensure navigation never hangs indefinitely
-    const watchdog = setTimeout(() => {
-      if (!navigated.current) {
-        splashReady.current = true;
-        authReady.current = true;
-        maybeNavigate();
-      }
-    }, 3000);
-
-    return () => {
-      clearTimeout(t);
-      clearTimeout(watchdog);
-    };
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
-    if (!isLoading) {
-      authReady.current = true;
-      maybeNavigate();
-    }
-  }, [isLoading, isAuthenticated, hasOnboarded, biometricEnabled]);
+    if (isLoading || !minSplashDone || navigated.current) return;
 
-  async function maybeNavigate() {
-    if (!splashReady.current || !authReady.current || navigated.current) return;
     navigated.current = true;
 
-    try {
-      if (!hasOnboarded) {
-        router.replace('/onboarding');
-        return;
-      }
+    (async () => {
+      try {
+        if (!hasOnboarded) {
+          router.replace('/onboarding');
+          return;
+        }
 
-      if (!isAuthenticated) {
-        router.replace('/auth');
-        return;
-      }
-
-      if (biometricEnabled) {
-        setStatusText('Unlocking…');
-        const success = await unlock();
-        if (!success) {
+        if (!isAuthenticated) {
           router.replace('/auth');
           return;
         }
-      }
 
-      router.replace('/(tabs)');
-    } catch (e) {
-      console.warn('Navigation error, fallback to auth:', e);
-      router.replace('/auth');
-    }
-  }
+        if (biometricEnabled) {
+          setStatusText('Unlocking…');
+          const success = await unlock();
+          if (!success) {
+            router.replace('/auth');
+            return;
+          }
+        }
+
+        router.replace('/(tabs)');
+      } catch (e) {
+        console.warn('Navigation error, fallback to auth:', e);
+        router.replace('/auth');
+      }
+    })();
+  }, [isLoading, minSplashDone, hasOnboarded, isAuthenticated, biometricEnabled]);
 
   const logoStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -96,20 +79,20 @@ export default function SplashScreen() {
         <View style={[styles.pageIcon, { borderColor: colors.foreground }]}>
           <View style={[styles.cornerFold, { borderTopColor: colors.primary, borderRightColor: colors.primary }]} />
           <View style={styles.lines}>
-            {[1, 2, 3, 4, 5].map(i => (
+            {[1, 2, 3, 4].map(i => (
               <View
                 key={i}
                 style={[styles.line, {
                   backgroundColor: colors.foreground,
-                  opacity: i <= 3 ? 0.7 : 0.3,
-                  width: i === 3 ? '60%' : i === 5 ? '40%' : '80%',
+                  opacity: i <= 2 ? 0.7 : 0.4,
+                  width: i === 3 ? '60%' : i === 4 ? '40%' : '80%',
                 }]}
               />
             ))}
           </View>
         </View>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-          Daily 5
+          Dear Day
         </Text>
       </Animated.View>
       <Animated.View style={taglineStyle}>

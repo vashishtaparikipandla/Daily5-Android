@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert,
+  Share, Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,6 +34,19 @@ export default function ProfileTab() {
 
   const lockedBooks = books.filter(b => b.locked).length;
 
+  async function handleShareApp() {
+    try {
+      const shareUrl = Platform.select({
+        ios: 'https://apps.apple.com/app/dear-day/id123456789',
+        default: 'https://play.google.com/store/apps/details?id=app.daily5.android',
+      });
+      await Share.share({
+        title: 'Dear Day — Diary in 4 Moments',
+        message: `I'm capturing my everyday life in 4 moments every night on Dear Day. Create your own monthly memory books:\n${shareUrl}`,
+      });
+    } catch {}
+  }
+
   async function handleSignOut() {
     Alert.alert('Sign out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -62,8 +76,9 @@ export default function ProfileTab() {
       ],
     },
     {
-      title: 'Support',
+      title: 'Support & Community',
       items: [
+        { icon: 'share-social-outline', label: 'Share Dear Day with Friends', onPress: handleShareApp },
         { icon: 'help-circle-outline', label: 'Help & About', route: '/profile/help' },
       ],
     },
@@ -82,11 +97,19 @@ export default function ProfileTab() {
       >
         {/* Avatar + name */}
         <View style={styles.avatarBlock}>
-          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.avatarLetter, { color: colors.primaryForeground }]}>
-              {(user?.name ?? 'U')[0].toUpperCase()}
-            </Text>
-          </View>
+          <TouchableOpacity
+            style={[styles.avatar, { backgroundColor: colors.primary, overflow: 'hidden' }]}
+            onPress={() => router.push('/profile/edit')}
+            activeOpacity={0.8}
+          >
+            {user?.avatar ? (
+              <Image source={{ uri: user.avatar }} style={styles.avatarImg} />
+            ) : (
+              <Text style={[styles.avatarLetter, { color: colors.primaryForeground }]}>
+                {(user?.name ?? 'U')[0].toUpperCase()}
+              </Text>
+            )}
+          </TouchableOpacity>
           <Text style={[styles.name, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
             {user?.name ?? 'You'}
           </Text>
@@ -150,6 +173,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 20, gap: 16 },
   avatarBlock: { alignItems: 'center', gap: 8, paddingVertical: 8 },
   avatar: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
+  avatarImg: { width: '100%', height: '100%', borderRadius: 36 },
   avatarLetter: { fontSize: 30, fontFamily: 'PlayfairDisplay_700Bold' },
   name: { fontSize: 22, letterSpacing: 0.2 },
   email: { fontSize: 13, fontFamily: 'Inter_400Regular' },
