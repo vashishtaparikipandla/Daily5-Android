@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, Platform } from 'react-native';
 import { Lock } from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { bookDisplayName } from '@/lib/data';
-import type { Book } from '@/lib/data';
+import type { Book, BookFontType } from '@/lib/data';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -20,14 +20,32 @@ const COVER_PALETTES = [
 ];
 
 function paletteForBook(book: Book) {
+  if (book.coverConfig?.type === 'solid' && book.coverConfig.value) {
+    const isLight = book.coverConfig.value.toLowerCase() === '#e7dfd5';
+    return { bg: book.coverConfig.value, text: isLight ? '#2B2D2F' : '#F2E8DC' };
+  }
   if (book.coverColor) {
-    return { bg: book.coverColor, text: '#F2E8DC' };
+    const isLight = book.coverColor.toLowerCase() === '#e7dfd5';
+    return { bg: book.coverColor, text: isLight ? '#2B2D2F' : '#F2E8DC' };
   }
   let hash = 0;
   for (let i = 0; i < book.monthKey.length; i++) {
     hash = (hash * 31 + book.monthKey.charCodeAt(i)) % COVER_PALETTES.length;
   }
   return COVER_PALETTES[hash];
+}
+
+function resolveFont(font?: BookFontType): { fontFamily?: string; fontWeight?: any } {
+  if (font === 'sans') {
+    return { fontFamily: 'Inter_700Bold' };
+  }
+  if (font === 'garamond') {
+    return { fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif', fontWeight: 'bold' };
+  }
+  if (font === 'typewriter') {
+    return { fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: 'bold' };
+  }
+  return { fontFamily: 'PlayfairDisplay_700Bold' };
 }
 
 interface Props {
@@ -40,6 +58,7 @@ interface Props {
 export function BookCover({ book, onPress, size = 'grid', customWidth }: Props) {
   const colors = useColors();
   const palette = paletteForBook(book);
+  const fontStyle = resolveFont(book.fontFamily || book.coverConfig?.fontFamily);
 
   // Responsive book sizing for 2-column grid with minimal whitespace
   const gridW = customWidth || Math.floor((SCREEN_WIDTH - 40 - 14) / 2);
@@ -67,17 +86,23 @@ export function BookCover({ book, onPress, size = 'grid', customWidth }: Props) 
     subSize = 13;
   }
 
-  const title = bookDisplayName(book);
+  const title = book.coverConfig?.title || bookDisplayName(book);
+  const subtitle = book.coverConfig?.subtitle;
   const daysCount = book.days.filter(d => d.entries.length > 0).length;
+
+  const isPhotoCover = book.coverConfig?.type === 'photo' && !!book.coverConfig.value;
+  const isGradientCover = book.coverConfig?.type === 'gradient' && !!book.coverConfig.value;
 
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={!onPress}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`Book: ${title}, ${daysCount} days recorded`}
       style={[
         styles.cover,
-        { width, height, backgroundColor: palette.bg },
+        { width, height, backgroundColor: isGradientCover ? '#1A2938' : palette.bg },
       ]}
     >
       {/* Spine-like left strip with subtle embossing */}
@@ -97,22 +122,41 @@ export function BookCover({ book, onPress, size = 'grid', customWidth }: Props) 
         )}
       </View>
 
-      {/* Center 4-dots memory pattern motif */}
-      <View style={styles.motifRow}>
-        <View style={[styles.motifDot, { backgroundColor: palette.text }]} />
-        <View style={[styles.motifDot, { backgroundColor: palette.text }]} />
-        <View style={[styles.motifDot, { backgroundColor: palette.text }]} />
-        <View style={[styles.motifDot, { backgroundColor: palette.text }]} />
-      </View>
+      {/* Center Art: Framed Photo Inset or 4-dots memory pattern motif */}
+      {isPhotoCover ? (
+        <View style={styles.photoInsetWrap}>
+          <Image
+            source={{ uri: book.coverConfig!.value }}
+            style={[styles.photoInset, { width: width * 0.55, height: width * 0.55 }]}
+            resizeMode="cover"
+          />
+        </View>
+      ) : (
+        <View style={styles.motifRow}>
+          <View style={[styles.motifDot, { backgroundColor: palette.text }]} />
+          <View style={[styles.motifDot, { backgroundColor: palette.text }]} />
+          <View style={[styles.motifDot, { backgroundColor: palette.text }]} />
+          <View style={[styles.motifDot, { backgroundColor: palette.text }]} />
+        </View>
+      )}
 
       {/* Book Bottom Content */}
       <View style={styles.inner}>
         <Text
-          style={[styles.title, { color: palette.text, fontSize, fontFamily: 'PlayfairDisplay_700Bold' }]}
+          style={[styles.title, { color: palette.text, fontSize }, fontStyle]}
           numberOfLines={2}
         >
           {title}
         </Text>
+
+        {subtitle ? (
+          <Text
+            style={[styles.subtitle, { color: palette.text, fontSize: subSize - 1 }]}
+            numberOfLines={1}
+          >
+            {subtitle}
+          </Text>
+        ) : null}
 
         <View style={[styles.divider, { backgroundColor: palette.text }]} />
 
@@ -187,6 +231,21 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
   },
+  photoInsetWrap: {
+    alignSelf: 'center',
+    marginVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.25)',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  photoInset: {
+    backgroundColor: '#333',
+  },
   inner: {
     paddingLeft: 22,
     paddingRight: 12,
@@ -196,6 +255,11 @@ const styles = StyleSheet.create({
   title: {
     letterSpacing: 0.3,
     lineHeight: 22,
+  },
+  subtitle: {
+    fontFamily: 'Inter_500Medium',
+    letterSpacing: 0.2,
+    opacity: 0.8,
   },
   divider: {
     height: 1.5,

@@ -2,7 +2,11 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { Alert } from 'react-native';
 import { loadBooks, saveBooks } from '@/lib/storage';
 import { seedDemoData } from '@/lib/seed';
-import { uid, todayStr, monthKey, type Book, type DayLog, type Entry } from '@/lib/data';
+import {
+  uid, todayStr, monthKey,
+  type Book, type DayLog, type Entry,
+  type PageLayoutType, type BookFontType, type BookCoverConfig,
+} from '@/lib/data';
 import {
   saveBackupToFile,
   loadBackupFromFile,
@@ -22,12 +26,31 @@ interface DiaryContextValue {
   customBooks: Book[];
   sampleBooks: Book[];
   monthlyBooks: Book[];
-  createCustomBook: (title: string, description?: string, coverColor?: string) => Promise<Book>;
+  createCustomBook: (
+    title: string,
+    description?: string,
+    coverColor?: string,
+    options?: {
+      coverConfig?: BookCoverConfig;
+      pageLayout?: PageLayoutType;
+      fontFamily?: BookFontType;
+    },
+  ) => Promise<Book>;
+  updateBookConfig: (
+    monthKey: string,
+    updates: Partial<Pick<Book, 'title' | 'description' | 'coverColor' | 'coverConfig' | 'pageLayout' | 'fontFamily'>>,
+  ) => Promise<void>;
   deleteCustomBook: (monthKey: string) => Promise<void>;
   addDayToCustomBook: (customMonthKey: string, date: string, entries?: Entry[]) => Promise<boolean>;
   toggleHideDayInBook: (bookMonthKey: string, date: string) => Promise<void>;
   /** Returns false (and does nothing) if the target book is locked. */
-  upsertDayEntries: (date: string, entries: Entry[], extras?: Entry[], customBookKeys?: string[]) => Promise<boolean>;
+  upsertDayEntries: (
+    date: string,
+    entries: Entry[],
+    extras?: Entry[],
+    customBookKeys?: string[],
+    dayLayout?: PageLayoutType,
+  ) => Promise<boolean>;
   lockCurrentMonth: () => Promise<void>;
   getOnThisDay: () => { book: Book; day: DayLog }[];
   totalMoments: number;
@@ -188,14 +211,26 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
   const sampleBooks = books.filter(b => b.isSample);
   const monthlyBooks = books.filter(b => !b.isCustom);
 
-  async function createCustomBook(title: string, description?: string, coverColor?: string): Promise<Book> {
+  async function createCustomBook(
+    title: string,
+    description?: string,
+    coverColor?: string,
+    options?: {
+      coverConfig?: BookCoverConfig;
+      pageLayout?: PageLayoutType;
+      fontFamily?: BookFontType;
+    },
+  ): Promise<Book> {
     const id = uid();
     const newBook: Book = {
       monthKey: `custom_${id}`,
       id,
       title: title.trim(),
       description: description?.trim(),
-      coverColor: coverColor || '#3D2A2F',
+      coverColor: coverColor || options?.coverConfig?.value || '#2F3E34',
+      coverConfig: options?.coverConfig,
+      pageLayout: options?.pageLayout || 'quad',
+      fontFamily: options?.fontFamily || 'playfair',
       isCustom: true,
       locked: false,
       days: [],
@@ -207,6 +242,16 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
     setBooks(updated);
     if (backupEnabled) performBackup(updated).catch(() => {});
     return newBook;
+  }
+
+  async function updateBookConfig(
+    monthKey: string,
+    updates: Partial<Pick<Book, 'title' | 'description' | 'coverColor' | 'coverConfig' | 'pageLayout' | 'fontFamily'>>,
+  ): Promise<void> {
+    const updated = books.map(b => (b.monthKey === monthKey ? { ...b, ...updates } : b));
+    await saveBooks(updated);
+    setBooks(updated);
+    if (backupEnabled) performBackup(updated).catch(() => {});
   }
 
   async function deleteCustomBook(monthKey: string): Promise<void> {
@@ -259,6 +304,7 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
     entries: Entry[],
     extras: Entry[] = [],
     customBookKeys?: string[],
+    dayLayout?: PageLayoutType,
   ): Promise<boolean> {
     const mk = date.slice(0, 7);
     const today = todayStr();
@@ -290,22 +336,33 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
     }
 
     let updated = books.map(b => {
+      const layoutToUse = dayLayout || b.pageLayout || 'quad';
       // 1. Update standard monthly volume
       if (b.monthKey === mk) {
         const hasDay = b.days.some(d => d.date === date);
         if (hasDay) {
-          return { ...b, days: b.days.map(d => d.date === date ? { ...d, entries: finalEntries, extras } : d) };
+          return {
+            ...b,
+            days: b.days.map(d =>
+              d.date === date ? { ...d, entries: finalEntries, extras, layout: dayLayout || d.layout || layoutToUse } : d
+            ),
+          };
         }
-        return { ...b, days: [...b.days, { date, entries: finalEntries, extras }] };
+        return { ...b, days: [...b.days, { date, entries: finalEntries, extras, layout: layoutToUse }] };
       }
 
       // 2. Also sync to any selected custom books
       if (customBookKeys && customBookKeys.includes(b.monthKey)) {
         const hasDay = b.days.some(d => d.date === date);
         if (hasDay) {
-          return { ...b, days: b.days.map(d => d.date === date ? { ...d, entries: finalEntries, extras } : d) };
+          return {
+            ...b,
+            days: b.days.map(d =>
+              d.date === date ? { ...d, entries: finalEntries, extras, layout: dayLayout || d.layout || layoutToUse } : d
+            ),
+          };
         }
-        return { ...b, days: [...b.days, { date, entries: finalEntries, extras }] };
+        return { ...b, days: [...b.days, { date, entries: finalEntries, extras, layout: layoutToUse }] };
       }
 
       return b;
@@ -313,7 +370,16 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
 
     // Create book for this month if none exists
     if (!updated.find(b => b.monthKey === mk)) {
-      updated = [...updated, { monthKey: mk, locked: false, days: [{ date, entries: finalEntries, extras }] }];
+      updated = [
+        ...updated,
+        {
+          monthKey: mk,
+          locked: false,
+          pageLayout: 'quad',
+          fontFamily: 'playfair',
+          days: [{ date, entries: finalEntries, extras, layout: dayLayout || 'quad' }],
+        },
+      ];
     }
 
     await saveBooks(updated);
@@ -407,7 +473,7 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
       books, isLoading, refresh,
       getBook, getTodayBook, getTodayLog, getDayLog,
       customBooks, sampleBooks, monthlyBooks,
-      createCustomBook, deleteCustomBook, addDayToCustomBook, toggleHideDayInBook,
+      createCustomBook, updateBookConfig, deleteCustomBook, addDayToCustomBook, toggleHideDayInBook,
       upsertDayEntries, lockCurrentMonth, getOnThisDay,
       totalMoments, totalDays, streakCount,
       performBackup: () => performBackup(),

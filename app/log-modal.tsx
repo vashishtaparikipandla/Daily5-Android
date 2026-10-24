@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  ScrollView, Platform, Alert, KeyboardAvoidingView,
+  ScrollView, Platform, Alert, KeyboardAvoidingView, Image,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { X, Lock, WarningCircle, BookmarkSimple, CheckCircle, BookOpen } from 'phosphor-react-native';
+import {
+  X, Lock, WarningCircle, BookmarkSimple, CheckCircle, BookOpen,
+  Camera, TrashSimple, Sparkle, Check,
+} from 'phosphor-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +18,15 @@ import { PhotoPicker } from '@/components/PhotoPicker';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
 import { randomPrompt } from '@/constants/placeholders';
 import { uid, todayStr, formatFullDate } from '@/lib/data';
-import type { Entry, CategoryId } from '@/lib/data';
+import type { Entry, CategoryId, PageLayoutType } from '@/lib/data';
+
+const LAYOUT_OPTIONS: { id: PageLayoutType; name: string; tag: string }[] = [
+  { id: 'quad', name: '2×2 Quad', tag: 'Figma Ref' },
+  { id: 'strips', name: 'Filmstrips', tag: 'Figma Ref' },
+  { id: 'hero', name: 'Hero + 3', tag: 'Editorial' },
+  { id: 'magazine', name: 'Magazine', tag: 'Split 2×2' },
+  { id: 'polaroid', name: 'Polaroid', tag: 'Scrapbook' },
+];
 
 const MAX_CHARS = 120;
 const COUNTER_THRESHOLD = Math.floor(MAX_CHARS * 0.75);
@@ -61,6 +73,10 @@ function LogModalContent() {
     return existingLog?.bookIds ?? [];
   });
 
+  const [selectedLayout, setSelectedLayout] = useState<PageLayoutType>(() => {
+    return existingLog?.layout || 'quad';
+  });
+
   const [showNewBookInput, setShowNewBookInput] = useState(false);
   const [newBookTitle, setNewBookTitle] = useState('');
   const [saving, setSaving] = useState(false);
@@ -97,15 +113,21 @@ function LogModalContent() {
   function handleDismiss() {
     const hasUnsaved = slots.some((s, i) => {
       const orig = existingEntries[i]?.text ?? '';
-      return !s.isImmutable && s.text.trim() !== orig.trim() && s.text.trim().length > 0;
+      const origPhoto = existingEntries[i]?.photos?.[0] ?? '';
+      const curPhoto = s.photos[0] ?? '';
+      return (
+        !s.isImmutable &&
+        ((s.text.trim() !== orig.trim() && s.text.trim().length > 0) ||
+         (curPhoto !== origPhoto && curPhoto.length > 0))
+      );
     });
 
     if (hasUnsaved) {
       Alert.alert(
         'Discard moments?',
-        'You have unsaved writing. Are you sure you want to discard your changes?',
+        'You have unsaved changes. Are you sure you want to discard them?',
         [
-          { text: 'Keep Writing', style: 'cancel' },
+          { text: 'Keep Editing', style: 'cancel' },
           { text: 'Discard', style: 'destructive', onPress: () => router.dismiss() },
         ],
       );
@@ -116,7 +138,7 @@ function LogModalContent() {
 
   async function handleDone() {
     const entries = slots
-      .filter(s => s.text.trim().length > 0)
+      .filter(s => s.text.trim().length > 0 || s.photos.length > 0)
       .map(s => ({
         id: s.id,
         text: s.text.trim(),
@@ -126,12 +148,12 @@ function LogModalContent() {
       }));
 
     if (entries.length === 0) {
-      Alert.alert('No moments', 'Add at least one moment before saving.');
+      Alert.alert('No moments', 'Add at least one photo or memory before saving.');
       return;
     }
 
     setSaving(true);
-    const success = await upsertDayEntries(targetDate, entries, [], selectedBooks);
+    const success = await upsertDayEntries(targetDate, entries, [], selectedBooks, selectedLayout);
 
     if (!success) {
       setSaving(false);
@@ -290,7 +312,68 @@ function LogModalContent() {
           </View>
         </View>
 
-        {/* 4 Hierarchical Memory Slots */}
+        {/* Photobook Page Layout Selector */}
+        <View style={[styles.layoutSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.layoutSectionHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Sparkle size={16} color={colors.primary} weight="bold" />
+              <Text style={[styles.layoutSectionTitle, { color: colors.foreground }]}>
+                Photobook Page Layout
+              </Text>
+            </View>
+            <Text style={[styles.layoutSectionSub, { color: colors.tertiary }]}>
+              Reflows today's 4 photos on the printed page
+            </Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.layoutChipsRow}
+          >
+            {LAYOUT_OPTIONS.map(lo => {
+              const active = selectedLayout === lo.id;
+              return (
+                <TouchableOpacity
+                  key={lo.id}
+                  style={[
+                    styles.layoutChip,
+                    {
+                      backgroundColor: active ? colors.accentLight : colors.muted,
+                      borderColor: active ? colors.primary : colors.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setSelectedLayout(lo.id);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  {active ? (
+                    <Check size={14} color={colors.primary} weight="bold" />
+                  ) : null}
+                  <Text
+                    style={[
+                      styles.layoutChipName,
+                      { color: active ? colors.primary : colors.foreground },
+                    ]}
+                  >
+                    {lo.name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.layoutChipTag,
+                      { color: active ? colors.primary : colors.tertiary },
+                    ]}
+                  >
+                    {lo.tag}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* 4 Hierarchical Photo-First Memory Slots */}
         {slots.map((slot, i) => (
           <SlotEditor
             key={slot.id}
@@ -315,6 +398,60 @@ interface SlotEditorProps {
 function SlotEditor({ slot, slotNumber, onChange, colors }: SlotEditorProps) {
   const showCounter = slot.text.length >= COUNTER_THRESHOLD;
   const charsLeft = MAX_CHARS - slot.text.length;
+  const photo = slot.photos?.[0];
+
+  async function handlePickPhoto() {
+    if (slot.isImmutable) return;
+    Alert.alert('Moment Photo', 'Select image source', [
+      { text: 'Take Photo', onPress: takePhoto },
+      { text: 'Choose from Gallery', onPress: pickFromGallery },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+
+  async function takePhoto() {
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please allow camera access to take photos.');
+        return;
+      }
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      onChange({ photos: [result.assets[0].uri] });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }
+
+  async function pickFromGallery() {
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please allow photo access to select memories.');
+        return;
+      }
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      onChange({ photos: [result.assets[0].uri] });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }
+
+  function handleRemovePhoto() {
+    if (slot.isImmutable) return;
+    onChange({ photos: [] });
+  }
 
   return (
     <View
@@ -332,7 +469,7 @@ function SlotEditor({ slot, slotNumber, onChange, colors }: SlotEditorProps) {
         <View style={styles.slotBadgeRow}>
           <View style={[styles.slotBadge, { backgroundColor: colors.muted }]}>
             <Text style={[styles.slotBadgeText, { color: colors.primary }]}>
-              MOMENT {String(slotNumber).padStart(2, '0')}
+              PHOTO {String(slotNumber).padStart(2, '0')}
             </Text>
           </View>
           {slot.isImmutable && (
@@ -350,37 +487,83 @@ function SlotEditor({ slot, slotNumber, onChange, colors }: SlotEditorProps) {
         )}
       </View>
 
-      {/* Prominent, 20% larger bold text input */}
-      <TextInput
-        style={[
-          styles.textInput,
-          {
-            color: colors.foreground,
-            backgroundColor: slot.isImmutable ? colors.muted + '44' : 'transparent',
-          },
-        ]}
-        placeholder={slot.placeholder}
-        placeholderTextColor={colors.tertiary}
-        value={slot.text}
-        onChangeText={t => onChange({ text: t.slice(0, MAX_CHARS) })}
-        multiline
-        editable={!slot.isImmutable}
-        maxLength={MAX_CHARS}
-        textAlignVertical="top"
-        accessibilityLabel={`Moment ${slotNumber} of 4`}
-        accessibilityHint="Enter up to 120 characters describing this moment"
-      />
+      {/* Prominent Photo-First Canvas Frame */}
+      {photo ? (
+        <View style={styles.photoCanvas}>
+          <Image source={{ uri: photo }} style={styles.photoCanvasImage} resizeMode="cover" />
+          <TouchableOpacity
+            style={styles.replacePhotoPill}
+            onPress={handlePickPhoto}
+            disabled={slot.isImmutable}
+            activeOpacity={0.8}
+          >
+            <Camera size={13} color="#FFF" />
+            <Text style={styles.replacePhotoPillText}>Replace Photo</Text>
+          </TouchableOpacity>
+          {!slot.isImmutable && (
+            <TouchableOpacity
+              style={styles.deletePhotoBtn}
+              onPress={handleRemovePhoto}
+              activeOpacity={0.8}
+            >
+              <TrashSimple size={14} color="#FFF" />
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={[
+            styles.emptyPhotoCanvas,
+            { backgroundColor: colors.muted, borderColor: colors.borderStrong },
+          ]}
+          onPress={handlePickPhoto}
+          disabled={slot.isImmutable}
+          activeOpacity={0.75}
+        >
+          <View style={[styles.cameraIconCircle, { backgroundColor: colors.card }]}>
+            <Camera size={26} color={colors.primary} />
+          </View>
+          <Text style={[styles.emptyPhotoTitle, { color: colors.foreground }]}>
+            + Add Moment Photo 0{slotNumber}
+          </Text>
+          <Text style={[styles.emptyPhotoSub, { color: colors.tertiary }]}>
+            Tap to capture or choose from library
+          </Text>
+        </TouchableOpacity>
+      )}
 
-      {/* Micro-hint */}
-      <Text style={[styles.microHint, { color: colors.tertiary }]}>
-        1–2 lines formatted under photo in physical book
-      </Text>
+      {/* Caption Input Directly Beneath Photo */}
+      <View style={styles.captionContainer}>
+        <TextInput
+          style={[
+            styles.captionInput,
+            {
+              color: colors.foreground,
+              backgroundColor: slot.isImmutable ? colors.muted + '44' : 'transparent',
+              fontFamily: 'PlayfairDisplay_400Regular',
+            },
+          ]}
+          placeholder={slot.placeholder || 'Write a 1–2 line caption under this photo...'}
+          placeholderTextColor={colors.tertiary}
+          value={slot.text}
+          onChangeText={t => onChange({ text: t.slice(0, MAX_CHARS) })}
+          multiline
+          editable={!slot.isImmutable}
+          maxLength={MAX_CHARS}
+          textAlignVertical="top"
+          accessibilityLabel={`Caption for photo ${slotNumber}`}
+        />
+        <View style={styles.captionFooter}>
+          <Text style={[styles.microHint, { color: colors.tertiary }]}>
+            Archival caption printed under photo in book
+          </Text>
+        </View>
+      </View>
 
-      {/* Category & Photo Pickers */}
+      {/* Category Picker */}
       {!slot.isImmutable && (
         <View style={styles.slotMeta}>
           <CategoryPicker selected={slot.category} onChange={cat => onChange({ category: cat })} />
-          <PhotoPicker photos={slot.photos} onChange={photos => onChange({ photos })} maxPhotos={2} />
         </View>
       )}
     </View>
@@ -504,12 +687,52 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
   },
 
+  /* Layout Selector */
+  layoutSection: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 10,
+  },
+  layoutSectionHeader: {
+    gap: 2,
+  },
+  layoutSectionTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  layoutSectionSub: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+  },
+  layoutChipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  layoutChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  layoutChipName: {
+    fontSize: 12,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  layoutChipTag: {
+    fontSize: 10,
+    fontFamily: 'Inter_500Medium',
+  },
+
   /* Slot Card */
   slotCard: {
     borderRadius: 18,
     borderWidth: 1.5,
     padding: 16,
-    gap: 10,
+    gap: 12,
     shadowColor: '#000',
     shadowOpacity: 0.03,
     shadowRadius: 6,
@@ -549,13 +772,91 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Inter_500Medium',
   },
-  textInput: {
-    fontSize: 18, // 20% larger than original 15px
+
+  /* Photo Canvas Frame */
+  photoCanvas: {
+    width: '100%',
+    height: 170,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  photoCanvasImage: {
+    width: '100%',
+    height: '100%',
+  },
+  replacePhotoPill: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  replacePhotoPillText: {
+    color: '#FFF',
+    fontSize: 11,
     fontFamily: 'Inter_600SemiBold',
-    lineHeight: 26,
-    minHeight: 56,
+  },
+  deletePhotoBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyPhotoCanvas: {
+    width: '100%',
+    height: 140,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  cameraIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  emptyPhotoTitle: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  emptyPhotoSub: {
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
+  },
+
+  /* Caption Input */
+  captionContainer: {
+    borderRadius: 10,
+    paddingVertical: 2,
+  },
+  captionInput: {
+    fontSize: 16,
+    lineHeight: 24,
+    minHeight: 52,
     borderRadius: 8,
     paddingVertical: 4,
+  },
+  captionFooter: {
+    marginTop: 2,
   },
   microHint: {
     fontSize: 11,
@@ -564,6 +865,6 @@ const styles = StyleSheet.create({
   },
   slotMeta: {
     gap: 10,
-    marginTop: 4,
+    marginTop: 2,
   },
 });
