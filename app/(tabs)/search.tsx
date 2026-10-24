@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiary } from '@/contexts/DiaryContext';
 import { Book, DayLog, Entry } from '@/lib/data';
 import { KEYS } from '@/lib/storage';
+import { EmptyState } from '@/components/EmptyState';
 import * as Haptics from 'expo-haptics';
 
 interface MemorySearchResult {
@@ -32,6 +33,7 @@ export default function SearchTab() {
   const [query, setQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'books' | 'memories'>('all');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [searchTipDismissed, setSearchTipDismissed] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
   const topPad = insets.top + (Platform.OS === 'web' ? 67 : 0);
@@ -39,7 +41,16 @@ export default function SearchTab() {
 
   useEffect(() => {
     loadRecentSearches();
+    AsyncStorage.getItem('@daily5/dismissed_search_tip').then(val => {
+      if (val === 'true') setSearchTipDismissed(true);
+    });
   }, []);
+
+  async function dismissSearchTip() {
+    Haptics.selectionAsync();
+    setSearchTipDismissed(true);
+    await AsyncStorage.setItem('@daily5/dismissed_search_tip', 'true').catch(() => {});
+  }
 
   async function loadRecentSearches() {
     try {
@@ -53,6 +64,7 @@ export default function SearchTab() {
   async function addRecentSearch(term: string) {
     const trimmed = term.trim();
     if (!trimmed) return;
+    dismissSearchTip();
     try {
       const updated = [trimmed, ...recentSearches.filter(s => s.toLowerCase() !== trimmed.toLowerCase())].slice(0, 8);
       setRecentSearches(updated);
@@ -294,43 +306,43 @@ export default function SearchTab() {
           </View>
 
           {/* Helper notice — distinct archival parchment callout */}
-          <View
-            style={[
-              styles.helperNotice,
-              {
-                backgroundColor: colors.backgroundAlt || '#F4EFEA',
-                borderColor: colors.border,
-                borderLeftColor: colors.primary,
-                borderLeftWidth: 3.5,
-              },
-            ]}
-          >
-            <Lightbulb size={20} color={colors.primary} weight="regular" />
-            <Text style={[styles.helperText, { color: colors.mutedForeground }]}>
-              Search across your entire life archive by keywords, emotions, dates, travel spots, or people.
-            </Text>
-          </View>
+          {!searchTipDismissed && (
+            <View
+              style={[
+                styles.helperNotice,
+                {
+                  backgroundColor: colors.backgroundAlt || '#F4EFEA',
+                  borderColor: colors.border,
+                  borderLeftColor: colors.primary,
+                  borderLeftWidth: 3.5,
+                },
+              ]}
+            >
+              <Lightbulb size={20} color={colors.primary} weight="regular" />
+              <Text style={[styles.helperText, { color: colors.mutedForeground, flex: 1 }]}>
+                Search across your entire life archive by keywords, emotions, dates, travel spots, or people.
+              </Text>
+              <TouchableOpacity
+                onPress={dismissSearchTip}
+                style={{ padding: 4 }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                accessibilityRole="button"
+                accessibilityLabel="Dismiss search helper"
+              >
+                <X size={15} color={colors.tertiary} weight="bold" />
+              </TouchableOpacity>
+            </View>
+          )}
         </ScrollView>
       ) : totalResults === 0 ? (
-        <View style={styles.emptyState}>
-          <View style={[styles.emptyIconCircle, { backgroundColor: colors.muted }]}>
-            <MagnifyingGlass size={32} color={colors.tertiary} weight="regular" />
-          </View>
-          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No moments found</Text>
-          <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-            We couldn't find any memories matching "{query}". Try checking for spelling or searching a broader term.
-          </Text>
-          <TouchableOpacity
-            style={[styles.emptyActionBtn, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}
-            onPress={() => router.push('/(tabs)/library')}
-            accessibilityRole="button"
-            accessibilityLabel="Explore Library"
-            activeOpacity={0.8}
-          >
-            <BookOpen size={16} color={colors.primary} weight="bold" />
-            <Text style={[styles.emptyActionText, { color: colors.primary }]}>Explore Library</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState
+          icon={MagnifyingGlass}
+          title="No Moments Found"
+          description={`We couldn't find any memories matching "${query}". Try checking for spelling or searching a broader keyword.`}
+          actionLabel="Explore Library"
+          actionIcon={BookOpen}
+          onAction={() => router.push('/(tabs)/library')}
+        />
       ) : (
         <FlatList
           data={[

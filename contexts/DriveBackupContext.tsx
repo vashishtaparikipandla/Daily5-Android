@@ -89,7 +89,12 @@ export function DriveBackupProvider({ children }: { children: React.ReactNode })
         AsyncStorage.getItem(KEYS.DRIVE_SCHEDULE),
         AsyncStorage.getItem(KEYS.DRIVE_LAST_BACKUP),
       ]);
-      if (scheduleRaw) setDriveScheduleState(scheduleRaw as DriveSchedule);
+      if (scheduleRaw) {
+        setDriveScheduleState(scheduleRaw as DriveSchedule);
+      } else {
+        setDriveScheduleState('daily');
+        AsyncStorage.setItem(KEYS.DRIVE_SCHEDULE, 'daily').catch(() => {});
+      }
       if (lastRaw) setLastDriveBackupTime(new Date(lastRaw));
     }
     load().catch(() => {});
@@ -114,20 +119,21 @@ export function DriveBackupProvider({ children }: { children: React.ReactNode })
     if (latestFile) knownFileIdRef.current = latestFile.id;
 
     // ── Post-install restore prompt ──
-    if (books.length === 0 && latestFile) {
+    const hasUserMemories = books.some(b => !b.isSample && b.days.some(d => d.entries.length > 0));
+    if (!hasUserMemories && latestFile) {
       const backupDate = new Date(latestFile.modifiedTime).toLocaleDateString(
         undefined,
-        { month: 'long', day: 'numeric', year: 'numeric' },
+        { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' },
       );
       Alert.alert(
-        'Backup found on Google Drive',
-        `A Dear Day backup from ${backupDate} was found in your Google Drive. Would you like to restore your diary?`,
+        'Restore from Google Drive?',
+        `We found your previous Dear Day archive from ${backupDate} on your Google Drive. Would you like to restore your memories and photobooks?`,
         [
           {
-            text: 'Restore',
+            text: 'Restore Archive',
             onPress: () => doRestoreFromDrive(token, latestFile.id),
           },
-          { text: 'Skip', style: 'cancel' },
+          { text: 'Start Fresh', style: 'cancel' },
         ],
       );
       return; // Skip auto-backup if we just offered a restore

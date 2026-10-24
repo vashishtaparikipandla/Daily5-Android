@@ -14,6 +14,7 @@ import { PaperBackground } from '@/components/PaperBackground';
 import { TonightCard } from '@/components/TonightCard';
 import { EntrySlot } from '@/components/EntrySlot';
 import { FtuoTour } from '@/components/FtuoTour';
+import { StreakCalendarModal } from '@/components/StreakCalendarModal';
 import { todayStr } from '@/lib/data';
 import { getUnreadNotificationCount } from '@/lib/notifications';
 
@@ -28,6 +29,7 @@ export default function TodayTab() {
   const { getTodayLog, getDayLog, getOnThisDay, streakCount } = useDiary();
   const [unreadCount, setUnreadCount] = useState(0);
   const [celebrate, setCelebrate] = useState(false);
+  const [showStreakModal, setShowStreakModal] = useState(false);
   const confettiRef = useRef<any>(null);
   const hasCelebratedToday = useRef(false);
 
@@ -136,7 +138,16 @@ export default function TodayTab() {
 
         {/* 7-Day Habit Tracker Card */}
         <View style={[styles.streakCard, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
-          <View style={styles.streakHeaderRow}>
+          <TouchableOpacity
+            style={styles.streakHeaderRow}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setShowStreakModal(true);
+            }}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="View Archival Journey and Habit Calendar"
+          >
             <View style={styles.streakTitleGroup}>
               <View style={[styles.streakFlameCircle, { backgroundColor: colors.accentLight }]}>
                 <Fire size={20} color={colors.primary} weight="fill" />
@@ -159,7 +170,7 @@ export default function TodayTab() {
                 {weekDays.filter(d => d.hasEntry).length}/7 DAYS
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
 
           {/* 7 Day Pills Ribbon */}
           <View style={styles.weekRibbon}>
@@ -362,6 +373,12 @@ export default function TodayTab() {
 
       {/* First-time User Onboarding Spotlight Tour */}
       <FtuoTour />
+
+      {/* Archival Journey & Streak Calendar Modal */}
+      <StreakCalendarModal
+        visible={showStreakModal}
+        onClose={() => setShowStreakModal(false)}
+      />
     </PaperBackground>
   );
 }

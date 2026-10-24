@@ -212,3 +212,39 @@ Each day spread in a book supports 5 distinct layout reflow options:
 5. **Authentic Vector Branding:**
    - Third-party auth providers must use official vector assets (4-color Google "G" SVG and official circular Telegram paper airplane badge) rather than monochrome or generic approximations.
 
+---
+
+## 10. Archival Streak Journey, Empty State System & Cloud Persistence
+
+1. **Streak & Archival Calendar Modal (`StreakCalendarModal.tsx`):**
+   - Opened by tapping the Streak card on the Today screen.
+   - Shows days from user's joining date to today in an interactive month calendar.
+   - Completion representation:
+     - 4/4 Moments (100%): Solid terracotta circle with white checkmark (`✓`).
+     - 1-3 Moments: Circular progress ring with dynamic SVG arc (`25%`, `50%`, `75%`) around the day number.
+     - 0 Moments: Quiet empty circle; today highlighted with an active terracotta ring.
+   - Tapping any date navigates directly to `log-modal` for viewing or filling moments.
+   - KPI Stats Bar: Day Streak, Days Logged, Total Moments, and Month Completion %.
+
+2. **Universal Empty State Standard (`EmptyState.tsx`):**
+   - Eliminates layout inconsistencies (no awkward top-slammed or arbitrary padding states).
+   - Centered vertical composition (`flex: 1, minHeight: 340, justifyContent: 'center'`).
+   - Soft icon container (`width: 72, height: 72, borderRadius: 36, backgroundColor: colors.accentLight`).
+   - Playfair Display headline (20px) + readable body (14px, max-width 320px).
+   - Actionable tactile pill CTA giving immediate user direction.
+
+3. **Persistent Notice & Banner Dismissal:**
+   - Informational notices (such as "Explore Sample Volume" and search helper callouts) include an explicit `X` dismiss button.
+   - Dismissal state is saved to `AsyncStorage`.
+   - Taking the recommended action (e.g., tapping the sample book or executing a search) automatically dismisses the hint permanently.
+
+4. **WhatsApp-Style Cloud Backup Architecture:**
+   - Zero-server-cost model: User-owned encrypted Google Drive `appDataFolder` storage (AES-256-GCM).
+   - Prominent WhatsApp-style status card on Profile tab:
+     - Last Backup timestamp (`Today at 9:42 PM`, `Yesterday`, etc.)
+     - Payload size (`1.4 MB`)
+     - Google Account (`user@gmail.com`)
+     - One-tap "Back Up Now" button.
+   - Automatic restore prompt on reinstallation when previous archives are discovered in Google Drive.
+
+

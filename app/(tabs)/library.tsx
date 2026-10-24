@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, Platform, Modal, Dimensions, Alert, ActivityIndicator, ScrollView, Image,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import {
   Plus, MagnifyingGlass, X, Sparkle, BookOpen, ShareNetwork, Printer,
@@ -14,6 +15,7 @@ import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiary } from '@/contexts/DiaryContext';
 import { BookCover } from '@/components/BookCover';
+import { EmptyState } from '@/components/EmptyState';
 import {
   bookDisplayName,
   SOLID_COVER_PRESETS,
@@ -78,9 +80,25 @@ export default function LibraryTab() {
     });
 
   const [sharingKey, setSharingKey] = useState<string | null>(null);
+  const [sampleBannerDismissed, setSampleBannerDismissed] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem('@daily5/dismissed_sample_banner').then(val => {
+      if (val === 'true') setSampleBannerDismissed(true);
+    });
+  }, []);
+
+  async function dismissSampleBanner() {
+    Haptics.selectionAsync();
+    setSampleBannerDismissed(true);
+    await AsyncStorage.setItem('@daily5/dismissed_sample_banner', 'true').catch(() => {});
+  }
 
   function openBook(book: Book) {
     Haptics.selectionAsync();
+    if (book.isSample) {
+      dismissSampleBanner();
+    }
     router.push({ pathname: '/book-viewer', params: { monthKey: book.monthKey } });
   }
 
@@ -251,7 +269,7 @@ export default function LibraryTab() {
       </View>
 
       {/* Exploration Callout for Sample Book */}
-      {sortedBooks.some(b => b.isSample) && filter !== 'custom' && !search && (
+      {!sampleBannerDismissed && sortedBooks.some(b => b.isSample) && filter !== 'custom' && !search && (
         <View style={[styles.sampleBanner, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
           <Sparkle size={16} color="#C47B3A" weight="fill" style={{ marginTop: 2 }} />
           <View style={{ flex: 1, gap: 2 }}>
@@ -262,18 +280,35 @@ export default function LibraryTab() {
               Tap "Kyoto Journey" below to preview how bound layouts, photos, and daily moments look in print.
             </Text>
           </View>
+          <TouchableOpacity
+            onPress={dismissSampleBanner}
+            style={styles.sampleCloseBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss sample announcement"
+          >
+            <X size={15} color={colors.tertiary} weight="bold" />
+          </TouchableOpacity>
         </View>
       )}
 
       {/* Book Grid */}
       {filtered.length === 0 ? (
-        <View style={styles.empty}>
-          <BookOpen size={44} color={colors.border} weight="regular" />
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No books found</Text>
-          <Text style={[styles.emptySub, { color: colors.tertiary }]}>
-            Create a custom book or log memories to populate your library.
-          </Text>
-        </View>
+        <EmptyState
+          icon={BookOpen}
+          title="No Books Found"
+          description={
+            search
+              ? `No photobooks found matching "${search}". Try searching another keyword.`
+              : 'Create a custom photobook or capture daily moments to bind your monthly volumes.'
+          }
+          actionLabel={search ? 'Clear Search' : '+ Create Custom Book'}
+          actionIcon={search ? X : Plus}
+          onAction={() => {
+            if (search) setSearch('');
+            else setShowCreateModal(true);
+          }}
+        />
       ) : (
         <FlatList
           data={filtered}
@@ -707,6 +742,10 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
+  },
+  sampleCloseBtn: {
+    padding: 4,
+    marginLeft: 4,
   },
   sampleBannerTitle: {
     fontSize: 13,

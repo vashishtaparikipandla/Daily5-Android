@@ -8,6 +8,7 @@ import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiary } from '@/contexts/DiaryContext';
 import { EntrySlot } from '@/components/EntrySlot';
+import { EmptyState } from '@/components/EmptyState';
 import { todayStr } from '@/lib/data';
 
 export default function DiscoverTab() {
@@ -48,15 +49,14 @@ export default function DiscoverTab() {
         </Text>
 
         {onThisDay.length === 0 ? (
-          <View style={styles.empty}>
-            <Clock size={44} color={colors.border} />
-            <Text style={[styles.emptyTitle, { color: colors.mutedForeground }]}>
-              Nothing yet
-            </Text>
-            <Text style={[styles.emptySub, { color: colors.tertiary }]}>
-              Memories from this day in past years will appear here as you build your diary.
-            </Text>
-          </View>
+          <EmptyState
+            icon={Clock}
+            title="No Memories on This Day Yet"
+            description="Moments recorded on this day in past years will magically surface here as your archival diary grows."
+            actionLabel="Capture Today's Moments"
+            onAction={() => router.push({ pathname: '/log-modal', params: { date: today } })}
+            style={{ minHeight: 280 }}
+          />
         ) : (
           onThisDay.map(({ book, day }) => (
             <TouchableOpacity

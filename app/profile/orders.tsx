@@ -4,10 +4,11 @@ import {
   FlatList, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { router } from 'expo-router';
-import { MapPin, ArrowLeft, ArrowsClockwise, Package } from 'phosphor-react-native';
+import { MapPin, ArrowLeft, ArrowsClockwise, Package, BookOpen } from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
+import { EmptyState } from '@/components/EmptyState';
 import { useOrders } from '@/contexts/OrdersContext';
 import {
   PrintOrder,
@@ -124,15 +125,14 @@ function OrdersContent() {
           <ActivityIndicator color={colors.primary} />
         </View>
       ) : orders.length === 0 ? (
-        <View style={styles.empty}>
-          <Package size={52} color={colors.border} weight="regular" />
-          <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-            No orders yet
-          </Text>
-          <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-            Open any book and tap the print icon to order a physical copy.
-          </Text>
-        </View>
+        <EmptyState
+          icon={Package}
+          title="No Orders Yet"
+          description="Transform your digital memories into real, tangible hardcover photobooks. Open any book in your library and tap 'Order Print'."
+          actionLabel="Explore Library"
+          actionIcon={BookOpen}
+          onAction={() => router.push('/(tabs)/library')}
+        />
       ) : (
         <FlatList
           data={orders}

@@ -17,6 +17,7 @@ import {
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
+import { EmptyState } from '@/components/EmptyState';
 import {
   InAppNotification,
   getInAppNotifications,
@@ -197,27 +198,17 @@ function NotificationsContent() {
           <ActivityIndicator size="small" color={colors.primary} />
         </View>
       ) : filtered.length === 0 ? (
-        <View style={styles.empty}>
-          <View style={[styles.emptyIconCircle, { backgroundColor: colors.accentLight }]}>
-            <BellSlash size={32} color={colors.tertiary} weight="regular" />
-          </View>
-          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-            {filter === 'unread' ? 'All caught up!' : 'No notifications yet'}
-          </Text>
-          <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
-            {filter === 'unread'
+        <EmptyState
+          icon={BellSlash}
+          title={filter === 'unread' ? 'All Caught Up!' : 'No Notifications Yet'}
+          description={
+            filter === 'unread'
               ? 'You have read all your notifications.'
-              : 'Reminders and journal updates will appear here, even without push notifications.'}
-          </Text>
-          <TouchableOpacity
-            style={[styles.sampleBtn, { backgroundColor: colors.primary }]}
-            onPress={handleSendSample}
-          >
-            <Text style={[styles.sampleBtnText, { color: colors.primaryForeground }]}>
-              Trigger Test Notification
-            </Text>
-          </TouchableOpacity>
-        </View>
+              : 'Evening 9 PM archival reminders, habit updates, and photobook prints will appear here.'
+          }
+          actionLabel="Trigger Test Reminder"
+          onAction={handleSendSample}
+        />
       ) : (
         <FlatList
           data={filtered}
