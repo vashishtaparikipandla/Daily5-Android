@@ -4,7 +4,7 @@ import {
   ScrollView, Platform, Alert,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { X, Lock, WarningCircle, BookmarkSimple, CheckCircle, BookOpen } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -133,7 +133,7 @@ function LogModalContent() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.dismiss()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Ionicons name="close" size={24} color={colors.mutedForeground} />
+          <X size={22} color={colors.mutedForeground} weight="bold" />
         </TouchableOpacity>
         <View style={styles.headerTitle}>
           <Text style={[styles.headerDate, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
@@ -155,7 +155,7 @@ function LogModalContent() {
       {/* Immutability Banner for Past Days */}
       {isPast && (
         <View style={[styles.immutabilityBanner, { backgroundColor: colors.accentLight, borderColor: colors.borderStrong }]}>
-          <Ionicons name="lock-closed" size={16} color={colors.accent} style={{ marginTop: 2 }} />
+          <Lock size={16} color={colors.accent} weight="fill" style={{ marginTop: 2 }} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={[styles.bannerTitle, { color: colors.foreground }]}>
               Permanent Ink
@@ -170,7 +170,7 @@ function LogModalContent() {
       {/* Locked Book error */}
       {lockedError && (
         <View style={[styles.errorBanner, { backgroundColor: colors.destructive }]}>
-          <Ionicons name="alert-circle" size={16} color="#fff" />
+          <WarningCircle size={16} color="#fff" weight="fill" />
           <Text style={styles.errorBannerText}>
             This volume has been locked and can no longer be edited.
           </Text>
@@ -188,7 +188,7 @@ function LogModalContent() {
         <View style={[styles.collectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.collectionHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="bookmark-outline" size={16} color={colors.primary} />
+              <BookmarkSimple size={16} color={colors.primary} weight="bold" />
               <Text style={[styles.collectionTitle, { color: colors.foreground }]}>
                 Add to Collection Book
               </Text>
@@ -241,11 +241,11 @@ function LogModalContent() {
                   onPress={() => toggleBook(cb.monthKey)}
                   activeOpacity={0.8}
                 >
-                  <Ionicons
-                    name={active ? 'checkmark-circle' : 'book-outline'}
-                    size={14}
-                    color={active ? colors.primaryForeground : colors.foreground}
-                  />
+                  {active ? (
+                    <CheckCircle size={14} color={colors.primaryForeground} weight="fill" />
+                  ) : (
+                    <BookOpen size={14} color={colors.foreground} weight="regular" />
+                  )}
                   <Text
                     style={[
                       styles.bookChipText,
@@ -307,7 +307,7 @@ function SlotEditor({ slot, slotNumber, onChange, colors }: SlotEditorProps) {
           </View>
           {slot.isImmutable && (
             <View style={styles.lockedTag}>
-              <Ionicons name="lock-closed" size={11} color={colors.tertiary} />
+              <Lock size={11} color={colors.tertiary} weight="fill" />
               <Text style={[styles.lockedTagText, { color: colors.tertiary }]}>Locked</Text>
             </View>
           )}

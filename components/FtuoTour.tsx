@@ -9,7 +9,15 @@ import {
   Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  PencilSimple,
+  BookOpen,
+  Package,
+  ShareNetwork,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+} from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { KEYS } from '@/lib/storage';
@@ -25,7 +33,7 @@ const STEPS = [
   {
     step: 1,
     tag: 'STEP 1 OF 4',
-    icon: 'pencil-outline' as const,
+    icon: PencilSimple,
     badgeColor: '#E8593A',
     badgeBg: 'rgba(232, 89, 58, 0.14)',
     title: 'Log your 4 memories',
@@ -36,7 +44,7 @@ const STEPS = [
   {
     step: 2,
     tag: 'STEP 2 OF 4',
-    icon: 'book-outline' as const,
+    icon: BookOpen,
     badgeColor: '#C47B3A',
     badgeBg: 'rgba(196, 123, 58, 0.14)',
     title: 'Explore monthly books',
@@ -47,7 +55,7 @@ const STEPS = [
   {
     step: 3,
     tag: 'STEP 3 OF 4',
-    icon: 'cube-outline' as const,
+    icon: Package,
     badgeColor: '#2A7B62',
     badgeBg: 'rgba(42, 123, 98, 0.14)',
     title: 'Order physical prints',
@@ -58,7 +66,7 @@ const STEPS = [
   {
     step: 4,
     tag: 'STEP 4 OF 4',
-    icon: 'share-social-outline' as const,
+    icon: ShareNetwork,
     badgeColor: '#3A7EC4',
     badgeBg: 'rgba(58, 126, 196, 0.14)',
     title: 'Share book as PDF',
@@ -174,7 +182,7 @@ export function FtuoTour({ forceShow = false, onClose }: FtuoTourProps) {
                 { backgroundColor: step.badgeBg, borderColor: step.badgeColor + '33' },
               ]}
             >
-              <Ionicons name={step.icon} size={36} color={step.badgeColor} />
+              {React.createElement(step.icon, { size: 36, color: step.badgeColor, weight: 'duotone' })}
             </View>
           </View>
 
@@ -229,7 +237,7 @@ export function FtuoTour({ forceShow = false, onClose }: FtuoTourProps) {
                 onPress={handlePrev}
                 activeOpacity={0.8}
               >
-                <Ionicons name="arrow-back" size={18} color={colors.foreground} />
+                <ArrowLeft size={18} color={colors.foreground} />
               </TouchableOpacity>
             )}
 
@@ -249,11 +257,11 @@ export function FtuoTour({ forceShow = false, onClose }: FtuoTourProps) {
               >
                 {step.actionLabel}
               </Text>
-              <Ionicons
-                name={currentStep === STEPS.length - 1 ? 'checkmark' : 'arrow-forward'}
-                size={18}
-                color={colors.primaryForeground}
-              />
+              {currentStep === STEPS.length - 1 ? (
+                <Check size={18} color={colors.primaryForeground} weight="bold" />
+              ) : (
+                <ArrowRight size={18} color={colors.primaryForeground} />
+              )}
             </TouchableOpacity>
           </View>
         </View>

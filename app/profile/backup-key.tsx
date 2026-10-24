@@ -10,7 +10,14 @@ import {
   Alert, TextInput, ActivityIndicator, ScrollView, Clipboard,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  ArrowLeft,
+  Warning,
+  CheckCircle,
+  Copy,
+  Key,
+  CaretRight,
+} from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getOrCreateRecoveryKey, formatRecoveryKey, importRecoveryKey } from '@/lib/backup';
@@ -89,7 +96,7 @@ function BackupKeyContent() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+          <ArrowLeft size={22} color={colors.foreground} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
           Recovery Key
@@ -99,7 +106,7 @@ function BackupKeyContent() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={[styles.infoCard, { backgroundColor: colors.accentLight, borderColor: colors.border }]}>
-          <Ionicons name="warning-outline" size={18} color={colors.primary} />
+          <Warning size={18} color={colors.primary} weight="fill" />
           <Text style={[styles.infoText, { color: colors.foreground }]}>
             This key encrypts your diary backup. Write it down and keep it somewhere safe.{'\n'}
             If you switch to a new device and don't have iCloud or Google account backup enabled,
@@ -118,11 +125,11 @@ function BackupKeyContent() {
               </View>
               <View style={[styles.keyActions, { borderTopColor: colors.border }]}>
                 <TouchableOpacity style={styles.keyAction} onPress={handleCopy}>
-                  <Ionicons
-                    name={copied ? 'checkmark-circle' : 'copy-outline'}
-                    size={18}
-                    color={copied ? colors.primary : colors.mutedForeground}
-                  />
+                  {copied ? (
+                    <CheckCircle size={18} color={colors.primary} weight="fill" />
+                  ) : (
+                    <Copy size={18} color={colors.mutedForeground} />
+                  )}
                   <Text style={[styles.keyActionLabel, { color: copied ? colors.primary : colors.mutedForeground }]}>
                     {copied ? 'Copied!' : 'Copy key'}
                   </Text>
@@ -140,14 +147,14 @@ function BackupKeyContent() {
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {!showImport ? (
             <TouchableOpacity style={styles.row} onPress={() => setShowImport(true)}>
-              <Ionicons name="enter-outline" size={20} color={colors.mutedForeground} />
+              <Key size={20} color={colors.mutedForeground} />
               <View style={styles.rowMeta}>
                 <Text style={[styles.rowLabel, { color: colors.foreground }]}>Enter a recovery key</Text>
                 <Text style={[styles.rowSub, { color: colors.tertiary }]}>
                   Use this when restoring from another device
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />
+              <CaretRight size={16} color={colors.tertiary} />
             </TouchableOpacity>
           ) : (
             <View style={styles.importForm}>

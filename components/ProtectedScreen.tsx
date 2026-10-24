@@ -16,7 +16,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Redirect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Lock, Fingerprint } from 'phosphor-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '@/contexts/AppContext';
 import { useColors } from '@/hooks/useColors';
@@ -50,7 +50,7 @@ function BiometricLock({ onUnlock }: { onUnlock: () => Promise<boolean> }) {
     >
       <View style={styles.center}>
         <View style={[styles.icon, { backgroundColor: colors.accentLight }]}>
-          <Ionicons name="lock-closed" size={36} color={colors.primary} />
+          <Lock size={36} color={colors.primary} weight="fill" />
         </View>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
           Dear Day is locked
@@ -73,7 +73,7 @@ function BiometricLock({ onUnlock }: { onUnlock: () => Promise<boolean> }) {
           <ActivityIndicator color={colors.primaryForeground} />
         ) : (
           <>
-            <Ionicons name="finger-print" size={20} color={colors.primaryForeground} />
+            <Fingerprint size={20} color={colors.primaryForeground} />
             <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Unlock</Text>
           </>
         )}

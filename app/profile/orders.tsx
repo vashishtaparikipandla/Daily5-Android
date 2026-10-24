@@ -4,7 +4,7 @@ import {
   FlatList, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { MapPin, ArrowLeft, ArrowsClockwise, Package } from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
@@ -82,7 +82,7 @@ function OrderCard({ order, colors }: { order: PrintOrder; colors: ReturnType<ty
 
       {/* Shipping address */}
       <View style={[styles.shippingRow, { borderTopColor: colors.border }]}>
-        <Ionicons name="location-outline" size={14} color={colors.mutedForeground} />
+        <MapPin size={14} color={colors.mutedForeground} weight="regular" />
         <Text style={[styles.shippingText, { color: colors.mutedForeground }]} numberOfLines={1}>
           {order.shippingAddress.name} · {order.shippingAddress.city}, {order.shippingAddress.state}
         </Text>
@@ -111,11 +111,11 @@ function OrdersContent() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+          <ArrowLeft size={22} color={colors.foreground} weight="bold" />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>Orders</Text>
         <TouchableOpacity onPress={handleRefresh} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Ionicons name="refresh-outline" size={22} color={colors.foreground} />
+          <ArrowsClockwise size={20} color={colors.foreground} weight="bold" />
         </TouchableOpacity>
       </View>
 
@@ -125,7 +125,7 @@ function OrdersContent() {
         </View>
       ) : orders.length === 0 ? (
         <View style={styles.empty}>
-          <Ionicons name="cube-outline" size={52} color={colors.border} />
+          <Package size={52} color={colors.border} weight="regular" />
           <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
             No orders yet
           </Text>

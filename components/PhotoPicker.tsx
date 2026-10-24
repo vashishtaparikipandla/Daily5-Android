@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Image, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Camera, X } from 'phosphor-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useColors } from '@/hooks/useColors';
 
@@ -61,7 +61,7 @@ export function PhotoPicker({ photos, onChange, maxPhotos = 2 }: Props) {
         <View key={i} style={styles.photoWrap}>
           <Image source={{ uri }} style={styles.photo} />
           <TouchableOpacity style={[styles.removeBtn, { backgroundColor: colors.foreground }]} onPress={() => remove(i)}>
-            <Ionicons name="close" size={10} color={colors.background} />
+            <X size={10} color={colors.background} weight="bold" />
           </TouchableOpacity>
         </View>
       ))}
@@ -71,7 +71,7 @@ export function PhotoPicker({ photos, onChange, maxPhotos = 2 }: Props) {
           style={[styles.addBtn, { borderColor: colors.border, backgroundColor: colors.muted }]}
           activeOpacity={0.75}
         >
-          <Ionicons name="camera-outline" size={20} color={colors.mutedForeground} />
+          <Camera size={20} color={colors.mutedForeground} />
         </TouchableOpacity>
       )}
     </View>

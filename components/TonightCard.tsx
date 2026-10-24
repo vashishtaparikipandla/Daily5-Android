@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { PencilSimple, ArrowRight, CheckCircle, Sparkle } from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { useDiary } from '@/contexts/DiaryContext';
 import { monthKey, daysInMonth } from '@/lib/data';
+import * as Haptics from 'expo-haptics';
 
 interface Props {
   onPress: () => void;
@@ -20,21 +21,36 @@ export function TonightCard({ onPress, entryCount = 0 }: Props) {
   // Page progress
   const totalPages = daysInMonth(mk);
   const filledDays = currentBook?.days.filter(d => d.entries.length > 0).length ?? 0;
-
-  const remaining = 4 - entryCount;
+  const remaining = Math.max(0, 4 - entryCount);
+  const isComplete = entryCount >= 4;
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
       <View style={styles.headerRow}>
-        <View style={styles.iconCircle}>
-          <Ionicons name="pencil" size={16} color={colors.primary} />
+        <View
+          style={[
+            styles.iconCircle,
+            { backgroundColor: isComplete ? 'rgba(76, 175, 80, 0.12)' : 'rgba(232, 89, 58, 0.12)' },
+          ]}
+        >
+          {isComplete ? (
+            <Sparkle size={18} color="#4CAF50" weight="fill" />
+          ) : (
+            <PencilSimple size={18} color={colors.primary} weight="bold" />
+          )}
         </View>
         <View style={styles.headerTextWrap}>
           <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-            {entryCount === 0 ? "Tonight's 4 moments" : 'Add remaining moments'}
+            {isComplete
+              ? "Today's Page Complete"
+              : entryCount === 0
+              ? "Tonight's 4 Moments"
+              : 'Add Remaining Moments'}
           </Text>
           <Text style={[styles.sub, { color: colors.mutedForeground }]}>
-            {entryCount === 0
+            {isComplete
+              ? 'You have preserved 4 honest moments today. Sleep well.'
+              : entryCount === 0
               ? 'Pause before sleep to capture four honest fragments of today.'
               : `${remaining} of 4 moments left to complete today’s page.`}
           </Text>
@@ -66,16 +82,37 @@ export function TonightCard({ onPress, entryCount = 0 }: Props) {
 
       {/* Primary CTA */}
       <TouchableOpacity
-        style={[styles.btn, { backgroundColor: colors.primary }]}
-        onPress={onPress}
+        style={[
+          styles.btn,
+          {
+            backgroundColor: isComplete ? colors.muted : colors.primary,
+            borderColor: isComplete ? colors.borderStrong : colors.primary,
+            borderWidth: isComplete ? 1 : 0,
+          },
+        ]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onPress();
+        }}
         activeOpacity={0.85}
       >
-        <Text style={[styles.btnText, { color: colors.primaryForeground }]}>
-          {entryCount === 0
-            ? "Log tonight's 4"
-            : `Add remaining (${remaining} left)`}
+        <Text
+          style={[
+            styles.btnText,
+            { color: isComplete ? colors.foreground : colors.primaryForeground },
+          ]}
+        >
+          {isComplete
+            ? 'Review / Edit Moments'
+            : entryCount === 0
+            ? "Log Tonight's 4"
+            : `Add Remaining (${remaining} left)`}
         </Text>
-        <Ionicons name="arrow-forward" size={16} color={colors.primaryForeground} />
+        <ArrowRight
+          size={16}
+          color={isComplete ? colors.foreground : colors.primaryForeground}
+          weight="bold"
+        />
       </TouchableOpacity>
     </View>
   );
@@ -83,15 +120,15 @@ export function TonightCard({ onPress, entryCount = 0 }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 18,
-    borderWidth: 1.5,
+    borderRadius: 14,
+    borderWidth: 1,
     padding: 18,
     gap: 14,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    elevation: 1,
   },
   headerRow: {
     flexDirection: 'row',
@@ -99,10 +136,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   iconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(232, 89, 58, 0.12)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
@@ -146,9 +182,8 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   btn: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

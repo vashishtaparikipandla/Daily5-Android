@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { ArrowLeft, EnvelopeSimple, Globe, FileText, CaretRight } from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
@@ -14,22 +14,36 @@ function HelpContent() {
   const version = Constants.expoConfig?.version ?? '1.0.0';
 
   const items = [
-    { icon: 'mail-outline', label: 'Contact support', onPress: () => Linking.openURL('mailto:support@daily5.app') },
-    { icon: 'globe-outline', label: 'Privacy Policy', onPress: () => Linking.openURL('https://daily5.app/privacy') },
-    { icon: 'document-text-outline', label: 'Terms of Service', onPress: () => Linking.openURL('https://daily5.app/terms') },
+    {
+      icon: <EnvelopeSimple size={19} color={colors.mutedForeground} weight="regular" />,
+      label: 'Contact Support',
+      onPress: () => Linking.openURL('mailto:support@dearday.app'),
+    },
+    {
+      icon: <Globe size={19} color={colors.mutedForeground} weight="regular" />,
+      label: 'Privacy Policy',
+      onPress: () => Linking.openURL('https://dearday.app/privacy'),
+    },
+    {
+      icon: <FileText size={19} color={colors.mutedForeground} weight="regular" />,
+      label: 'Terms of Service',
+      onPress: () => Linking.openURL('https://dearday.app/terms'),
+    },
   ];
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <ArrowLeft size={22} color={colors.foreground} weight="bold" />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>Help & About</Text>
-        <View style={{ width: 24 }} />
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+          Help & About
+        </Text>
+        <View style={{ width: 22 }} />
       </View>
       <View style={styles.content}>
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
           {items.map((item, i) => (
             <TouchableOpacity
               key={item.label}
@@ -40,14 +54,16 @@ function HelpContent() {
               onPress={item.onPress}
               activeOpacity={0.75}
             >
-              <Ionicons name={item.icon as any} size={20} color={colors.mutedForeground} />
+              {item.icon}
               <Text style={[styles.rowLabel, { color: colors.foreground }]}>{item.label}</Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />
+              <CaretRight size={15} color={colors.tertiary} weight="bold" />
             </TouchableOpacity>
           ))}
         </View>
         <View style={styles.versionBlock}>
-          <Text style={[styles.appName, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>Dear Day</Text>
+          <Text style={[styles.appName, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+            Dear Day
+          </Text>
           <Text style={[styles.version, { color: colors.tertiary }]}>Version {version}</Text>
           <Text style={[styles.tagline, { color: colors.tertiary }]}>your days, remembered</Text>
         </View>
@@ -72,12 +88,12 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 18 },
   content: { padding: 20, gap: 24 },
-  card: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  card: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     paddingHorizontal: 16, paddingVertical: 14,
   },
-  rowLabel: { flex: 1, fontSize: 15, fontFamily: 'Inter_400Regular' },
+  rowLabel: { flex: 1, fontSize: 14, fontFamily: 'Inter_500Medium' },
   versionBlock: { alignItems: 'center', gap: 4, paddingVertical: 16 },
   appName: { fontSize: 20 },
   version: { fontSize: 12, fontFamily: 'Inter_400Regular' },

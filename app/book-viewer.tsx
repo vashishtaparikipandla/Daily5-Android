@@ -10,7 +10,17 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  ArrowLeft,
+  BookOpen,
+  ShareNetwork,
+  Printer,
+  Eye,
+  EyeSlash,
+  PencilSimple,
+  CaretLeft,
+  CaretRight,
+} from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,7 +56,7 @@ export function BookViewerContent() {
   if (!book) {
     return (
       <View style={[styles.empty, { backgroundColor: colors.background }]}>
-        <Ionicons name="book-outline" size={48} color={colors.tertiary} />
+        <BookOpen size={48} color={colors.tertiary} />
         <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Book not found</Text>
         <TouchableOpacity onPress={() => router.back()} style={styles.backLinkWrap}>
           <Text style={[styles.backLink, { color: colors.primary }]}>Go back to Library</Text>
@@ -121,7 +131,7 @@ export function BookViewerContent() {
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           style={styles.headerBtn}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+          <ArrowLeft size={22} color={colors.foreground} />
         </TouchableOpacity>
 
         <View style={styles.headerTitleWrap}>
@@ -150,11 +160,11 @@ export function BookViewerContent() {
                 },
               ]}
             >
-              <Ionicons
-                name={isCurrentDayHidden ? 'eye' : 'eye-off-outline'}
-                size={16}
-                color={isCurrentDayHidden ? colors.primaryForeground : colors.mutedForeground}
-              />
+              {isCurrentDayHidden ? (
+                <Eye size={16} color={colors.primaryForeground} weight="fill" />
+              ) : (
+                <EyeSlash size={16} color={colors.mutedForeground} />
+              )}
               <Text
                 style={[
                   styles.hideBtnText,
@@ -176,7 +186,7 @@ export function BookViewerContent() {
             {exporting ? (
               <ActivityIndicator size="small" color={colors.primary} />
             ) : (
-              <Ionicons name="share-outline" size={22} color={colors.primary} />
+              <ShareNetwork size={22} color={colors.primary} />
             )}
           </TouchableOpacity>
 
@@ -191,7 +201,7 @@ export function BookViewerContent() {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={styles.headerBtn}
           >
-            <Ionicons name="print-outline" size={22} color={colors.primary} />
+            <Printer size={22} color={colors.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -287,7 +297,7 @@ export function BookViewerContent() {
                   {/* Hidden Watermark */}
                   {isHidden && (
                     <View style={styles.hiddenWatermark}>
-                      <Ionicons name="eye-off" size={16} color={colors.destructive} />
+                      <EyeSlash size={16} color={colors.destructive} />
                       <Text style={[styles.hiddenWatermarkText, { color: colors.destructive }]}>
                         Page hidden from print & export
                       </Text>
@@ -343,7 +353,7 @@ export function BookViewerContent() {
                       }}
                       activeOpacity={0.8}
                     >
-                      <Ionicons name="create-outline" size={14} color={colors.primary} />
+                      <PencilSimple size={14} color={colors.primary} />
                       <Text style={[styles.fillEmptyBtnText, { color: colors.primary }]}>
                         Fill {4 - day.entries.length} empty moment{4 - day.entries.length > 1 ? 's' : ''}
                       </Text>
@@ -363,7 +373,7 @@ export function BookViewerContent() {
           onPress={() => scrollToPage(pageIndex - 1)}
           disabled={pageIndex === 0}
         >
-          <Ionicons name="chevron-back" size={20} color={colors.foreground} />
+          <CaretLeft size={20} color={colors.foreground} />
           <Text style={[styles.navPageText, { color: colors.foreground }]}>Previous</Text>
         </TouchableOpacity>
 
@@ -380,7 +390,7 @@ export function BookViewerContent() {
           disabled={pageIndex >= pages.length - 1}
         >
           <Text style={[styles.navPageText, { color: colors.foreground }]}>Next</Text>
-          <Ionicons name="chevron-forward" size={20} color={colors.foreground} />
+          <CaretRight size={20} color={colors.foreground} />
         </TouchableOpacity>
       </View>
     </View>

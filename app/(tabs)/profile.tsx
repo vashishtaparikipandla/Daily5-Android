@@ -4,14 +4,24 @@ import {
   Share, Image,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  User,
+  Bell,
+  Palette,
+  ShieldCheck,
+  Package,
+  ShareNetwork,
+  Question,
+  SignOut,
+  CaretRight,
+} from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '@/contexts/AppContext';
 import { useDiary } from '@/contexts/DiaryContext';
 
 interface SectionItem {
-  icon: string;
+  icon: (color: string) => React.ReactNode;
   label: string;
   route?: string;
   onPress?: () => void;
@@ -27,10 +37,10 @@ export default function ProfileTab() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, signOut } = useApp();
-  const { books, totalDays, totalMoments } = useDiary();
+  const { books, totalDays, totalMoments, streakCount } = useDiary();
 
   const topPad = insets.top + (Platform.OS === 'web' ? 67 : 0);
-  const botPad = insets.bottom + (Platform.OS === 'web' ? 84 : 84);
+  const botPad = insets.bottom + 90;
 
   const lockedBooks = books.filter(b => b.locked).length;
 
@@ -58,33 +68,66 @@ export default function ProfileTab() {
     {
       title: 'Account',
       items: [
-        { icon: 'person-outline', label: 'Edit Profile', route: '/profile/edit' },
+        {
+          icon: color => <User size={19} color={color} weight="regular" />,
+          label: 'Edit Profile',
+          route: '/profile/edit',
+        },
       ],
     },
     {
       title: 'Preferences',
       items: [
-        { icon: 'notifications-outline', label: 'Notifications', route: '/profile/notifications' },
-        { icon: 'color-palette-outline', label: 'Appearance', route: '/profile/appearance' },
+        {
+          icon: color => <Bell size={19} color={color} weight="regular" />,
+          label: 'Notifications',
+          route: '/profile/notifications',
+        },
+        {
+          icon: color => <Palette size={19} color={color} weight="regular" />,
+          label: 'Appearance',
+          route: '/profile/appearance',
+        },
       ],
     },
     {
-      title: 'Data',
+      title: 'Data & Privacy',
       items: [
-        { icon: 'shield-outline', label: 'Data & Privacy', route: '/profile/privacy' },
-        { icon: 'cube-outline', label: 'Orders', route: '/profile/orders' },
+        {
+          icon: color => <ShieldCheck size={19} color={color} weight="regular" />,
+          label: 'Data & Cloud Backup',
+          route: '/profile/privacy',
+        },
+        {
+          icon: color => <Package size={19} color={color} weight="regular" />,
+          label: 'Print Orders',
+          route: '/profile/orders',
+        },
       ],
     },
     {
       title: 'Support & Community',
       items: [
-        { icon: 'share-social-outline', label: 'Share Dear Day with Friends', onPress: handleShareApp },
-        { icon: 'help-circle-outline', label: 'Help & About', route: '/profile/help' },
+        {
+          icon: color => <ShareNetwork size={19} color={color} weight="regular" />,
+          label: 'Share Dear Day with Friends',
+          onPress: handleShareApp,
+        },
+        {
+          icon: color => <Question size={19} color={color} weight="regular" />,
+          label: 'Help & About',
+          route: '/profile/help',
+        },
       ],
     },
     {
       items: [
-        { icon: 'log-out-outline', label: 'Sign Out', onPress: handleSignOut, destructive: true },
+        {
+          icon: color => <SignOut size={19} color={color} weight="bold" />,
+          label: 'Sign Out',
+          onPress: handleSignOut,
+          destructive: true,
+        },
       ],
     },
   ];
@@ -116,9 +159,10 @@ export default function ProfileTab() {
           <Text style={[styles.email, { color: colors.mutedForeground }]}>{user?.email}</Text>
         </View>
 
-        {/* Stats */}
-        <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        {/* Stats Row */}
+        <View style={[styles.statsRow, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
           {[
+            { value: streakCount, label: 'Day Streak' },
             { value: totalDays, label: 'Days' },
             { value: lockedBooks, label: 'Books' },
             { value: totalMoments, label: 'Moments' },
@@ -138,28 +182,27 @@ export default function ProfileTab() {
             {section.title && (
               <Text style={[styles.sectionTitle, { color: colors.tertiary }]}>{section.title}</Text>
             )}
-            <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              {section.items.map((item, ii) => (
-                <TouchableOpacity
-                  key={item.label}
-                  style={[
-                    styles.sectionItem,
-                    ii < section.items.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-                  ]}
-                  onPress={item.onPress ?? (() => item.route && router.push(item.route as any))}
-                  activeOpacity={0.75}
-                >
-                  <Ionicons
-                    name={item.icon as any}
-                    size={20}
-                    color={item.destructive ? colors.destructive : colors.mutedForeground}
-                  />
-                  <Text style={[styles.itemLabel, { color: item.destructive ? colors.destructive : colors.foreground }]}>
-                    {item.label}
-                  </Text>
-                  {!item.onPress && <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />}
-                </TouchableOpacity>
-              ))}
+            <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
+              {section.items.map((item, ii) => {
+                const iconColor = item.destructive ? colors.destructive : colors.mutedForeground;
+                return (
+                  <TouchableOpacity
+                    key={item.label}
+                    style={[
+                      styles.sectionItem,
+                      ii < section.items.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+                    ]}
+                    onPress={item.onPress ?? (() => item.route && router.push(item.route as any))}
+                    activeOpacity={0.75}
+                  >
+                    {item.icon(iconColor)}
+                    <Text style={[styles.itemLabel, { color: item.destructive ? colors.destructive : colors.foreground }]}>
+                      {item.label}
+                    </Text>
+                    {!item.onPress && <CaretRight size={15} color={colors.tertiary} weight="bold" />}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         ))}
@@ -171,25 +214,27 @@ export default function ProfileTab() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { paddingHorizontal: 20, gap: 16 },
-  avatarBlock: { alignItems: 'center', gap: 8, paddingVertical: 8 },
-  avatar: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
-  avatarImg: { width: '100%', height: '100%', borderRadius: 36 },
+  avatarBlock: { alignItems: 'center', gap: 6, paddingVertical: 4 },
+  avatar: { width: 72, height: 72, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  avatarImg: { width: '100%', height: '100%', borderRadius: 20 },
   avatarLetter: { fontSize: 30, fontFamily: 'PlayfairDisplay_700Bold' },
   name: { fontSize: 22, letterSpacing: 0.2 },
   email: { fontSize: 13, fontFamily: 'Inter_400Regular' },
   statsRow: {
-    flexDirection: 'row', borderRadius: 14, borderWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 16,
+    flexDirection: 'row',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 14,
   },
-  stat: { flex: 1, alignItems: 'center', gap: 4 },
-  statValue: { fontSize: 24 },
-  statLabel: { fontSize: 11, fontFamily: 'Inter_400Regular' },
+  stat: { flex: 1, alignItems: 'center', gap: 2 },
+  statValue: { fontSize: 22 },
+  statLabel: { fontSize: 11, fontFamily: 'Inter_500Medium' },
   section: { gap: 6 },
-  sectionTitle: { fontSize: 11, fontFamily: 'Inter_500Medium', letterSpacing: 0.8, textTransform: 'uppercase', paddingLeft: 4 },
-  sectionCard: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  sectionTitle: { fontSize: 11, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.8, textTransform: 'uppercase', paddingLeft: 4 },
+  sectionCard: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   sectionItem: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     paddingHorizontal: 16, paddingVertical: 14,
   },
-  itemLabel: { flex: 1, fontSize: 15, fontFamily: 'Inter_400Regular' },
+  itemLabel: { flex: 1, fontSize: 14, fontFamily: 'Inter_500Medium' },
 });

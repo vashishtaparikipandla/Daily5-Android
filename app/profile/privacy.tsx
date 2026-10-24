@@ -4,8 +4,26 @@ import {
   Alert, Switch, ActivityIndicator, ScrollView, Modal,
 } from 'react-native';
 import { router } from 'expo-router';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  ArrowLeft,
+  Lock,
+  Fingerprint,
+  ShieldCheck,
+  ArrowsClockwise,
+  Key,
+  ShareNetwork,
+  DownloadSimple,
+  ArrowsLeftRight,
+  GoogleLogo,
+  CloudArrowUp,
+  CloudArrowDown,
+  LinkBreak,
+  CheckCircle,
+  Clock,
+  Trash,
+  CaretRight,
+  X,
+} from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '@/contexts/AppContext';
@@ -13,6 +31,7 @@ import { useDiary } from '@/contexts/DiaryContext';
 import { useDriveBackup, DriveSchedule } from '@/contexts/DriveBackupContext';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
 import { exportBackupFile, importBackupFromFilePicker } from '@/lib/backup';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 const WEB_CLIENT_ID = '205619709770-c7cabrrdedn0nnndifceo9cbo387llcd.apps.googleusercontent.com';
 
@@ -334,7 +353,7 @@ function PrivacyContent() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+          <ArrowLeft size={22} color={colors.foreground} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
           Data & Privacy
@@ -346,7 +365,7 @@ function PrivacyContent() {
 
         {/* Info banner */}
         <View style={[styles.infoCard, { backgroundColor: colors.accentLight, borderColor: colors.border }]}>
-          <Ionicons name="lock-closed" size={18} color={colors.primary} />
+          <Lock size={18} color={colors.primary} weight="fill" />
           <Text style={[styles.infoText, { color: colors.foreground }]}>
             Your diary is stored locally on this device. Backup is end-to-end encrypted — only you hold the key.
           </Text>
@@ -356,7 +375,7 @@ function PrivacyContent() {
         <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>Security</Text>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.row}>
-            <Ionicons name="finger-print" size={20} color={colors.mutedForeground} />
+            <Fingerprint size={20} color={colors.mutedForeground} />
             <View style={styles.rowMeta}>
               <Text style={[styles.rowLabel, { color: colors.foreground }]}>Biometric unlock</Text>
               <Text style={[styles.rowSub, { color: colors.tertiary }]}>
@@ -375,7 +394,7 @@ function PrivacyContent() {
         <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>Local Encrypted Backup</Text>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-            <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
+            <ShieldCheck size={20} color={colors.primary} />
             <View style={styles.rowMeta}>
               <Text style={[styles.rowLabel, { color: colors.foreground }]}>Automatic device backup</Text>
               <Text style={[styles.rowSub, { color: colors.tertiary }]}>
@@ -394,38 +413,38 @@ function PrivacyContent() {
             onPress={handleBackupNow}
             disabled={backingUp}
           >
-            <Ionicons name="refresh-outline" size={20} color={colors.mutedForeground} />
+            <ArrowsClockwise size={20} color={colors.mutedForeground} />
             <View style={styles.rowMeta}>
               <Text style={[styles.rowLabel, { color: colors.foreground }]}>Back up now</Text>
               <Text style={[styles.rowSub, { color: colors.tertiary }]}>
                 {lastBackupTime ? `Last saved: ${formatTime(lastBackupTime)}` : 'Create instant encrypted copy'}
               </Text>
             </View>
-            {backingUp ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />}
+            {backingUp ? <ActivityIndicator size="small" color={colors.primary} /> : <CaretRight size={16} color={colors.tertiary} />}
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
             onPress={() => router.push('/profile/backup-key')}
           >
-            <Ionicons name="key-outline" size={20} color={colors.mutedForeground} />
+            <Key size={20} color={colors.mutedForeground} />
             <View style={styles.rowMeta}>
               <Text style={[styles.rowLabel, { color: colors.foreground }]}>Recovery key</Text>
               <Text style={[styles.rowSub, { color: colors.tertiary }]}>64-character key required to restore on new device</Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />
+            <CaretRight size={16} color={colors.tertiary} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
             onPress={handleExport}
           >
-            <Ionicons name="share-outline" size={20} color={colors.mutedForeground} />
+            <ShareNetwork size={20} color={colors.mutedForeground} />
             <View style={styles.rowMeta}>
               <Text style={[styles.rowLabel, { color: colors.foreground }]}>Export backup file (.d5b)</Text>
               <Text style={[styles.rowSub, { color: colors.tertiary }]}>Share or save to cloud/storage</Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />
+            <CaretRight size={16} color={colors.tertiary} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -433,19 +452,19 @@ function PrivacyContent() {
             onPress={handleImport}
             disabled={importing}
           >
-            <Ionicons name="download-outline" size={20} color={colors.mutedForeground} />
+            <DownloadSimple size={20} color={colors.mutedForeground} />
             <View style={styles.rowMeta}>
               <Text style={[styles.rowLabel, { color: colors.foreground }]}>Import backup file</Text>
               <Text style={[styles.rowSub, { color: colors.tertiary }]}>Restore memories from a .d5b file</Text>
             </View>
-            {importing ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />}
+            {importing ? <ActivityIndicator size="small" color={colors.primary} /> : <CaretRight size={16} color={colors.tertiary} />}
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.row}
             onPress={() => setShowTransferModal(true)}
           >
-            <Ionicons name="swap-horizontal-outline" size={20} color={colors.primary} />
+            <ArrowsLeftRight size={20} color={colors.primary} />
             <View style={styles.rowMeta}>
               <Text style={[styles.rowLabel, { color: colors.primary, fontFamily: 'Inter_600SemiBold' }]}>
                 Switching devices? Read guide
@@ -454,7 +473,7 @@ function PrivacyContent() {
                 Step-by-step instructions for transferring data
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            <CaretRight size={16} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -466,7 +485,7 @@ function PrivacyContent() {
           {!driveConnected && (
             <View>
               <View style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-                <Ionicons name="logo-google" size={20} color={colors.mutedForeground} />
+                <GoogleLogo size={20} color={colors.mutedForeground} weight="bold" />
                 <View style={styles.rowMeta}>
                   <Text style={[styles.rowLabel, { color: colors.foreground }]}>Google Drive</Text>
                   <Text style={[styles.rowSub, { color: colors.tertiary }]}>
@@ -478,7 +497,7 @@ function PrivacyContent() {
                 onPress={handleConnectDrive} disabled={connectingDrive}>
                 {connectingDrive
                   ? <ActivityIndicator size="small" color={colors.primary} />
-                  : <><Ionicons name="cloud-upload-outline" size={18} color={colors.primary} />
+                  : <><CloudArrowUp size={18} color={colors.primary} />
                      <Text style={[styles.connectLabel, { color: colors.primary }]}>Connect Google Drive</Text></>}
               </TouchableOpacity>
             </View>
@@ -488,7 +507,7 @@ function PrivacyContent() {
           {driveSessionExpired && (
             <View>
               <View style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-                <Ionicons name="logo-google" size={20} color={colors.destructive} />
+                <GoogleLogo size={20} color={colors.destructive} weight="bold" />
                 <View style={styles.rowMeta}>
                   <Text style={[styles.rowLabel, { color: colors.foreground }]}>
                     {driveAccount ?? 'Google Drive'}
@@ -500,11 +519,11 @@ function PrivacyContent() {
                 onPress={handleReconnectDrive} disabled={connectingDrive}>
                 {connectingDrive
                   ? <ActivityIndicator size="small" color={colors.primary} />
-                  : <><Ionicons name="refresh-outline" size={20} color={colors.primary} />
+                  : <><ArrowsClockwise size={20} color={colors.primary} />
                      <Text style={[styles.rowLabel, { color: colors.primary, flex: 1 }]}>Reconnect</Text></>}
               </TouchableOpacity>
               <TouchableOpacity style={styles.row} onPress={handleDisconnectDrive}>
-                <Ionicons name="unlink-outline" size={20} color={colors.destructive} />
+                <LinkBreak size={20} color={colors.destructive} />
                 <Text style={[styles.rowLabel, { color: colors.destructive, flex: 1 }]}>Disconnect Drive</Text>
               </TouchableOpacity>
             </View>
@@ -515,7 +534,7 @@ function PrivacyContent() {
             <View>
               {/* Account row */}
               <View style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-                <Ionicons name="logo-google" size={20} color={colors.primary} />
+                <GoogleLogo size={20} color={colors.primary} weight="bold" />
                 <View style={styles.rowMeta}>
                   <Text style={[styles.rowLabel, { color: colors.foreground }]}>
                     {driveAccount ?? 'Google Drive connected'}
@@ -524,34 +543,34 @@ function PrivacyContent() {
                     Last backup: {formatTime(lastDriveBackupTime)}
                   </Text>
                 </View>
-                <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
+                <CheckCircle size={18} color={colors.primary} weight="fill" />
               </View>
 
               {/* Back up now */}
               <TouchableOpacity
                 style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
                 onPress={handleDriveBackupNow} disabled={driveWorking}>
-                <Ionicons name="cloud-upload-outline" size={20} color={colors.mutedForeground} />
+                <CloudArrowUp size={20} color={colors.mutedForeground} />
                 <Text style={[styles.rowLabel, { color: colors.foreground, flex: 1 }]}>Back up to Drive now</Text>
                 {driveWorking
                   ? <ActivityIndicator size="small" color={colors.primary} />
-                  : <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />}
+                  : <CaretRight size={16} color={colors.tertiary} />}
               </TouchableOpacity>
 
               {/* Restore */}
               <TouchableOpacity
                 style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
                 onPress={handleDriveRestore} disabled={driveWorking}>
-                <Ionicons name="cloud-download-outline" size={20} color={colors.mutedForeground} />
+                <CloudArrowDown size={20} color={colors.mutedForeground} />
                 <Text style={[styles.rowLabel, { color: colors.foreground, flex: 1 }]}>Restore from Drive</Text>
                 {driveWorking
                   ? <ActivityIndicator size="small" color={colors.primary} />
-                  : <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />}
+                  : <CaretRight size={16} color={colors.tertiary} />}
               </TouchableOpacity>
 
               {/* Schedule picker */}
               <View style={[styles.scheduleHeader, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-                <Ionicons name="time-outline" size={18} color={colors.mutedForeground} />
+                <Clock size={18} color={colors.mutedForeground} />
                 <Text style={[styles.rowLabel, { color: colors.foreground }]}>Auto-backup schedule</Text>
               </View>
               <SchedulePicker
@@ -565,7 +584,7 @@ function PrivacyContent() {
               <TouchableOpacity
                 style={[styles.row, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }]}
                 onPress={handleDisconnectDrive}>
-                <Ionicons name="unlink-outline" size={20} color={colors.destructive} />
+                <LinkBreak size={20} color={colors.destructive} />
                 <Text style={[styles.rowLabel, { color: colors.destructive, flex: 1 }]}>Disconnect Drive</Text>
               </TouchableOpacity>
             </View>
@@ -576,9 +595,9 @@ function PrivacyContent() {
         <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>Your data</Text>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <TouchableOpacity style={styles.row} onPress={handleDelete}>
-            <Ionicons name="trash-outline" size={20} color={colors.destructive} />
+            <Trash size={20} color={colors.destructive} />
             <Text style={[styles.rowLabel, { color: colors.destructive }]}>Delete account</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.tertiary} />
+            <CaretRight size={16} color={colors.tertiary} />
           </TouchableOpacity>
         </View>
 
@@ -601,7 +620,7 @@ function PrivacyContent() {
               Transfer to a New Phone
             </Text>
             <TouchableOpacity onPress={() => setShowTransferModal(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Ionicons name="close" size={24} color={colors.foreground} />
+              <X size={24} color={colors.foreground} />
             </TouchableOpacity>
           </View>
 

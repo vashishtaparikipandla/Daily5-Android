@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Fingerprint } from 'phosphor-react-native';
 import { useApp } from '@/contexts/AppContext';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -40,7 +40,7 @@ export default function BiometricSetup() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad, paddingBottom: botPad }]}>
       <View style={styles.center}>
         <View style={[styles.iconWrap, { backgroundColor: colors.accentLight }]}>
-          <Ionicons name="finger-print" size={48} color={colors.primary} />
+          <Fingerprint size={48} color={colors.primary} />
         </View>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
           Quick unlock

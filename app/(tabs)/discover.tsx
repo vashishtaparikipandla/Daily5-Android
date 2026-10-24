@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { CalendarBlank, Clock } from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiary } from '@/contexts/DiaryContext';
@@ -37,7 +37,7 @@ export default function DiscoverTab() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.dateChip}>
-          <Ionicons name="calendar-outline" size={14} color={colors.primary} />
+          <CalendarBlank size={14} color={colors.primary} />
           <Text style={[styles.dateChipText, { color: colors.primary }]}>
             {dayOfWeek}, {fullDate}
           </Text>
@@ -49,7 +49,7 @@ export default function DiscoverTab() {
 
         {onThisDay.length === 0 ? (
           <View style={styles.empty}>
-            <Ionicons name="time-outline" size={44} color={colors.border} />
+            <Clock size={44} color={colors.border} />
             <Text style={[styles.emptyTitle, { color: colors.mutedForeground }]}>
               Nothing yet
             </Text>

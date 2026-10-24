@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Lock } from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { bookDisplayName } from '@/lib/data';
 import type { Book } from '@/lib/data';
@@ -92,7 +92,7 @@ export function BookCover({ book, onPress, size = 'grid', customWidth }: Props) 
         )}
         {book.locked && (
           <View style={styles.lockCircle}>
-            <Ionicons name="lock-closed" size={11} color={palette.text} />
+            <Lock size={11} color={palette.text} weight="fill" />
           </View>
         )}
       </View>

@@ -2,7 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { useColorScheme } from 'react-native';
 import { Tabs, Redirect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  BookOpen,
+  Books,
+  MagnifyingGlass,
+  User,
+  Lock,
+  Fingerprint,
+} from 'phosphor-react-native';
 import { BlurView } from 'expo-blur';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/contexts/AppContext';
@@ -10,8 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**
  * Full-screen biometric lock overlay. Shown when the user navigates
- * directly to a tab without passing through the splash unlock flow
- * (e.g. via deep link or hot reload).
+ * directly to a tab without passing through the splash unlock flow.
  */
 function BiometricLock({ onUnlock }: { onUnlock: () => Promise<boolean> }) {
   const colors = useColors();
@@ -20,7 +26,6 @@ function BiometricLock({ onUnlock }: { onUnlock: () => Promise<boolean> }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Automatically prompt on mount
     handleUnlock();
   }, []);
 
@@ -29,7 +34,7 @@ function BiometricLock({ onUnlock }: { onUnlock: () => Promise<boolean> }) {
     setError('');
     const success = await onUnlock();
     if (!success) {
-      setError('Biometric failed. Try again.');
+      setError('Biometric verification failed. Tap to retry.');
     }
     setLoading(false);
   }
@@ -38,16 +43,16 @@ function BiometricLock({ onUnlock }: { onUnlock: () => Promise<boolean> }) {
     <View style={[styles.lockRoot, { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.lockCenter}>
         <View style={[styles.lockIcon, { backgroundColor: colors.accentLight }]}>
-          <Ionicons name="lock-closed" size={36} color={colors.primary} />
+          <Lock size={36} color={colors.primary} weight="fill" />
         </View>
         <Text style={[styles.lockTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-          Dear Day is locked
+          Dear Day is Locked
         </Text>
         {error ? (
           <Text style={[styles.lockError, { color: colors.destructive }]}>{error}</Text>
         ) : (
           <Text style={[styles.lockSub, { color: colors.mutedForeground }]}>
-            Use your biometric to open your diary
+            Use biometric to unlock your personal diary
           </Text>
         )}
       </View>
@@ -61,8 +66,8 @@ function BiometricLock({ onUnlock }: { onUnlock: () => Promise<boolean> }) {
           <ActivityIndicator color={colors.primaryForeground} />
         ) : (
           <>
-            <Ionicons name="finger-print" size={20} color={colors.primaryForeground} />
-            <Text style={[styles.lockBtnText, { color: colors.primaryForeground }]}>Unlock</Text>
+            <Fingerprint size={20} color={colors.primaryForeground} weight="bold" />
+            <Text style={[styles.lockBtnText, { color: colors.primaryForeground }]}>Unlock Diary</Text>
           </>
         )}
       </TouchableOpacity>
@@ -96,10 +101,13 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colors.mutedForeground,
         tabBarStyle: {
           position: 'absolute',
-          backgroundColor: isIOS ? 'transparent' : colors.background,
+          backgroundColor: isIOS ? 'transparent' : colors.card,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.border,
           elevation: 0,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 6,
         },
         tabBarBackground: () =>
           isIOS ? (
@@ -114,6 +122,7 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontFamily: 'Inter_500Medium',
           fontSize: 11,
+          letterSpacing: 0.2,
         },
       }}
     >
@@ -122,7 +131,7 @@ export default function TabLayout() {
         options={{
           title: 'Today',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'book' : 'book-outline'} size={23} color={color} />
+            <BookOpen size={22} color={color} weight={focused ? 'fill' : 'regular'} />
           ),
         }}
       />
@@ -131,7 +140,7 @@ export default function TabLayout() {
         options={{
           title: 'Library',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'library' : 'library-outline'} size={23} color={color} />
+            <Books size={22} color={color} weight={focused ? 'fill' : 'regular'} />
           ),
         }}
       />
@@ -140,7 +149,7 @@ export default function TabLayout() {
         options={{
           title: 'Search',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'search' : 'search-outline'} size={23} color={color} />
+            <MagnifyingGlass size={22} color={color} weight={focused ? 'bold' : 'regular'} />
           ),
         }}
       />
@@ -149,7 +158,7 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} size={23} color={color} />
+            <User size={22} color={color} weight={focused ? 'fill' : 'regular'} />
           ),
         }}
       />
@@ -160,13 +169,13 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   lockRoot: { flex: 1, paddingHorizontal: 28, justifyContent: 'space-between', paddingVertical: 40 },
   lockCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
-  lockIcon: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' },
+  lockIcon: { width: 72, height: 72, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   lockTitle: { fontSize: 24, textAlign: 'center' },
-  lockSub: { fontSize: 15, fontFamily: 'Inter_400Regular', textAlign: 'center' },
-  lockError: { fontSize: 14, fontFamily: 'Inter_400Regular', textAlign: 'center' },
+  lockSub: { fontSize: 14, fontFamily: 'Inter_400Regular', textAlign: 'center' },
+  lockError: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'center' },
   lockBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    height: 52, borderRadius: 12,
+    height: 48, borderRadius: 10,
   },
-  lockBtnText: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
+  lockBtnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
 });

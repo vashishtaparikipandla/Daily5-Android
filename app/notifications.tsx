@@ -4,7 +4,16 @@ import {
   Platform, ActivityIndicator, Alert,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  ArrowLeft,
+  Moon,
+  Hourglass,
+  BookOpen,
+  Package,
+  Bell,
+  BellSlash,
+  X,
+} from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
@@ -37,19 +46,35 @@ function formatTimestamp(iso: string): string {
   }
 }
 
-function getIconForType(type: InAppNotification['type']): { name: keyof typeof Ionicons.glyphMap; color: string } {
+function renderIconForType(type: InAppNotification['type'], color: string) {
   switch (type) {
     case 'nightly':
-      return { name: 'moon', color: '#E8593A' };
+      return <Moon size={18} color={color} weight="fill" />;
     case 'onThisDay':
-      return { name: 'hourglass-outline', color: '#C47B3A' };
+      return <Hourglass size={18} color={color} weight="fill" />;
     case 'bookReady':
-      return { name: 'book-outline', color: '#2E7D32' };
+      return <BookOpen size={18} color={color} weight="fill" />;
     case 'orderUpdates':
-      return { name: 'cube-outline', color: '#1976D2' };
+      return <Package size={18} color={color} weight="fill" />;
     case 'system':
     default:
-      return { name: 'notifications-outline', color: '#7C3AED' };
+      return <Bell size={18} color={color} weight="fill" />;
+  }
+}
+
+function getIconColor(type: InAppNotification['type']): string {
+  switch (type) {
+    case 'nightly':
+      return '#E8593A';
+    case 'onThisDay':
+      return '#C47B3A';
+    case 'bookReady':
+      return '#2E7D32';
+    case 'orderUpdates':
+      return '#1976D2';
+    case 'system':
+    default:
+      return '#7C3AED';
   }
 }
 
@@ -113,7 +138,7 @@ function NotificationsContent() {
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+          <ArrowLeft size={22} color={colors.foreground} weight="bold" />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
           Notifications
@@ -174,7 +199,7 @@ function NotificationsContent() {
       ) : filtered.length === 0 ? (
         <View style={styles.empty}>
           <View style={[styles.emptyIconCircle, { backgroundColor: colors.accentLight }]}>
-            <Ionicons name="notifications-off-outline" size={32} color={colors.tertiary} />
+            <BellSlash size={32} color={colors.tertiary} weight="regular" />
           </View>
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
             {filter === 'unread' ? 'All caught up!' : 'No notifications yet'}
@@ -199,7 +224,7 @@ function NotificationsContent() {
           keyExtractor={item => item.id}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => {
-            const icon = getIconForType(item.type);
+            const iconColor = getIconColor(item.type);
             return (
               <TouchableOpacity
                 style={[
@@ -213,8 +238,8 @@ function NotificationsContent() {
                 onPress={() => handlePressNotification(item)}
               >
                 <View style={styles.cardHeader}>
-                  <View style={[styles.iconWrap, { backgroundColor: `${icon.color}18` }]}>
-                    <Ionicons name={icon.name} size={18} color={icon.color} />
+                  <View style={[styles.iconWrap, { backgroundColor: `${iconColor}18` }]}>
+                    {renderIconForType(item.type, iconColor)}
                   </View>
                   <View style={styles.titleWrap}>
                     <View style={styles.titleRow}>
@@ -241,7 +266,7 @@ function NotificationsContent() {
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     onPress={() => handleDelete(item.id)}
                   >
-                    <Ionicons name="close" size={16} color={colors.tertiary} />
+                    <X size={15} color={colors.tertiary} weight="bold" />
                   </TouchableOpacity>
                 </View>
 

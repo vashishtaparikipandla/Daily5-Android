@@ -4,7 +4,16 @@ import {
   Platform, ScrollView, Alert, ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  ArrowLeft,
+  EnvelopeSimple,
+  Bell,
+  CaretRight,
+  Moon,
+  Hourglass,
+  BookOpen,
+  Package,
+} from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
@@ -72,13 +81,13 @@ function NotificationsContent() {
       setUnreadCount(count);
       Alert.alert(
         '🔔 Scenario Triggered',
-        `"${label}" was fired!\n\nA push notification was sent to your device and logged to your In-App Notification Center.`,
+        `"${label}" was fired!\n\nA notification was triggered and logged to your In-App Notification Center.`,
         [
           { text: 'View In-App', onPress: () => router.push('/notifications') },
           { text: 'OK', style: 'cancel' },
         ],
       );
-    } catch (e) {
+    } catch {
       setTestingType(null);
       Alert.alert('Test Failed', 'Could not fire scenario notification.');
     }
@@ -88,31 +97,31 @@ function NotificationsContent() {
     key: keyof NotificationPrefs;
     label: string;
     sub: string;
-    icon: keyof typeof Ionicons.glyphMap;
+    icon: (color: string) => React.ReactNode;
   }[] = [
     {
       key: 'nightly',
       label: 'Nightly reminder',
       sub: "Reminds you to log tonight's 4 memories at 9:00 PM",
-      icon: 'moon-outline',
+      icon: c => <Moon size={20} color={c} weight="regular" />,
     },
     {
       key: 'onThisDay',
       label: 'On This Day',
       sub: 'A gentle morning capsule when you have memories from previous years',
-      icon: 'hourglass-outline',
+      icon: c => <Hourglass size={20} color={c} weight="regular" />,
     },
     {
       key: 'bookReady',
       label: 'Monthly book ready',
       sub: 'Notifies you when a 30-day month completes and is ready for binding',
-      icon: 'book-outline',
+      icon: c => <BookOpen size={20} color={c} weight="regular" />,
     },
     {
       key: 'orderUpdates',
       label: 'Order & shipping updates',
       sub: 'Tracking and delivery updates for printed physical hardcover books',
-      icon: 'cube-outline',
+      icon: c => <Package size={20} color={c} weight="regular" />,
     },
   ];
 
@@ -123,7 +132,7 @@ function NotificationsContent() {
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+          <ArrowLeft size={22} color={colors.foreground} weight="bold" />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
           Notifications
@@ -132,7 +141,7 @@ function NotificationsContent() {
           style={styles.bellBadge}
           onPress={() => router.push('/notifications')}
         >
-          <Ionicons name="mail-outline" size={22} color={colors.foreground} />
+          <EnvelopeSimple size={22} color={colors.foreground} weight="regular" />
           {unreadCount > 0 && (
             <View style={[styles.badgeDot, { backgroundColor: colors.primary }]}>
               <Text style={styles.badgeText}>{unreadCount}</Text>
@@ -149,7 +158,7 @@ function NotificationsContent() {
           activeOpacity={0.8}
         >
           <View style={[styles.inAppIconCircle, { backgroundColor: colors.primary }]}>
-            <Ionicons name="notifications" size={20} color={colors.primaryForeground} />
+            <Bell size={20} color={colors.primaryForeground} weight="fill" />
           </View>
           <View style={styles.inAppTextWrap}>
             <Text style={[styles.inAppTitle, { color: colors.foreground }]}>In-App Notification Center</Text>
@@ -157,12 +166,12 @@ function NotificationsContent() {
               {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'View all system updates and logs'}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.tertiary} />
+          <CaretRight size={16} color={colors.tertiary} weight="bold" />
         </TouchableOpacity>
 
         {/* Channels & Preferences */}
         <Text style={[styles.sectionHeading, { color: colors.tertiary }]}>Notification Preferences</Text>
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
           {loading ? (
             <ActivityIndicator style={{ padding: 24 }} size="small" color={colors.primary} />
           ) : (
@@ -174,7 +183,7 @@ function NotificationsContent() {
                   i < items.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
                 ]}
               >
-                <Ionicons name={item.icon} size={22} color={colors.mutedForeground} style={{ marginRight: 4 }} />
+                <View style={{ marginRight: 6 }}>{item.icon(colors.mutedForeground)}</View>
                 <View style={styles.rowText}>
                   <Text style={[styles.rowLabel, { color: colors.foreground }]}>{item.label}</Text>
                   <Text style={[styles.rowSub, { color: colors.mutedForeground }]}>{item.sub}</Text>
@@ -196,14 +205,14 @@ function NotificationsContent() {
           Test each scenario immediately to verify sound, vibration, device banners, and in-app logging.
         </Text>
 
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
           <TouchableOpacity
             style={[styles.testRow, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
             onPress={() => handleTestScenario('nightly', 'Nightly 9:00 PM Reminder')}
             disabled={testingType !== null}
           >
             <View style={[styles.testIconWrap, { backgroundColor: '#E8593A18' }]}>
-              <Ionicons name="moon" size={18} color="#E8593A" />
+              <Moon size={18} color="#E8593A" weight="fill" />
             </View>
             <View style={styles.testMeta}>
               <Text style={[styles.testLabel, { color: colors.foreground }]}>Nightly 9:00 PM Reminder</Text>
@@ -224,7 +233,7 @@ function NotificationsContent() {
             disabled={testingType !== null}
           >
             <View style={[styles.testIconWrap, { backgroundColor: '#C47B3A18' }]}>
-              <Ionicons name="hourglass-outline" size={18} color="#C47B3A" />
+              <Hourglass size={18} color="#C47B3A" weight="fill" />
             </View>
             <View style={styles.testMeta}>
               <Text style={[styles.testLabel, { color: colors.foreground }]}>On This Day Morning Capsule</Text>
@@ -245,7 +254,7 @@ function NotificationsContent() {
             disabled={testingType !== null}
           >
             <View style={[styles.testIconWrap, { backgroundColor: '#2E7D3218' }]}>
-              <Ionicons name="book-outline" size={18} color="#2E7D32" />
+              <BookOpen size={18} color="#2E7D32" weight="fill" />
             </View>
             <View style={styles.testMeta}>
               <Text style={[styles.testLabel, { color: colors.foreground }]}>Monthly Book Ready</Text>
@@ -266,11 +275,11 @@ function NotificationsContent() {
             disabled={testingType !== null}
           >
             <View style={[styles.testIconWrap, { backgroundColor: '#1976D218' }]}>
-              <Ionicons name="cube-outline" size={18} color="#1976D2" />
+              <Package size={18} color="#1976D2" weight="fill" />
             </View>
             <View style={styles.testMeta}>
-              <Text style={[styles.testLabel, { color: colors.foreground }]}>Order Shipped & In Transit</Text>
-              <Text style={[styles.testSub, { color: colors.mutedForeground }]}>"Book #DD-8492 is on its way"</Text>
+              <Text style={[styles.testLabel, { color: colors.foreground }]}>Order & Delivery Update</Text>
+              <Text style={[styles.testSub, { color: colors.mutedForeground }]}>"Hardcover printed & shipped"</Text>
             </View>
             {testingType === 'orderUpdates' ? (
               <ActivityIndicator size="small" color={colors.primary} />
@@ -297,91 +306,43 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth,
   },
   title: { fontSize: 18 },
   bellBadge: { position: 'relative', padding: 4 },
   badgeDot: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
+    position: 'absolute', top: 0, right: 0, minWidth: 16, height: 16,
+    borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
   },
-  badgeText: { fontSize: 10, color: '#fff', fontFamily: 'Inter_600SemiBold' },
-  content: { padding: 20, gap: 16, paddingBottom: 40 },
+  badgeText: { fontSize: 9, fontFamily: 'Inter_700Bold', color: '#fff' },
+  content: { padding: 20, gap: 14 },
   inAppBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    gap: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    padding: 14, borderRadius: 12, borderWidth: 1,
   },
-  inAppIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  inAppIconCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   inAppTextWrap: { flex: 1, gap: 2 },
-  inAppTitle: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
+  inAppTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
   inAppSub: { fontSize: 12, fontFamily: 'Inter_400Regular' },
-  sectionHeading: {
-    fontSize: 12,
-    fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginTop: 8,
-  },
-  sectionSub: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
-    lineHeight: 18,
-    marginTop: -8,
-  },
-  card: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  sectionHeading: { fontSize: 11, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.8, textTransform: 'uppercase', marginTop: 8 },
+  sectionSub: { fontSize: 13, fontFamily: 'Inter_400Regular', lineHeight: 18, marginTop: -6 },
+  card: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 10,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 14, gap: 10,
   },
   rowText: { flex: 1, gap: 2 },
-  rowLabel: { fontSize: 15, fontFamily: 'Inter_500Medium' },
+  rowLabel: { fontSize: 14, fontFamily: 'Inter_500Medium' },
   rowSub: { fontSize: 12, fontFamily: 'Inter_400Regular', lineHeight: 16 },
   testRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 16, paddingVertical: 14,
   },
-  testIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  testIconWrap: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   testMeta: { flex: 1, gap: 2 },
-  testLabel: { fontSize: 14, fontFamily: 'Inter_500Medium' },
+  testLabel: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
   testSub: { fontSize: 12, fontFamily: 'Inter_400Regular' },
-  triggerPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  triggerPillText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  triggerPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  triggerPillText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
 });

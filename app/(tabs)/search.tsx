@@ -4,7 +4,7 @@ import {
   Platform, Keyboard, ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { MagnifyingGlass, XCircle, X, Clock, Lightbulb, CaretRight, CalendarBlank } from 'phosphor-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -171,7 +171,7 @@ export default function SearchTab() {
         </Text>
 
         <View style={[styles.searchBar, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-          <Ionicons name="search" size={20} color={colors.tertiary} />
+          <MagnifyingGlass size={18} color={colors.tertiary} weight="bold" />
           <TextInput
             ref={inputRef}
             style={[styles.input, { color: colors.foreground }]}
@@ -188,7 +188,7 @@ export default function SearchTab() {
               onPress={() => setQuery('')}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="close-circle" size={18} color={colors.tertiary} />
+              <XCircle size={18} color={colors.tertiary} weight="fill" />
             </TouchableOpacity>
           )}
         </View>
@@ -254,14 +254,14 @@ export default function SearchTab() {
                     style={[styles.recentChip, { backgroundColor: colors.card, borderColor: colors.border }]}
                   >
                     <TouchableOpacity onPress={() => handleSelectTerm(term)} style={styles.recentChipBtn}>
-                      <Ionicons name="time-outline" size={14} color={colors.tertiary} />
+                      <Clock size={14} color={colors.tertiary} weight="regular" />
                       <Text style={[styles.recentChipText, { color: colors.foreground }]}>{term}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => removeRecentSearch(term)}
                       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     >
-                      <Ionicons name="close" size={14} color={colors.tertiary} />
+                      <X size={13} color={colors.tertiary} weight="bold" />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -287,7 +287,7 @@ export default function SearchTab() {
 
           {/* Helper notice */}
           <View style={[styles.helperNotice, { backgroundColor: colors.accentLight, borderColor: colors.border }]}>
-            <Ionicons name="bulb-outline" size={20} color={colors.primary} />
+            <Lightbulb size={20} color={colors.primary} weight="regular" />
             <Text style={[styles.helperText, { color: colors.mutedForeground }]}>
               Search across your entire life archive by keywords, emotions, dates, travel spots, or people.
             </Text>
@@ -296,7 +296,7 @@ export default function SearchTab() {
       ) : totalResults === 0 ? (
         <View style={styles.emptyState}>
           <View style={[styles.emptyIconCircle, { backgroundColor: colors.accentLight }]}>
-            <Ionicons name="search-outline" size={36} color={colors.tertiary} />
+            <MagnifyingGlass size={36} color={colors.tertiary} weight="regular" />
           </View>
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No moments found</Text>
           <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
@@ -356,7 +356,7 @@ export default function SearchTab() {
                       {book.description ?? `${book.days.length} entries recorded`}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={colors.tertiary} />
+                  <CaretRight size={16} color={colors.tertiary} weight="bold" />
                 </TouchableOpacity>
               );
             }
@@ -377,7 +377,7 @@ export default function SearchTab() {
                 >
                   <View style={styles.memoryTopRow}>
                     <View style={styles.memoryDateBadge}>
-                      <Ionicons name="calendar-outline" size={12} color={colors.primary} />
+                      <CalendarBlank size={12} color={colors.primary} weight="bold" />
                       <Text style={[styles.memoryDateText, { color: colors.primary }]}>{formattedDate}</Text>
                     </View>
                     <Text style={[styles.memoryBookLabel, { color: colors.tertiary }]}>{book.title}</Text>

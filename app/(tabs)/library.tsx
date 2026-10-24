@@ -4,7 +4,7 @@ import {
   TextInput, Platform, Modal, Dimensions, Alert, ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Plus, MagnifyingGlass, X, Sparkle, BookOpen, ShareNetwork, Printer } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -127,7 +127,7 @@ export default function LibraryTab() {
             onPress={() => setShowCreateModal(true)}
             activeOpacity={0.85}
           >
-            <Ionicons name="add" size={18} color={colors.primaryForeground} />
+            <Plus size={16} color={colors.primaryForeground} weight="bold" />
             <Text style={[styles.newBookBtnText, { color: colors.primaryForeground }]}>New Book</Text>
           </TouchableOpacity>
 
@@ -136,7 +136,11 @@ export default function LibraryTab() {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={styles.iconBtn}
           >
-            <Ionicons name={showSearch ? 'close' : 'search'} size={22} color={colors.mutedForeground} />
+            {showSearch ? (
+              <X size={20} color={colors.mutedForeground} weight="bold" />
+            ) : (
+              <MagnifyingGlass size={20} color={colors.mutedForeground} weight="bold" />
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -144,7 +148,7 @@ export default function LibraryTab() {
       {/* Search Bar */}
       {showSearch && (
         <View style={[styles.searchBar, { backgroundColor: colors.muted, marginHorizontal: 20, marginTop: 12 }]}>
-          <Ionicons name="search" size={16} color={colors.tertiary} />
+          <MagnifyingGlass size={16} color={colors.tertiary} weight="bold" />
           <TextInput
             style={[styles.searchInput, { color: colors.foreground }]}
             placeholder="Search moments & volumes…"
@@ -187,7 +191,7 @@ export default function LibraryTab() {
       {/* Exploration Callout for Sample Book */}
       {sortedBooks.some(b => b.isSample) && filter !== 'custom' && !search && (
         <View style={[styles.sampleBanner, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
-          <Ionicons name="sparkles" size={16} color="#C47B3A" style={{ marginTop: 2 }} />
+          <Sparkle size={16} color="#C47B3A" weight="fill" style={{ marginTop: 2 }} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={[styles.sampleBannerTitle, { color: colors.foreground }]}>
               Explore Sample Volume
@@ -202,7 +206,7 @@ export default function LibraryTab() {
       {/* Book Grid */}
       {filtered.length === 0 ? (
         <View style={styles.empty}>
-          <Ionicons name="book-outline" size={44} color={colors.border} />
+          <BookOpen size={44} color={colors.border} weight="regular" />
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No books found</Text>
           <Text style={[styles.emptySub, { color: colors.tertiary }]}>
             Create a custom book or log memories to populate your library.
@@ -239,7 +243,7 @@ export default function LibraryTab() {
                       <ActivityIndicator size="small" color={colors.primary} />
                     ) : (
                       <>
-                        <Ionicons name="share-outline" size={13} color={colors.foreground} />
+                        <ShareNetwork size={14} color={colors.foreground} weight="bold" />
                         <Text style={[styles.bookActionText, { color: colors.foreground }]}>Share</Text>
                       </>
                     )}
@@ -250,7 +254,7 @@ export default function LibraryTab() {
                     onPress={() => handlePrintBook(item)}
                     activeOpacity={0.75}
                   >
-                    <Ionicons name="print-outline" size={13} color={colors.primaryForeground} />
+                    <Printer size={14} color={colors.primaryForeground} weight="bold" />
                     <Text style={[styles.bookActionText, { color: colors.primaryForeground }]}>Print</Text>
                   </TouchableOpacity>
                 </View>
@@ -274,7 +278,7 @@ export default function LibraryTab() {
                 New Book Collection
               </Text>
               <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-                <Ionicons name="close" size={24} color={colors.mutedForeground} />
+                <X size={22} color={colors.mutedForeground} weight="bold" />
               </TouchableOpacity>
             </View>
 

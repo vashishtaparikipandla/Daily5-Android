@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Platform,
+  Platform, Dimensions,
 } from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { router, useFocusEffect } from 'expo-router';
+import { Bell, Fire, Sparkle, ArrowRight } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
+import ConfettiCannon from 'react-native-confetti-cannon';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiary } from '@/contexts/DiaryContext';
@@ -14,16 +15,21 @@ import { TonightCard } from '@/components/TonightCard';
 import { EntrySlot } from '@/components/EntrySlot';
 import { FtuoTour } from '@/components/FtuoTour';
 import { todayStr } from '@/lib/data';
-
-import { useState, useCallback } from 'react';
-import { useFocusEffect } from 'expo-router';
 import { getUnreadNotificationCount } from '@/lib/notifications';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Warm terracotta and luxury bookbinding celebration palette
+const CELEBRATION_COLORS = ['#E8593A', '#C47B3A', '#2D3F2A', '#D8B4C0', '#F2E8DC', '#E83A7A'];
 
 export default function TodayTab() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { getTodayLog, getOnThisDay } = useDiary();
+  const { getTodayLog, getOnThisDay, streakCount } = useDiary();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [celebrate, setCelebrate] = useState(false);
+  const confettiRef = useRef<any>(null);
+  const hasCelebratedToday = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -35,6 +41,16 @@ export default function TodayTab() {
   const todayLog = getTodayLog();
   const entries = todayLog?.entries ?? [];
   const onThisDay = getOnThisDay();
+  const isComplete = entries.length === 4;
+
+  useEffect(() => {
+    if (isComplete && !hasCelebratedToday.current) {
+      hasCelebratedToday.current = true;
+      setCelebrate(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      confettiRef.current?.start();
+    }
+  }, [isComplete]);
 
   const dayOfWeek = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' });
   const fullDate = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
@@ -48,31 +64,42 @@ export default function TodayTab() {
   }
 
   return (
-    <PaperBackground>
+    <PaperBackground showMarginLine={false}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingTop: topPad + 20, paddingBottom: botPad }]}
+        contentContainerStyle={[styles.content, { paddingTop: topPad + 12, paddingBottom: botPad }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Date header + Notification Bell */}
+        {/* Date header + Streak badge + Notification Bell */}
         <View style={styles.headerRow}>
           <View style={styles.dateHeader}>
-            <Text style={[styles.dayOfWeek, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-              {dayOfWeek}
-            </Text>
+            <View style={styles.dateTitleRow}>
+              <Text style={[styles.dayOfWeek, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+                {dayOfWeek}
+              </Text>
+              {/* Streak badge */}
+              <View style={[styles.streakBadge, { backgroundColor: colors.accentLight, borderColor: colors.border }]}>
+                <Fire size={14} color={colors.primary} weight="fill" />
+                <Text style={[styles.streakText, { color: colors.primary }]}>
+                  {streakCount > 0 ? `${streakCount}d Streak` : 'Start Streak'}
+                </Text>
+              </View>
+            </View>
             <Text style={[styles.fullDate, { color: colors.mutedForeground, fontFamily: 'PlayfairDisplay_400Regular' }]}>
               {fullDate}
             </Text>
           </View>
+
           <TouchableOpacity
-            style={styles.notifBtn}
+            style={[styles.notifBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={() => {
               Haptics.selectionAsync();
               router.push('/notifications');
             }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            activeOpacity={0.75}
           >
-            <Ionicons name="notifications-outline" size={24} color={colors.foreground} />
+            <Bell size={20} color={colors.foreground} weight="regular" />
             {unreadCount > 0 && (
               <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
                 <Text style={styles.unreadBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -81,14 +108,36 @@ export default function TodayTab() {
           </TouchableOpacity>
         </View>
 
-        <View style={[styles.hairline, { backgroundColor: colors.borderStrong }]} />
+        <View style={[styles.hairline, { backgroundColor: colors.border }]} />
+
+        {/* Celebration Banner when 4/4 moments captured */}
+        {isComplete && (
+          <View style={[styles.celebrationCard, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
+            <View style={[styles.celebrationIconWrap, { backgroundColor: colors.accentLight }]}>
+              <Sparkle size={18} color={colors.primary} weight="fill" />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[styles.celebrationTitle, { color: colors.foreground }]}>
+                Today's Story is Complete ✨
+              </Text>
+              <Text style={[styles.celebrationSubtitle, { color: colors.mutedForeground }]}>
+                You captured all 4 fragments. Your daily page has been preserved.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Logged entries for today */}
         {entries.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>
-              {entries.length === 4 ? "Today's 4" : `${entries.length} of 4 moments`}
-            </Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>
+                {entries.length === 4 ? "Today's 4 Moments" : `${entries.length} of 4 Moments Recorded`}
+              </Text>
+              <TouchableOpacity onPress={openLog} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={[styles.editLink, { color: colors.primary }]}>Edit</Text>
+              </TouchableOpacity>
+            </View>
             {entries.map((entry, i) => (
               <EntrySlot
                 key={entry.id}
@@ -100,7 +149,7 @@ export default function TodayTab() {
           </View>
         )}
 
-        {/* Tonight card / Add remaining CTA — at bottom of added memories */}
+        {/* Tonight card / Add remaining CTA */}
         {entries.length < 4 && (
           <TonightCard onPress={openLog} entryCount={entries.length} />
         )}
@@ -111,7 +160,7 @@ export default function TodayTab() {
             <View style={styles.otdHeaderRow}>
               <View style={[styles.otdHeaderDot, { backgroundColor: colors.accent }]} />
               <Text style={[styles.otdHeaderTitle, { color: colors.accent }]}>
-                MEMORY TIME CAPSULE
+                On This Day · Time Capsule
               </Text>
             </View>
 
@@ -133,10 +182,10 @@ export default function TodayTab() {
                   {/* Vintage stamp badge */}
                   <View style={styles.otdCardTop}>
                     <View style={styles.otdBadge}>
-                      <Ionicons name="sparkles" size={12} color="#C47B3A" />
+                      <Sparkle size={12} color="#C47B3A" weight="fill" />
                       <Text style={styles.otdBadgeText}>{year} · THIS DAY</Text>
                     </View>
-                    <Ionicons name="arrow-forward" size={14} color={colors.tertiary} />
+                    <ArrowRight size={14} color={colors.tertiary} weight="bold" />
                   </View>
 
                   {/* Memories recorded on that day */}
@@ -155,7 +204,7 @@ export default function TodayTab() {
                   </View>
 
                   <Text style={[styles.otdFooter, { color: colors.tertiary }]}>
-                    Open {book.title} volume →
+                    Open {book.title || 'Volume'} →
                   </Text>
                 </TouchableOpacity>
               );
@@ -163,6 +212,16 @@ export default function TodayTab() {
           </View>
         )}
       </ScrollView>
+
+      {/* Confetti Cannon celebration layer */}
+      <ConfettiCannon
+        ref={confettiRef}
+        count={80}
+        origin={{ x: SCREEN_WIDTH / 2, y: -20 }}
+        colors={CELEBRATION_COLORS}
+        autoStart={false}
+        fadeOut
+      />
 
       {/* First-time User Onboarding Spotlight Tour */}
       <FtuoTour />
@@ -172,23 +231,47 @@ export default function TodayTab() {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  content: { paddingLeft: 72, paddingRight: 20, gap: 20 },
+  content: { paddingHorizontal: 20, gap: 16 },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
   },
-  dateHeader: { gap: 4 },
+  dateHeader: { gap: 2 },
+  dateTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  streakText: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.2,
+  },
+  dayOfWeek: { fontSize: 26, letterSpacing: 0.2 },
+  fullDate: { fontSize: 16 },
   notifBtn: {
     position: 'relative',
-    padding: 8,
-    borderRadius: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   unreadBadge: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: -4,
+    right: -4,
     minWidth: 16,
     height: 16,
     borderRadius: 8,
@@ -201,14 +284,43 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
     color: '#fff',
   },
-  dayOfWeek: { fontSize: 28, letterSpacing: 0.2 },
-  fullDate: { fontSize: 20 },
-  hairline: { height: 1, marginBottom: 4 },
+  hairline: { height: 1, marginVertical: 2 },
+  celebrationCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  celebrationIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  celebrationTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  celebrationSubtitle: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 16,
+  },
   section: { gap: 0 },
-  sectionLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  sectionLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.8, textTransform: 'uppercase' },
+  editLink: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
 
   /* On This Day / Archival styling */
-  otdSection: { marginTop: 12, gap: 12 },
+  otdSection: { marginTop: 4, gap: 12 },
   otdHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -222,19 +334,19 @@ const styles = StyleSheet.create({
   otdHeaderTitle: {
     fontSize: 11,
     fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 1.2,
+    letterSpacing: 1,
     textTransform: 'uppercase',
   },
   otdCard: {
-    borderRadius: 16,
-    borderWidth: 1.5,
+    borderRadius: 14,
+    borderWidth: 1,
     padding: 16,
     gap: 12,
     shadowColor: '#000',
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.03,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    elevation: 1,
   },
   otdCardTop: {
     flexDirection: 'row',
@@ -248,7 +360,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(196, 123, 58, 0.12)',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   otdBadgeText: {
     fontSize: 11,

@@ -12,7 +12,15 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import Svg, { Rect } from 'react-native-svg';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  Lightbulb,
+  Coffee,
+  Heartbeat,
+  Heart,
+  Airplane,
+  BookOpen,
+  ArrowLeft,
+} from 'phosphor-react-native';
 import { router } from 'expo-router';
 import { useApp } from '@/contexts/AppContext';
 import { useColors } from '@/hooks/useColors';
@@ -45,11 +53,11 @@ const SLIDES = [
 ];
 
 const CATEGORY_CHIPS = [
-  { icon: 'cafe-outline' as const, color: '#C47B3A', label: 'Coffee' },
-  { icon: 'pulse-outline' as const, color: '#E8593A', label: 'Health' },
-  { icon: 'heart-outline' as const, color: '#E83A7A', label: 'Love' },
-  { icon: 'airplane-outline' as const, color: '#3A7EC4', label: 'Travel' },
-  { icon: 'book-outline' as const, color: '#C43A6F', label: 'Learn' },
+  { icon: Coffee, color: '#C47B3A', label: 'Coffee' },
+  { icon: Heartbeat, color: '#E8593A', label: 'Health' },
+  { icon: Heart, color: '#E83A7A', label: 'Love' },
+  { icon: Airplane, color: '#3A7EC4', label: 'Travel' },
+  { icon: BookOpen, color: '#C43A6F', label: 'Learn' },
 ];
 
 // ─── Slide 0: Glowing Floating Lamp ──────────────────────────────────────────
@@ -78,7 +86,7 @@ function LampVisual() {
       <View style={visualStyles.lampGlow} />
       <Animated.View style={[visualStyles.lampContainer, animatedStyle]}>
         <View style={visualStyles.lampCircle}>
-          <Ionicons name="bulb-outline" size={68} color="#E8593A" />
+          <Lightbulb size={68} color="#E8593A" weight="duotone" />
         </View>
       </Animated.View>
     </View>
@@ -138,23 +146,26 @@ function DotsVisual() {
 function CategoryChipsVisual() {
   return (
     <View style={visualStyles.chipsWrap}>
-      {CATEGORY_CHIPS.map((chip, i) => (
-        <View
-          key={chip.label}
-          style={[
-            visualStyles.categoryChip,
-            {
-              borderColor: chip.color + '44',
-              backgroundColor: chip.color + '15',
-            },
-          ]}
-        >
-          <Ionicons name={chip.icon} size={22} color={chip.color} />
-          <Text style={[visualStyles.categoryChipLabel, { color: chip.color }]}>
-            {chip.label}
-          </Text>
-        </View>
-      ))}
+      {CATEGORY_CHIPS.map((chip, i) => {
+        const IconComp = chip.icon;
+        return (
+          <View
+            key={chip.label}
+            style={[
+              visualStyles.categoryChip,
+              {
+                borderColor: chip.color + '44',
+                backgroundColor: chip.color + '15',
+              },
+            ]}
+          >
+            <IconComp size={22} color={chip.color} />
+            <Text style={[visualStyles.categoryChipLabel, { color: chip.color }]}>
+              {chip.label}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -192,10 +203,10 @@ function BookVisual() {
         <View style={visualStyles.bookCover}>
           <Text style={visualStyles.bookMonth}>July 2026</Text>
           <View style={visualStyles.bookPattern}>
-            <Ionicons name="cafe-outline" size={18} color="rgba(255,255,255,0.9)" />
-            <Ionicons name="airplane-outline" size={18} color="rgba(255,255,255,0.9)" />
-            <Ionicons name="heart-outline" size={18} color="rgba(255,255,255,0.9)" />
-            <Ionicons name="book-outline" size={18} color="rgba(255,255,255,0.9)" />
+            <Coffee size={18} color="rgba(255,255,255,0.9)" />
+            <Airplane size={18} color="rgba(255,255,255,0.9)" />
+            <Heart size={18} color="rgba(255,255,255,0.9)" />
+            <BookOpen size={18} color="rgba(255,255,255,0.9)" />
           </View>
           <Text style={visualStyles.bookBrand}>DEAR DAY</Text>
         </View>
@@ -277,6 +288,7 @@ export default function OnboardingScreen() {
     const weeks = Math.floor((Date.now() - date.getTime()) / (7 * 24 * 60 * 60 * 1000));
     setLivedWeeks(Math.min(weeks, 4160));
     setDobError('');
+    completeOnboarding().catch(() => {});
     transition(1);
   }
 
@@ -341,7 +353,7 @@ export default function OnboardingScreen() {
         {phase === 1 && (
           <View style={styles.phase}>
             <TouchableOpacity onPress={() => transition(0)} style={styles.backBtn}>
-              <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+              <ArrowLeft size={22} color={colors.foreground} />
             </TouchableOpacity>
             <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
               How many days do you remember from last week?

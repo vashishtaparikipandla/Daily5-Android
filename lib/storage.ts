@@ -17,6 +17,7 @@ export const KEYS = {
   DRIVE_SCHEDULE: '@daily5/drive_schedule',   // 'off' | 'daily' | 'weekly'
   DRIVE_LAST_BACKUP: '@daily5/drive_last_backup', // ISO timestamp
   FTUO_COMPLETED: '@dearday/ftuo_completed',
+  DEVICE_ONBOARDED: '@dearday/device_onboarded',
 };
 
 export async function loadBooks(): Promise<Book[]> {

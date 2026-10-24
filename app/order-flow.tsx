@@ -4,7 +4,18 @@ import {
   TextInput, Platform, ActivityIndicator, Alert, KeyboardAvoidingView,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  Palette,
+  ShieldCheck,
+  Package,
+  CreditCard,
+  Lock,
+  Clock,
+  CheckCircle,
+} from 'phosphor-react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -67,16 +78,19 @@ function PreviewStep({
       <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>WHAT YOU GET</Text>
         {[
-          { icon: 'book-outline', text: 'High-quality softcover book' },
-          { icon: 'color-palette-outline', text: 'Full-color interior printing' },
-          { icon: 'shield-checkmark-outline', text: 'Acid-free, archival paper' },
-          { icon: 'cube-outline', text: 'Delivered to your door in 7–10 days' },
-        ].map(row => (
-          <View key={row.text} style={styles.featureRow}>
-            <Ionicons name={row.icon as any} size={18} color={colors.primary} />
-            <Text style={[styles.featureText, { color: colors.foreground }]}>{row.text}</Text>
-          </View>
-        ))}
+          { icon: BookOpen, text: 'High-quality softcover book' },
+          { icon: Palette, text: 'Full-color interior printing' },
+          { icon: ShieldCheck, text: 'Acid-free, archival paper' },
+          { icon: Package, text: 'Delivered to your door in 7–10 days' },
+        ].map(row => {
+          const IconComp = row.icon;
+          return (
+            <View key={row.text} style={styles.featureRow}>
+              <IconComp size={18} color={colors.primary} />
+              <Text style={[styles.featureText, { color: colors.foreground }]}>{row.text}</Text>
+            </View>
+          );
+        })}
       </View>
 
       <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -101,7 +115,7 @@ function PreviewStep({
         activeOpacity={0.85}
       >
         <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>Continue to Shipping</Text>
-        <Ionicons name="arrow-forward" size={18} color={colors.primaryForeground} />
+        <ArrowRight size={18} color={colors.primaryForeground} />
       </TouchableOpacity>
     </ScrollView>
   );
@@ -159,7 +173,7 @@ function AddressStep({
           <Text style={[styles.primaryBtnText, { color: valid ? colors.primaryForeground : colors.mutedForeground }]}>
             Continue to Payment
           </Text>
-          <Ionicons name="arrow-forward" size={18} color={valid ? colors.primaryForeground : colors.mutedForeground} />
+          <ArrowRight size={18} color={valid ? colors.primaryForeground : colors.mutedForeground} />
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -211,7 +225,7 @@ function PaymentStep({
       <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>PAYMENT</Text>
         <View style={styles.featureRow}>
-          <Ionicons name="card-outline" size={20} color={colors.primary} />
+          <CreditCard size={20} color={colors.primary} />
           <View style={{ flex: 1 }}>
             <Text style={[styles.featureText, { color: colors.foreground }]}>Secure card payment via Stripe</Text>
             <Text style={[styles.smallNote, { color: colors.mutedForeground }]}>
@@ -220,13 +234,13 @@ function PaymentStep({
           </View>
         </View>
         <View style={[styles.featureRow, { marginTop: 4 }]}>
-          <Ionicons name="lock-closed-outline" size={16} color={colors.mutedForeground} />
+          <Lock size={16} color={colors.mutedForeground} />
           <Text style={[styles.smallNote, { color: colors.mutedForeground }]}>256-bit SSL encrypted · PCI-DSS compliant</Text>
         </View>
       </View>
 
       <View style={[styles.deliveryBanner, { backgroundColor: colors.primary + '18', borderColor: colors.primary + '40' }]}>
-        <Ionicons name="time-outline" size={16} color={colors.primary} />
+        <Clock size={16} color={colors.primary} />
         <Text style={[styles.deliveryText, { color: colors.primary }]}>
           Estimated delivery by {formatDeliveryDate(delivery.toISOString().slice(0, 10))}
         </Text>
@@ -241,7 +255,7 @@ function PaymentStep({
           <ActivityIndicator color={colors.primaryForeground} />
         ) : (
           <>
-            <Ionicons name="card-outline" size={18} color={colors.primaryForeground} />
+            <CreditCard size={18} color={colors.primaryForeground} />
             <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>Pay {formatTotalCents(TOTAL_CENTS)}</Text>
           </>
         )}
@@ -264,7 +278,7 @@ function ConfirmationStep({
   return (
     <ScrollView contentContainerStyle={[styles.stepContent, { alignItems: 'center' }]} showsVerticalScrollIndicator={false}>
       <View style={[styles.successIcon, { backgroundColor: colors.primary + '18' }]}>
-        <Ionicons name="checkmark-circle" size={56} color={colors.primary} />
+        <CheckCircle size={56} color={colors.primary} weight="fill" />
       </View>
       <Text style={[styles.confTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
         Order placed!
@@ -449,7 +463,7 @@ function OrderFlowContent() {
       <View style={[styles.header, { paddingTop: topPad, borderBottomColor: colors.border }]}>
         {step !== 'confirmation' ? (
           <TouchableOpacity onPress={handleBack} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-            <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+            <ArrowLeft size={22} color={colors.foreground} />
           </TouchableOpacity>
         ) : (
           <View style={{ width: 24 }} />

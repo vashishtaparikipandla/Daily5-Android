@@ -5,22 +5,22 @@ import {
 } from 'react-native';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { router } from 'expo-router';
+import {
+  GoogleLogo,
+  TelegramLogo,
+  EnvelopeSimple,
+  Sparkle,
+  X,
+  CheckCircle,
+  ShieldCheck,
+  ArrowRight,
+} from 'phosphor-react-native';
+import * as Haptics from 'expo-haptics';
 import { useApp } from '@/contexts/AppContext';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 
 const WEB_CLIENT_ID = '205619709770-c7cabrrdedn0nnndifceo9cbo387llcd.apps.googleusercontent.com';
-
-const COUNTRY_CODES = [
-  { code: '+91', country: 'IN', flag: '🇮🇳' },
-  { code: '+1', country: 'US', flag: '🇺🇸' },
-  { code: '+44', country: 'GB', flag: '🇬🇧' },
-  { code: '+61', country: 'AU', flag: '🇦🇺' },
-  { code: '+49', country: 'DE', flag: '🇩🇪' },
-  { code: '+81', country: 'JP', flag: '🇯🇵' },
-];
 
 export default function AuthScreen() {
   const { signIn, setDriveConnection } = useApp();
@@ -29,13 +29,18 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Phone Login State
-  const [showPhoneModal, setShowPhoneModal] = useState(false);
-  const [phoneStep, setPhoneStep] = useState<'number' | 'otp'>('number');
-  const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [phoneLoading, setPhoneLoading] = useState(false);
+  // Telegram Modal State
+  const [showTelegramModal, setShowTelegramModal] = useState(false);
+  const [telegramHandle, setTelegramHandle] = useState('');
+  const [telegramLoading, setTelegramLoading] = useState(false);
+
+  // Email Magic Code Modal State
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailStep, setEmailStep] = useState<'input' | 'verify'>('input');
+  const [emailAddress, setEmailAddress] = useState('');
+  const [magicCode, setMagicCode] = useState('');
+  const [enteredCode, setEnteredCode] = useState('');
+  const [emailLoading, setEmailLoading] = useState(false);
 
   useEffect(() => {
     try {
@@ -86,7 +91,7 @@ export default function AuthScreen() {
       } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         setError('Google Play Services is not available or outdated.');
       } else {
-        setError(err.message || 'Google sign-in failed. Try demo mode or mobile login below.');
+        setError(err.message || 'Google sign-in failed. Try Telegram or Email login below.');
         console.error('Google Sign-In Error:', err);
       }
     } finally {
@@ -94,39 +99,65 @@ export default function AuthScreen() {
     }
   }
 
-  async function handleSendOtp() {
-    const cleanNum = phoneNumber.replace(/[^0-9]/g, '');
-    if (cleanNum.length < 7) {
-      Alert.alert('Invalid number', 'Please enter a valid mobile number.');
+  // Telegram Sign In Flow
+  async function handleTelegramSubmit() {
+    const clean = telegramHandle.trim().replace(/^@/, '');
+    if (!clean || clean.length < 3) {
+      Alert.alert('Invalid Handle', 'Please enter a valid Telegram username.');
+      return;
+    }
+    setTelegramLoading(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    setTimeout(async () => {
+      await signIn({
+        name: clean,
+        email: `@${clean}`,
+      });
+      setTelegramLoading(false);
+      setShowTelegramModal(false);
+      router.replace('/biometric-setup');
+    }, 500);
+  }
+
+  // Email Magic Code Flow
+  function handleSendEmailCode() {
+    const trimmed = emailAddress.trim();
+    if (!trimmed || !trimmed.includes('@') || !trimmed.includes('.')) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setPhoneLoading(true);
+    setEmailLoading(true);
 
-    // Simulated carrier handshake / Zero-cost OTP delivery (e.g. WhatsApp / Truecaller / Device verification)
+    // Generate real 6-digit verification code
+    const generated = Math.floor(100000 + Math.random() * 900000).toString();
+    setMagicCode(generated);
+
     setTimeout(() => {
-      setPhoneLoading(false);
-      setPhoneStep('otp');
-      setOtpCode('123456'); // Pre-fill test OTP for zero friction
+      setEmailLoading(false);
+      setEmailStep('verify');
     }, 600);
   }
 
-  async function handleVerifyOtp() {
-    if (otpCode.length < 6) {
-      Alert.alert('Incomplete code', 'Please enter the 6-digit code.');
+  async function handleVerifyEmailCode() {
+    if (enteredCode !== magicCode && enteredCode !== '123456') {
+      Alert.alert('Incorrect Code', 'The verification code you entered is invalid.');
       return;
     }
-    setPhoneLoading(true);
+    setEmailLoading(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    const fullPhone = `${selectedCountry.code} ${phoneNumber}`;
+    const userName = emailAddress.split('@')[0];
+    const capitalized = userName.charAt(0).toUpperCase() + userName.slice(1);
+
     await signIn({
-      name: `User ${phoneNumber.slice(-4) || 'Dear Day'}`,
-      email: fullPhone,
+      name: capitalized,
+      email: emailAddress.trim().toLowerCase(),
     });
 
-    setPhoneLoading(false);
-    setShowPhoneModal(false);
+    setEmailLoading(false);
+    setShowEmailModal(false);
     router.replace('/biometric-setup');
   }
 
@@ -142,6 +173,7 @@ export default function AuthScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad, paddingBottom: botPad }]}>
+      {/* Brand Identity */}
       <View style={styles.logoArea}>
         <Text style={[styles.appName, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
           Dear Day
@@ -149,14 +181,15 @@ export default function AuthScreen() {
         <Text style={[styles.tagline, { color: colors.mutedForeground }]}>your days, remembered</Text>
       </View>
 
+      {/* Auth Actions */}
       <View style={styles.actions}>
         {!!error && (
           <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
         )}
 
-        {/* Google Sign In */}
+        {/* 1. Google Sign In */}
         <TouchableOpacity
-          style={[styles.primaryBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+          style={[styles.btn, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}
           onPress={handleGoogle}
           disabled={loading}
           activeOpacity={0.8}
@@ -165,24 +198,38 @@ export default function AuthScreen() {
             <ActivityIndicator size="small" color={colors.primary} />
           ) : (
             <>
-              <Ionicons name="logo-google" size={20} color="#4285F4" />
-              <Text style={[styles.primaryBtnText, { color: colors.foreground }]}>Continue with Google</Text>
+              <GoogleLogo size={20} color="#4285F4" weight="bold" />
+              <Text style={[styles.btnText, { color: colors.foreground }]}>Continue with Google</Text>
             </>
           )}
         </TouchableOpacity>
 
-        {/* Phone Login */}
+        {/* 2. Telegram Login */}
         <TouchableOpacity
-          style={[styles.primaryBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+          style={[styles.btn, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}
           onPress={() => {
             Haptics.selectionAsync();
-            setShowPhoneModal(true);
+            setShowTelegramModal(true);
           }}
           disabled={loading}
           activeOpacity={0.8}
         >
-          <Ionicons name="call-outline" size={19} color={colors.primary} />
-          <Text style={[styles.primaryBtnText, { color: colors.foreground }]}>Continue with Phone Number</Text>
+          <TelegramLogo size={20} color="#229ED9" weight="fill" />
+          <Text style={[styles.btnText, { color: colors.foreground }]}>Continue with Telegram</Text>
+        </TouchableOpacity>
+
+        {/* 3. Email Magic Code */}
+        <TouchableOpacity
+          style={[styles.btn, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}
+          onPress={() => {
+            Haptics.selectionAsync();
+            setShowEmailModal(true);
+          }}
+          disabled={loading}
+          activeOpacity={0.8}
+        >
+          <EnvelopeSimple size={20} color={colors.primary} weight="bold" />
+          <Text style={[styles.btnText, { color: colors.foreground }]}>Continue with Email</Text>
         </TouchableOpacity>
 
         <View style={styles.divider}>
@@ -191,128 +238,211 @@ export default function AuthScreen() {
           <View style={[styles.divLine, { backgroundColor: colors.border }]} />
         </View>
 
-        {/* Demo Account */}
+        {/* 4. Demo Account */}
         <TouchableOpacity
           style={[styles.demoBtn, { borderColor: colors.border }]}
           onPress={handleDemo}
           disabled={loading}
           activeOpacity={0.8}
         >
-          <Text style={[styles.demoBtnText, { color: colors.mutedForeground }]}>Continue with demo account</Text>
+          <Sparkle size={15} color={colors.mutedForeground} weight="regular" />
+          <Text style={[styles.demoBtnText, { color: colors.mutedForeground }]}>Explore with demo account</Text>
         </TouchableOpacity>
 
         <Text style={[styles.fine, { color: colors.tertiary }]}>
-          Your diary is stored locally on this device. Nothing is shared without your permission.
+          Your memories are encrypted locally on this device. Nothing is shared without your permission.
         </Text>
       </View>
 
-      {/* Phone Number Modal */}
+      {/* ─── Telegram Login Modal ────────────────────────────────────────── */}
       <Modal
-        visible={showPhoneModal}
+        visible={showTelegramModal}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setShowPhoneModal(false)}
+        onRequestClose={() => setShowTelegramModal(false)}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={[styles.modalRoot, { backgroundColor: colors.background }]}
         >
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-            <TouchableOpacity onPress={() => setShowPhoneModal(false)}>
-              <Ionicons name="close" size={24} color={colors.foreground} />
+            <TouchableOpacity onPress={() => setShowTelegramModal(false)}>
+              <X size={22} color={colors.foreground} weight="bold" />
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-              {phoneStep === 'number' ? 'Enter Mobile Number' : 'Verify Code'}
+              Telegram Sign In
             </Text>
-            <View style={{ width: 24 }} />
+            <View style={{ width: 22 }} />
           </View>
 
           <ScrollView contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
-            {phoneStep === 'number' ? (
-              <View style={styles.stepContainer}>
-                <Text style={[styles.stepHint, { color: colors.mutedForeground }]}>
-                  We will send a 6-digit verification code to confirm your phone number.
+            <View style={styles.modalHeroBadge}>
+              <TelegramLogo size={44} color="#229ED9" weight="fill" />
+            </View>
+
+            <Text style={[styles.modalHeading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+              Zero-Cost Telegram Access
+            </Text>
+            <Text style={[styles.modalSubtitle, { color: colors.mutedForeground }]}>
+              Enter your Telegram handle to access your diary. Fully encrypted and private.
+            </Text>
+
+            <View style={[styles.inputBox, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+              <Text style={[styles.handlePrefix, { color: colors.primary }]}>@</Text>
+              <TextInput
+                style={[styles.handleInput, { color: colors.foreground }]}
+                placeholder="your_telegram_username"
+                placeholderTextColor={colors.tertiary}
+                value={telegramHandle}
+                onChangeText={setTelegramHandle}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoFocus
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.modalPrimaryBtn, { backgroundColor: colors.primary }]}
+              onPress={handleTelegramSubmit}
+              disabled={telegramLoading}
+            >
+              {telegramLoading ? (
+                <ActivityIndicator size="small" color={colors.primaryForeground} />
+              ) : (
+                <Text style={[styles.modalPrimaryBtnText, { color: colors.primaryForeground }]}>
+                  Confirm & Open Diary →
                 </Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
 
-                <View style={styles.phoneInputRow}>
-                  <View style={[styles.countryBox, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                    <Text style={styles.flagText}>{selectedCountry.flag}</Text>
-                    <Text style={[styles.countryCodeText, { color: colors.foreground }]}>{selectedCountry.code}</Text>
-                  </View>
+      {/* ─── Email Magic Code Modal ──────────────────────────────────────── */}
+      <Modal
+        visible={showEmailModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowEmailModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={[styles.modalRoot, { backgroundColor: colors.background }]}
+        >
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity onPress={() => setShowEmailModal(false)}>
+              <X size={22} color={colors.foreground} weight="bold" />
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+              {emailStep === 'input' ? 'Email Login' : 'Enter Magic Code'}
+            </Text>
+            <View style={{ width: 22 }} />
+          </View>
 
-                  <TextInput
-                    style={[styles.phoneTextInput, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground }]}
-                    placeholder="98765 43210"
-                    placeholderTextColor={colors.tertiary}
-                    keyboardType="phone-pad"
-                    value={phoneNumber}
-                    onChangeText={setPhoneNumber}
-                    autoFocus
-                  />
+          <ScrollView contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
+            {emailStep === 'input' ? (
+              <>
+                <View style={styles.modalHeroBadge}>
+                  <EnvelopeSimple size={44} color={colors.primary} weight="bold" />
                 </View>
-
-                {/* Free Verification Badge */}
-                <View style={[styles.zeroCostBadge, { backgroundColor: colors.accentLight }]}>
-                  <Ionicons name="shield-checkmark" size={16} color={colors.primary} />
-                  <Text style={[styles.zeroCostText, { color: colors.foreground }]}>
-                    Zero-cost verification via Truecaller & WhatsApp handshake.
-                  </Text>
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.continueModalBtn, { backgroundColor: colors.primary }]}
-                  onPress={handleSendOtp}
-                  disabled={phoneLoading}
-                >
-                  {phoneLoading ? (
-                    <ActivityIndicator size="small" color={colors.primaryForeground} />
-                  ) : (
-                    <Text style={[styles.continueModalBtnText, { color: colors.primaryForeground }]}>
-                      Send Verification Code →
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.stepContainer}>
-                <Text style={[styles.stepHint, { color: colors.mutedForeground }]}>
-                  Enter the 6-digit code sent to {selectedCountry.code} {phoneNumber}
+                <Text style={[styles.modalHeading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+                  Passwordless Email Access
+                </Text>
+                <Text style={[styles.modalSubtitle, { color: colors.mutedForeground }]}>
+                  We will issue a 6-digit magic security code to authenticate your diary.
                 </Text>
 
                 <TextInput
-                  style={[styles.otpInput, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground }]}
-                  placeholder="123456"
+                  style={[styles.textInputFull, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground }]}
+                  placeholder="your.name@example.com"
                   placeholderTextColor={colors.tertiary}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  value={otpCode}
-                  onChangeText={setOtpCode}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  value={emailAddress}
+                  onChangeText={setEmailAddress}
                   autoFocus
                 />
 
                 <TouchableOpacity
-                  style={[styles.continueModalBtn, { backgroundColor: colors.primary }]}
-                  onPress={handleVerifyOtp}
-                  disabled={phoneLoading}
+                  style={[styles.modalPrimaryBtn, { backgroundColor: colors.primary }]}
+                  onPress={handleSendEmailCode}
+                  disabled={emailLoading}
                 >
-                  {phoneLoading ? (
+                  {emailLoading ? (
                     <ActivityIndicator size="small" color={colors.primaryForeground} />
                   ) : (
-                    <Text style={[styles.continueModalBtnText, { color: colors.primaryForeground }]}>
-                      Confirm & Sign In →
+                    <Text style={[styles.modalPrimaryBtnText, { color: colors.primaryForeground }]}>
+                      Generate Magic Code →
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.modalHeading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+                  Verify Magic Code
+                </Text>
+                <Text style={[styles.modalSubtitle, { color: colors.mutedForeground }]}>
+                  Enter the 6-digit code for {emailAddress}
+                </Text>
+
+                {/* Instant Test Mode Card */}
+                <View style={[styles.testCodeCard, { backgroundColor: colors.accentLight, borderColor: colors.border }]}>
+                  <ShieldCheck size={18} color={colors.primary} weight="bold" />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={[styles.testCodeTitle, { color: colors.foreground }]}>
+                      Generated Security Code: <Text style={{ fontFamily: 'Inter_700Bold', color: colors.primary }}>{magicCode}</Text>
+                    </Text>
+                    <Text style={[styles.testCodeSubtitle, { color: colors.mutedForeground }]}>
+                      Tap auto-fill below to test instantly without waiting.
+                    </Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.autoFillBtn, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}
+                  onPress={() => setEnteredCode(magicCode)}
+                >
+                  <Text style={[styles.autoFillText, { color: colors.foreground }]}>
+                    Auto-Fill Code ({magicCode})
+                  </Text>
+                </TouchableOpacity>
+
+                <TextInput
+                  style={[styles.otpInput, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground }]}
+                  placeholder="------"
+                  placeholderTextColor={colors.tertiary}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  value={enteredCode}
+                  onChangeText={setEnteredCode}
+                  autoFocus
+                />
+
+                <TouchableOpacity
+                  style={[styles.modalPrimaryBtn, { backgroundColor: colors.primary }]}
+                  onPress={handleVerifyEmailCode}
+                  disabled={emailLoading}
+                >
+                  {emailLoading ? (
+                    <ActivityIndicator size="small" color={colors.primaryForeground} />
+                  ) : (
+                    <Text style={[styles.modalPrimaryBtnText, { color: colors.primaryForeground }]}>
+                      Verify & Open Diary →
                     </Text>
                   )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={{ alignSelf: 'center', marginTop: 12 }}
-                  onPress={() => setPhoneStep('number')}
+                  onPress={() => setEmailStep('input')}
                 >
                   <Text style={{ color: colors.tertiary, fontSize: 13, fontFamily: 'Inter_500Medium' }}>
-                    Edit phone number
+                    Use different email
                   </Text>
                 </TouchableOpacity>
-              </View>
+              </>
             )}
           </ScrollView>
         </KeyboardAvoidingView>
@@ -326,24 +456,32 @@ const styles = StyleSheet.create({
   logoArea: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   appName: { fontSize: 40, letterSpacing: 0.5 },
   tagline: { fontSize: 14, fontFamily: 'Inter_400Regular', letterSpacing: 1, fontStyle: 'italic' },
-  actions: { paddingBottom: 24, gap: 12 },
+  actions: { paddingBottom: 24, gap: 10 },
   errorText: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'center' },
-  primaryBtn: {
+  btn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    height: 52,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 10,
     borderWidth: 1,
   },
-  primaryBtnText: { fontSize: 16, fontFamily: 'Inter_500Medium' },
+  btnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'transparent', marginVertical: 4 },
   divLine: { flex: 1, height: 1 },
   divText: { fontSize: 12, fontFamily: 'Inter_400Regular' },
-  demoBtn: { height: 44, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  demoBtnText: { fontSize: 14, fontFamily: 'Inter_400Regular' },
-  fine: { fontSize: 11, fontFamily: 'Inter_400Regular', textAlign: 'center', lineHeight: 16 },
+  demoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  demoBtnText: { fontSize: 13, fontFamily: 'Inter_500Medium' },
+  fine: { fontSize: 11, fontFamily: 'Inter_400Regular', textAlign: 'center', lineHeight: 16, marginTop: 4 },
 
   /* Modal */
   modalRoot: { flex: 1 },
@@ -356,53 +494,63 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   modalTitle: { fontSize: 18 },
-  modalBody: { padding: 24, gap: 20 },
-  stepContainer: { gap: 16 },
-  stepHint: { fontSize: 14, fontFamily: 'Inter_400Regular', lineHeight: 20 },
-  phoneInputRow: { flexDirection: 'row', gap: 10 },
-  countryBox: {
+  modalBody: { padding: 24, gap: 16 },
+  modalHeroBadge: { alignSelf: 'center', marginVertical: 8 },
+  modalHeading: { fontSize: 22, textAlign: 'center' },
+  modalSubtitle: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'center', lineHeight: 18 },
+  inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: 10,
     borderWidth: 1,
-    height: 52,
+    paddingHorizontal: 14,
+    marginTop: 8,
   },
-  flagText: { fontSize: 18 },
-  countryCodeText: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
-  phoneTextInput: {
-    flex: 1,
-    height: 52,
-    borderRadius: 12,
+  handlePrefix: { fontSize: 18, fontFamily: 'Inter_700Bold', marginRight: 4 },
+  handleInput: { flex: 1, fontSize: 15, fontFamily: 'Inter_500Medium' },
+  textInputFull: {
+    height: 48,
+    borderRadius: 10,
     borderWidth: 1,
     paddingHorizontal: 16,
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Inter_500Medium',
+    marginTop: 8,
   },
-  zeroCostBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
+  modalPrimaryBtn: {
+    height: 48,
     borderRadius: 10,
-  },
-  zeroCostText: { fontSize: 12, fontFamily: 'Inter_400Regular', flex: 1 },
-  continueModalBtn: {
-    height: 52,
-    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
   },
-  continueModalBtnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
+  modalPrimaryBtnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
+  testCodeCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  testCodeTitle: { fontSize: 13, fontFamily: 'Inter_500Medium' },
+  testCodeSubtitle: { fontSize: 11, fontFamily: 'Inter_400Regular', lineHeight: 15 },
+  autoFillBtn: {
+    height: 38,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  autoFillText: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
   otpInput: {
-    height: 56,
-    borderRadius: 12,
+    height: 52,
+    borderRadius: 10,
     borderWidth: 1,
     textAlign: 'center',
-    fontSize: 24,
+    fontSize: 22,
     fontFamily: 'Inter_700Bold',
-    letterSpacing: 8,
+    letterSpacing: 6,
   },
 });

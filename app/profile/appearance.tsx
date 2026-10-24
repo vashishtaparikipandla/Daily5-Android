@@ -1,16 +1,23 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { ArrowLeft, Sun, Moon, DeviceMobile, Check } from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '@/contexts/AppContext';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
+import * as Haptics from 'expo-haptics';
 
-const OPTIONS: { value: 'light' | 'dark' | 'system'; label: string; icon: string }[] = [
-  { value: 'light', label: 'Light', icon: 'sunny-outline' },
-  { value: 'dark', label: 'Dark', icon: 'moon-outline' },
-  { value: 'system', label: 'System', icon: 'phone-portrait-outline' },
+interface ThemeOption {
+  value: 'light' | 'dark' | 'system';
+  label: string;
+  icon: (color: string) => React.ReactNode;
+}
+
+const OPTIONS: ThemeOption[] = [
+  { value: 'light', label: 'Light', icon: c => <Sun size={20} color={c} weight="regular" /> },
+  { value: 'dark', label: 'Dark', icon: c => <Moon size={20} color={c} weight="regular" /> },
+  { value: 'system', label: 'System Default', icon: c => <DeviceMobile size={20} color={c} weight="regular" /> },
 ];
 
 function AppearanceContent() {
@@ -22,17 +29,21 @@ function AppearanceContent() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <ArrowLeft size={22} color={colors.foreground} weight="bold" />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>Appearance</Text>
-        <View style={{ width: 24 }} />
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+          Appearance
+        </Text>
+        <View style={{ width: 22 }} />
       </View>
+
       <View style={styles.content}>
-        <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>Theme</Text>
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>Theme Palette</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
           {OPTIONS.map((opt, i) => {
             const active = theme === opt.value;
+            const iconColor = active ? colors.primary : colors.mutedForeground;
             return (
               <TouchableOpacity
                 key={opt.value}
@@ -40,20 +51,31 @@ function AppearanceContent() {
                   styles.row,
                   i < OPTIONS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
                 ]}
-                onPress={() => setTheme(opt.value)}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setTheme(opt.value);
+                }}
                 activeOpacity={0.75}
               >
-                <Ionicons name={opt.icon as any} size={20} color={active ? colors.primary : colors.mutedForeground} />
-                <Text style={[styles.rowLabel, { color: active ? colors.primary : colors.foreground, fontFamily: active ? 'Inter_600SemiBold' : 'Inter_400Regular' }]}>
+                {opt.icon(iconColor)}
+                <Text
+                  style={[
+                    styles.rowLabel,
+                    {
+                      color: active ? colors.primary : colors.foreground,
+                      fontFamily: active ? 'Inter_600SemiBold' : 'Inter_400Regular',
+                    },
+                  ]}
+                >
                   {opt.label}
                 </Text>
-                {active && <Ionicons name="checkmark" size={18} color={colors.primary} />}
+                {active && <Check size={18} color={colors.primary} weight="bold" />}
               </TouchableOpacity>
             );
           })}
         </View>
         <Text style={[styles.hint, { color: colors.tertiary }]}>
-          Light mode is the default. Changes apply immediately.
+          Changes apply instantly. The warm paper theme is optimized for readability and evening reflection.
         </Text>
       </View>
     </View>
@@ -76,12 +98,12 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 18 },
   content: { padding: 20, gap: 10 },
-  sectionLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', letterSpacing: 0.8, textTransform: 'uppercase' },
-  card: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  sectionLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.8, textTransform: 'uppercase' },
+  card: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     paddingHorizontal: 16, paddingVertical: 16,
   },
   rowLabel: { flex: 1, fontSize: 15 },
-  hint: { fontSize: 12, fontFamily: 'Inter_400Regular', lineHeight: 18 },
+  hint: { fontSize: 12, fontFamily: 'Inter_400Regular', lineHeight: 18, marginTop: 4 },
 });

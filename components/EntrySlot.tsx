@@ -1,18 +1,18 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { getCategoryById } from '@/constants/categories';
+import { CategoryIcon } from './CategoryIcon';
 import type { Entry } from '@/lib/data';
 
 interface Props {
-  entry: Entry | null; // null = empty intentional slot
+  entry: Entry | null;
   slotNumber: number;
   onPress?: () => void;
   compact?: boolean;
 }
 
-const SLOT_HEIGHT = 92;
+const SLOT_HEIGHT = 88;
 
 export function EntrySlot({ entry, slotNumber, onPress, compact }: Props) {
   const colors = useColors();
@@ -23,9 +23,19 @@ export function EntrySlot({ entry, slotNumber, onPress, compact }: Props) {
       onPress={onPress}
       disabled={!onPress}
       activeOpacity={0.75}
-      style={[styles.container, { height: compact ? SLOT_HEIGHT - 12 : SLOT_HEIGHT, borderColor: colors.border }]}
+      style={[
+        styles.container,
+        {
+          minHeight: compact ? SLOT_HEIGHT - 12 : SLOT_HEIGHT,
+          borderColor: colors.borderStrong,
+          backgroundColor: colors.card,
+        },
+      ]}
     >
-      <Text style={[styles.num, { color: colors.tertiary }]}>{slotNumber}</Text>
+      <View style={[styles.numBadge, { backgroundColor: colors.muted }]}>
+        <Text style={[styles.num, { color: colors.foreground }]}>{slotNumber}</Text>
+      </View>
+
       <View style={styles.content}>
         {entry ? (
           <>
@@ -34,8 +44,8 @@ export function EntrySlot({ entry, slotNumber, onPress, compact }: Props) {
             </Text>
             <View style={styles.meta}>
               {category && (
-                <View style={[styles.catBadge, { backgroundColor: category.color + '22' }]}>
-                  <Ionicons name={category.icon as any} size={11} color={category.color} />
+                <View style={[styles.catBadge, { backgroundColor: category.color + '22', borderColor: category.color + '44' }]}>
+                  <CategoryIcon id={category.id} size={11} color={category.color} weight="bold" />
                   <Text style={[styles.catLabel, { color: category.color }]}>{category.label}</Text>
                 </View>
               )}
@@ -60,21 +70,35 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 10,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+    gap: 12,
   },
-  num: { fontSize: 11, fontFamily: 'Inter_500Medium', width: 16, marginTop: 3 },
+  numBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  num: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   content: { flex: 1, gap: 6 },
-  text: { fontSize: 14, fontFamily: 'Inter_400Regular', lineHeight: 20 },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  text: { fontSize: 14, fontFamily: 'Inter_400Regular', lineHeight: 21 },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
   catBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    paddingHorizontal: 7, paddingVertical: 3, borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
   },
-  catLabel: { fontSize: 10, fontFamily: 'Inter_500Medium' },
+  catLabel: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
   photos: { flexDirection: 'row', gap: 4 },
-  photo: { width: 28, height: 28, borderRadius: 4, backgroundColor: '#eee' },
+  photo: { width: 26, height: 26, borderRadius: 4, backgroundColor: '#eee' },
   emptyLine: { height: 1, borderRadius: 1, marginTop: 12, opacity: 0.5 },
 });

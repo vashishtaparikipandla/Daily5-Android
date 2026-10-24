@@ -40,7 +40,7 @@ export default function SplashScreen() {
 
     (async () => {
       try {
-        if (!hasOnboarded) {
+        if (!hasOnboarded && !isAuthenticated) {
           router.replace('/onboarding');
           return;
         }

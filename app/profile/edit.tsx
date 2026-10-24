@@ -4,7 +4,7 @@ import {
   Platform, Alert, Image, ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { ArrowLeft, Camera } from 'phosphor-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -102,7 +102,7 @@ function EditProfileContent() {
           onPress={() => router.back()}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.foreground} />
+          <ArrowLeft size={22} color={colors.foreground} weight="bold" />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
           Edit Profile
@@ -135,7 +135,7 @@ function EditProfileContent() {
             )}
 
             <View style={[styles.cameraBadge, { backgroundColor: colors.foreground }]}>
-              <Ionicons name="camera" size={14} color={colors.background} />
+              <Camera size={14} color={colors.background} weight="fill" />
             </View>
           </TouchableOpacity>
 

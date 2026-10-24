@@ -1,9 +1,10 @@
 import React from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ScrollView, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { CATEGORIES } from '@/constants/categories';
+import { CategoryIcon } from './CategoryIcon';
 import type { CategoryId } from '@/lib/data';
+import * as Haptics from 'expo-haptics';
 
 interface Props {
   selected?: CategoryId;
@@ -20,18 +21,26 @@ export function CategoryPicker({ selected, onChange }: Props) {
         return (
           <TouchableOpacity
             key={cat.id}
-            onPress={() => onChange(cat.id)}
+            onPress={() => {
+              Haptics.selectionAsync();
+              onChange(cat.id);
+            }}
             activeOpacity={0.75}
             style={[
               styles.chip,
               {
                 backgroundColor: active ? cat.color + '22' : colors.muted,
-                borderColor: active ? cat.color : 'transparent',
-                borderWidth: active ? 1 : 0,
+                borderColor: active ? cat.color : colors.border,
+                borderWidth: 1,
               },
             ]}
           >
-            <Ionicons name={cat.icon as any} size={13} color={active ? cat.color : colors.mutedForeground} />
+            <CategoryIcon
+              id={cat.id}
+              size={14}
+              color={active ? cat.color : colors.mutedForeground}
+              weight={active ? 'bold' : 'regular'}
+            />
             <Text style={[styles.label, { color: active ? cat.color : colors.mutedForeground }]}>
               {cat.label}
             </Text>
@@ -44,10 +53,14 @@ export function CategoryPicker({ selected, onChange }: Props) {
 
 const styles = StyleSheet.create({
   scroll: { flexGrow: 0 },
-  row: { flexDirection: 'row', gap: 6, paddingVertical: 2 },
+  row: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
   chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    height: 32,
+    borderRadius: 8,
   },
   label: { fontSize: 12, fontFamily: 'Inter_500Medium' },
 });

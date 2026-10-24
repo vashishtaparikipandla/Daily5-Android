@@ -79,10 +79,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   async function load() {
     try {
-      const [userJson, onboarded, savedTheme, biometric, backup, driveConn, driveAcc] =
+      const [userJson, onboarded, deviceOnboarded, savedTheme, biometric, backup, driveConn, driveAcc] =
         await Promise.all([
           AsyncStorage.getItem(KEYS.AUTH_USER),
           AsyncStorage.getItem(KEYS.ONBOARDED),
+          AsyncStorage.getItem(KEYS.DEVICE_ONBOARDED),
           AsyncStorage.getItem(KEYS.THEME),
           AsyncStorage.getItem(KEYS.BIOMETRIC),
           AsyncStorage.getItem(KEYS.BACKUP_ENABLED),
@@ -93,7 +94,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const bioEnabled = biometric === 'true';
 
       if (userJson) setUser(JSON.parse(userJson) as AppUser);
-      if (onboarded === 'true') setHasOnboarded(true);
+      if (deviceOnboarded === 'true' || onboarded === 'true' || hasUser) {
+        setHasOnboarded(true);
+      }
       if (savedTheme) {
         const t = savedTheme as 'light' | 'dark' | 'system';
         setThemeState(t);
@@ -133,6 +136,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.multiSet([
       [KEYS.AUTH_USER, JSON.stringify(u)],
       [KEYS.ONBOARDED, 'true'],
+      [KEYS.DEVICE_ONBOARDED, 'true'],
     ]);
     setUser(u);
     setHasOnboarded(true);
@@ -224,7 +228,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function completeOnboarding() {
-    await AsyncStorage.setItem(KEYS.ONBOARDED, 'true');
+    await AsyncStorage.multiSet([
+      [KEYS.ONBOARDED, 'true'],
+      [KEYS.DEVICE_ONBOARDED, 'true'],
+    ]);
     setHasOnboarded(true);
   }
 

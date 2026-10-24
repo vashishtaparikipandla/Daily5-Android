@@ -32,6 +32,7 @@ interface DiaryContextValue {
   getOnThisDay: () => { book: Book; day: DayLog }[];
   totalMoments: number;
   totalDays: number;
+  streakCount: number;
   /** Manually trigger an encrypted backup. */
   performBackup: () => Promise<boolean>;
   /** Restore books from the local backup file. Returns true on success. */
@@ -362,6 +363,45 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
     0,
   );
 
+  const streakCount = React.useMemo(() => {
+    const datesWithEntries = new Set<string>();
+    for (const b of books) {
+      if (b.isSample) continue;
+      for (const d of b.days) {
+        if (d.entries.length > 0) {
+          datesWithEntries.add(d.date);
+        }
+      }
+    }
+
+    const today = todayStr();
+    const cur = new Date(today + 'T12:00:00');
+
+    let checkDate = cur;
+    if (!datesWithEntries.has(today)) {
+      const yesterday = new Date(cur);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+      if (!datesWithEntries.has(yStr)) {
+        return 0;
+      }
+      checkDate = yesterday;
+    }
+
+    let streak = 0;
+    const runner = new Date(checkDate);
+    while (true) {
+      const dStr = `${runner.getFullYear()}-${String(runner.getMonth() + 1).padStart(2, '0')}-${String(runner.getDate()).padStart(2, '0')}`;
+      if (datesWithEntries.has(dStr)) {
+        streak++;
+        runner.setDate(runner.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }, [books]);
+
   return (
     <DiaryContext.Provider value={{
       books, isLoading, refresh,
@@ -369,7 +409,7 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
       customBooks, sampleBooks, monthlyBooks,
       createCustomBook, deleteCustomBook, addDayToCustomBook, toggleHideDayInBook,
       upsertDayEntries, lockCurrentMonth, getOnThisDay,
-      totalMoments, totalDays,
+      totalMoments, totalDays, streakCount,
       performBackup: () => performBackup(),
       restoreFromBackup,
       restoreFromData,
