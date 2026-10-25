@@ -632,79 +632,95 @@ function PrivacyContent() {
         onRequestClose={() => setShowTransferModal(false)}
       >
         <View style={[styles.modalRoot, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-              Transfer to a New Phone
-            </Text>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border, paddingTop: insets.top + (Platform.OS === 'web' ? 20 : 14) }]}>
+            <View>
+              <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+                Switching Devices Guide
+              </Text>
+              <Text style={[styles.modalSub, { color: colors.mutedForeground }]}>
+                3 simple steps to transfer your memories securely
+              </Text>
+            </View>
             <TouchableOpacity onPress={() => setShowTransferModal(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <X size={24} color={colors.foreground} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
-            <View style={[styles.guideStep, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <ScrollView contentContainerStyle={[styles.modalContent, { paddingBottom: 24 }]} showsVerticalScrollIndicator={false}>
+            {/* Step 1 */}
+            <View style={[styles.guideStep, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
               <View style={[styles.stepNumberBadge, { backgroundColor: colors.primary }]}>
                 <Text style={styles.stepNumberText}>1</Text>
               </View>
               <View style={styles.stepInfo}>
-                <Text style={[styles.stepTitle, { color: colors.foreground }]}>Copy your Recovery Key</Text>
+                <Text style={[styles.stepTitle, { color: colors.foreground }]}>Copy your 64-char Recovery Key</Text>
                 <Text style={[styles.stepDesc, { color: colors.mutedForeground }]}>
-                  Your diary is protected by a 64-character encryption key known only to you. Go to Recovery Key and tap "Copy Key". Keep it safe.
+                  Your diary is protected by a 64-character encryption key unique to your device. Keep it safe in your notes or password manager.
                 </Text>
                 <TouchableOpacity
-                  style={[styles.stepActionBtn, { borderColor: colors.border }]}
+                  style={[styles.stepActionBtn, { backgroundColor: colors.accentLight, borderColor: colors.primary }]}
                   onPress={() => {
                     setShowTransferModal(false);
                     router.push('/profile/backup-key');
                   }}
+                  activeOpacity={0.8}
                 >
+                  <Key size={14} color={colors.primary} weight="bold" />
                   <Text style={[styles.stepActionText, { color: colors.primary }]}>Open Recovery Key →</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
-            <View style={[styles.guideStep, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {/* Step 2 */}
+            <View style={[styles.guideStep, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
               <View style={[styles.stepNumberBadge, { backgroundColor: colors.primary }]}>
                 <Text style={styles.stepNumberText}>2</Text>
               </View>
               <View style={styles.stepInfo}>
                 <Text style={[styles.stepTitle, { color: colors.foreground }]}>Export your Backup File (.d5b)</Text>
                 <Text style={[styles.stepDesc, { color: colors.mutedForeground }]}>
-                  Tap "Export backup file" to send the encrypted `.d5b` file to your new phone via Google Drive, Nearby Share, or email.
+                  Export your encrypted `.d5b` file and send it to your new device via Drive, Nearby Share, WhatsApp, or AirDrop.
                 </Text>
                 <TouchableOpacity
-                  style={[styles.stepActionBtn, { borderColor: colors.border }]}
+                  style={[styles.stepActionBtn, { backgroundColor: colors.accentLight, borderColor: colors.primary }]}
                   onPress={() => {
                     setShowTransferModal(false);
                     handleExport();
                   }}
+                  activeOpacity={0.8}
                 >
-                  <Text style={[styles.stepActionText, { color: colors.primary }]}>Export Backup Now →</Text>
+                  <ShareNetwork size={14} color={colors.primary} weight="bold" />
+                  <Text style={[styles.stepActionText, { color: colors.primary }]}>Export Backup File Now →</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
-            <View style={[styles.guideStep, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {/* Step 3 */}
+            <View style={[styles.guideStep, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
               <View style={[styles.stepNumberBadge, { backgroundColor: colors.primary }]}>
                 <Text style={styles.stepNumberText}>3</Text>
               </View>
               <View style={styles.stepInfo}>
-                <Text style={[styles.stepTitle, { color: colors.foreground }]}>Restore on your New Device</Text>
+                <Text style={[styles.stepTitle, { color: colors.foreground }]}>Restore on your New Phone</Text>
                 <Text style={[styles.stepDesc, { color: colors.mutedForeground }]}>
-                  Install Dear Day on your new device. In Data & Privacy:{"\n\n"}
-                  a) Tap "Recovery Key" → "Enter recovery key" and paste your 64-character key.{"\n\n"}
-                  b) Tap "Import backup file" and pick the `.d5b` file. All your daily moments and books will decrypt instantly.
+                  Install Dear Day on your new device, go to Profile → Data & Privacy:{"\n\n"}
+                  a) Tap "Recovery Key" → "Enter a recovery key" and paste your 64-char key.{"\n\n"}
+                  b) Tap "Import backup file" and pick the `.d5b` file. All memories and books will decrypt instantly.
                 </Text>
               </View>
             </View>
+          </ScrollView>
 
+          {/* Sticky Safe Footer */}
+          <View style={[styles.modalFooter, { borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 20) + 12 }]}>
             <TouchableOpacity
               style={[styles.modalCloseBtn, { backgroundColor: colors.primary }]}
               onPress={() => setShowTransferModal(false)}
+              activeOpacity={0.85}
             >
-              <Text style={[styles.modalCloseBtnText, { color: colors.primaryForeground }]}>Got it</Text>
+              <Text style={[styles.modalCloseBtnText, { color: colors.primaryForeground }]}>Understood & Close ✓</Text>
             </TouchableOpacity>
-          </ScrollView>
+          </View>
         </View>
       </Modal>
     </View>
@@ -757,7 +773,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   modalTitle: { fontSize: 20 },
-  modalContent: { padding: 20, gap: 16, paddingBottom: 40 },
+  modalSub: { fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  modalContent: { padding: 20, gap: 16 },
   guideStep: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -778,20 +795,32 @@ const styles = StyleSheet.create({
   stepTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
   stepDesc: { fontSize: 14, fontFamily: 'Inter_400Regular', lineHeight: 20 },
   stepActionBtn: {
-    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
     borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
     alignSelf: 'flex-start',
-    marginTop: 6,
+    marginTop: 8,
   },
   stepActionText: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  modalFooter: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   modalCloseBtn: {
     borderRadius: 12,
-    height: 48,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   modalCloseBtnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
 });

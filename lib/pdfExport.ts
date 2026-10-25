@@ -6,6 +6,7 @@
 
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system/legacy';
 import { monthLabel, formatFullDate, bookDisplayName } from './data';
 import { getCategoryById } from '@/constants/categories';
 import type { Book, DayLog, Entry } from './data';
@@ -44,33 +45,87 @@ function coverPalette(book: Book) {
   return COVER_PALETTES[hash];
 }
 
+// ─── Image & Asset preparation ───────────────────────────────────────────────
+
+async function toBase64DataUri(uri: string): Promise<string> {
+  if (!uri) return '';
+  if (uri.startsWith('data:') || uri.startsWith('http://') || uri.startsWith('https://')) {
+    return uri;
+  }
+  try {
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const lower = uri.toLowerCase();
+    const mime = lower.endsWith('.png')
+      ? 'image/png'
+      : lower.endsWith('.webp')
+      ? 'image/webp'
+      : 'image/jpeg';
+    return `data:${mime};base64,${base64}`;
+  } catch (err) {
+    console.warn('[PDF] Failed to convert local image to base64 data URI:', uri, err);
+    return uri;
+  }
+}
+
+async function prepareBookForExport(book: Book): Promise<Book> {
+  const newDays = await Promise.all(
+    book.days.map(async day => {
+      const newEntries = await Promise.all(
+        day.entries.map(async entry => {
+          if (!entry.photos || entry.photos.length === 0) return entry;
+          const newPhotos = await Promise.all(entry.photos.map(p => toBase64DataUri(p)));
+          return { ...entry, photos: newPhotos };
+        }),
+      );
+      const newExtras = await Promise.all(
+        day.extras.map(async extra => {
+          if (!extra.photos || extra.photos.length === 0) return extra;
+          const newPhotos = await Promise.all(extra.photos.map(p => toBase64DataUri(p)));
+          return { ...extra, photos: newPhotos };
+        }),
+      );
+      return { ...day, entries: newEntries, extras: newExtras };
+    }),
+  );
+  return { ...book, days: newDays };
+}
+
 // ─── HTML helpers ─────────────────────────────────────────────────────────────
 
 function entryHtml(entry: Entry, slot: number): string {
   const cat = getCategoryById(entry.category);
   const photos = entry.photos ?? [];
+  const photo = photos[0];
   return `
-    <div class="entry">
-      <div class="slot-num">${slot}</div>
-      <div class="entry-body">
-        ${entry.text
-          ? `<p class="entry-text">${escHtml(entry.text)}</p>`
-          : `<p class="entry-placeholder">—</p>`}
-        <span class="cat-chip" style="background:${cat.color}22;color:${cat.color}">
+    <div class="entry-card">
+      <div class="entry-media-wrap">
+        ${photo
+          ? `<img class="entry-photo" src="${photo}" />`
+          : `<div class="entry-empty-photo">
+               <span class="entry-empty-num">0${slot}</span>
+               <span class="entry-empty-label">${escHtml(cat.label)}</span>
+             </div>`
+        }
+        <div class="entry-cat-badge" style="background:${cat.color}22;border-color:${cat.color}66;color:${cat.color}">
           ${escHtml(cat.label)}
-        </span>
-        ${photos.length > 0
-          ? `<div class="photos">${photos.map(uri => `<img class="photo" src="${uri}" />`).join('')}</div>`
-          : ''}
+        </div>
       </div>
+      <div class="entry-meta">
+        <span class="entry-num">MOMENT 0${slot}</span>
+      </div>
+      <p class="entry-caption">${entry.text ? escHtml(entry.text) : '—'}</p>
     </div>`;
 }
 
 function emptySlotHtml(slot: number): string {
   return `
-    <div class="entry empty">
-      <div class="slot-num">${slot}</div>
-      <div class="entry-body"><p class="entry-placeholder">—</p></div>
+    <div class="entry-card empty">
+      <div class="entry-empty-content">
+        <span class="entry-empty-num">0${slot}</span>
+        <span class="entry-empty-label">Unrecorded Moment</span>
+      </div>
     </div>`;
 }
 
@@ -81,14 +136,27 @@ function dayPageHtml(day: DayLog, book: Book): string {
     <div class="page day-page">
       <div class="margin-rule"></div>
       <div class="day-content">
-        <h2 class="day-date">${formatFullDate(day.date)}</h2>
-        <div class="slots">
+        <div class="day-header">
+          <div class="day-header-left">
+            <span class="day-eyebrow">DEAR DAY ARCHIVAL RECORD</span>
+            <h2 class="day-date">${formatFullDate(day.date)}</h2>
+          </div>
+          <div class="day-header-right">
+            <span class="day-seal">❖</span>
+          </div>
+        </div>
+
+        <div class="slots-grid">
           ${slots.map((e, i) => e ? entryHtml(e, i + 1) : emptySlotHtml(i + 1)).join('')}
         </div>
-        ${hasExtras
-          ? `<p class="extras-note">+${day.extras.length} extra moment${day.extras.length > 1 ? 's' : ''} recorded this day</p>`
-          : ''}
-        ${book.locked ? `<div class="locked-badge">🔒 Locked</div>` : ''}
+
+        <div class="day-footer">
+          ${hasExtras
+            ? `<span class="extras-note">+${day.extras.length} extra moment${day.extras.length > 1 ? 's' : ''} in diary vault</span>`
+            : `<span class="day-footer-text">Archival Cotton Press · Dear Day</span>`
+          }
+          ${book.locked ? `<span class="locked-badge">🔒 Locked Volume</span>` : ''}
+        </div>
       </div>
     </div>`;
 }
@@ -243,116 +311,180 @@ function buildHtml(book: Book, includeColophon: boolean = true): string {
   .day-page {
     display: flex;
     flex-direction: row;
+    height: 297mm;
+    max-height: 297mm;
+    page-break-after: always;
   }
   .margin-rule {
-    width: 14mm;
+    width: 12mm;
     flex-shrink: 0;
     background: ${MARGIN};
-    opacity: 0.5;
+    opacity: 0.35;
   }
   .day-content {
     flex: 1;
-    padding: 16mm 16mm 10mm 12mm;
+    padding: 14mm 16mm 14mm 14mm;
     display: flex;
     flex-direction: column;
-    gap: 6mm;
+    height: 297mm;
+    box-sizing: border-box;
+    justify-content: space-between;
+  }
+  .day-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 0.75pt solid ${BORDER};
+    padding-bottom: 3.5mm;
+    margin-bottom: 4mm;
+  }
+  .day-eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: 7.5pt;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: ${PRIMARY};
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 1.5mm;
   }
   .day-date {
     font-family: 'Playfair Display', serif;
-    font-size: 22pt;
+    font-size: 20pt;
     color: ${INK};
-    border-bottom: 0.5pt solid ${BORDER};
-    padding-bottom: 4mm;
+    line-height: 1.1;
   }
-  .slots {
-    display: flex;
-    flex-direction: column;
-    gap: 4mm;
+  .day-seal {
+    font-size: 14pt;
+    color: ${PRIMARY};
+    opacity: 0.6;
   }
 
-  /* ── Entry ── */
-  .entry {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 5mm;
-    padding: 4mm 5mm;
-    border-radius: 4mm;
-    background: ${CARD};
-    border: 0.5pt solid ${BORDER};
-  }
-  .entry.empty {
-    background: transparent;
-    border-color: transparent;
-    opacity: 0.45;
-  }
-  .slot-num {
-    font-family: 'Inter', sans-serif;
-    font-size: 8pt;
-    font-weight: 700;
-    color: ${PRIMARY};
-    width: 5mm;
-    flex-shrink: 0;
-    padding-top: 1mm;
-    text-align: center;
-  }
-  .entry-body {
+  /* ── 2x2 Grid ── */
+  .slots-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 6mm;
     flex: 1;
+    margin-bottom: 3mm;
+  }
+  .entry-card {
     display: flex;
     flex-direction: column;
+    background: #FFFFFF;
+    border: 0.5pt solid ${BORDER};
+    border-radius: 4mm;
+    padding: 3.5mm;
+    gap: 2.5mm;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+  .entry-card.empty {
+    background: transparent;
+    border: 0.5pt dashed ${BORDER};
+    opacity: 0.35;
+    justify-content: center;
+    align-items: center;
+  }
+  .entry-media-wrap {
+    position: relative;
+    width: 100%;
+    height: 60mm;
+    border-radius: 2.5mm;
+    overflow: hidden;
+    background: #EBE5D8;
+    flex-shrink: 0;
+  }
+  .entry-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .entry-empty-photo {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2mm;
+    background: #F2EDE4;
+  }
+  .entry-empty-num {
+    font-family: 'Inter', sans-serif;
+    font-size: 13pt;
+    font-weight: 700;
+    color: #B5ADA4;
+  }
+  .entry-empty-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 10pt;
+    color: #8C827A;
+  }
+  .entry-cat-badge {
+    position: absolute;
+    top: 2.5mm;
+    left: 2.5mm;
+    font-family: 'Inter', sans-serif;
+    font-size: 6.5pt;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 1mm 2.5mm;
+    border-radius: 99px;
+    border: 0.5pt solid;
+    background: rgba(255,255,255,0.92);
+  }
+  .entry-meta {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .entry-num {
+    font-family: 'Inter', sans-serif;
+    font-size: 7pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: ${PRIMARY};
+  }
+  .entry-caption {
+    font-family: 'Inter', sans-serif;
+    font-size: 9pt;
+    line-height: 1.45;
+    color: ${INK};
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+  .entry-empty-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 2mm;
   }
-  .entry-text {
-    font-family: 'Inter', sans-serif;
-    font-size: 10pt;
-    color: ${INK};
-    line-height: 1.5;
+  .day-footer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 3mm;
+    border-top: 0.5pt solid ${BORDER};
   }
-  .entry-placeholder {
-    font-family: 'Inter', sans-serif;
-    font-size: 10pt;
-    color: ${MUTED};
-  }
-  .cat-chip {
-    display: inline-block;
+  .day-footer-text, .extras-note {
     font-family: 'Inter', sans-serif;
     font-size: 7.5pt;
-    font-weight: 500;
-    padding: 1mm 3mm;
-    border-radius: 99px;
-    align-self: flex-start;
-  }
-
-  /* ── Photos ── */
-  .photos {
-    display: flex;
-    flex-direction: row;
-    gap: 2mm;
-    flex-wrap: wrap;
-    margin-top: 1mm;
-  }
-  .photo {
-    width: 40mm;
-    height: 30mm;
-    object-fit: cover;
-    border-radius: 2mm;
-    border: 0.5pt solid ${BORDER};
-  }
-
-  /* ── Extras / locked ── */
-  .extras-note {
-    font-family: 'Inter', sans-serif;
-    font-size: 8.5pt;
     color: ${MUTED};
-    font-style: italic;
-    margin-top: auto;
+    letter-spacing: 0.05em;
   }
   .locked-badge {
     font-family: 'Inter', sans-serif;
-    font-size: 8pt;
+    font-size: 7.5pt;
     color: ${MUTED};
-    align-self: flex-end;
-    margin-top: auto;
   }
 
   /* ── Colophon ── */
@@ -437,27 +569,44 @@ ${pages}
 
 /**
  * Generate a PDF for the given book and return its local file URI.
- * The caller is responsible for any further sharing or upload.
- * expo-print writes to a cache temp file; it persists until the OS clears it.
+ * Resolves local image paths into base64 data URIs so that Android WebViews
+ * render images with 100% fidelity without security-sandbox failures.
  */
-export async function generateBookPdf(book: Book): Promise<string> {
-  const html = buildHtml(book);
+export async function generateBookPdf(book: Book, includeColophon: boolean = true): Promise<string> {
+  const preparedBook = await prepareBookForExport(book);
+  const html = buildHtml(preparedBook, includeColophon);
   const { uri } = await Print.printToFileAsync({ html, base64: false });
   return uri;
 }
 
 /**
  * Generate and share a PDF for the given book.
+ * Formats a clean, readable filename so WhatsApp and Android share targets
+ * present an archival document card with proper title and thumbnail.
  */
 export async function exportBookAsPdf(book: Book): Promise<void> {
-  const uri = await generateBookPdf(book);
+  const rawUri = await generateBookPdf(book, true);
 
-  // Share via native sheet (works on Android and iOS)
+  const safeName = (bookDisplayName(book) || 'Memories')
+    .replace(/[^a-zA-Z0-9_\-\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '_');
+  const targetUri = `${FileSystem.cacheDirectory}DearDay_${safeName}.pdf`;
+
+  try {
+    await FileSystem.copyAsync({ from: rawUri, to: targetUri });
+  } catch (e) {
+    // Fallback to rawUri if copy fails
+  }
+
+  const fileInfo = await FileSystem.getInfoAsync(targetUri);
+  const shareUri = fileInfo.exists ? targetUri : rawUri;
+
   const canShare = await Sharing.isAvailableAsync();
   if (canShare) {
-    await Sharing.shareAsync(uri, {
+    await Sharing.shareAsync(shareUri, {
       mimeType: 'application/pdf',
-      dialogTitle: `Export ${monthLabel(book.monthKey)}`,
+      dialogTitle: `Dear Day — ${bookDisplayName(book)}`,
       UTI: 'com.adobe.pdf',
     });
   }
@@ -472,11 +621,23 @@ export async function exportDayAsPdf(day: DayLog): Promise<void> {
     locked: false,
     days: [day],
   };
-  const html = buildHtml(dummyBook, false);
-  const { uri } = await Print.printToFileAsync({ html, base64: false });
+  const rawUri = await generateBookPdf(dummyBook, false);
+
+  const safeDate = day.date.replace(/[^0-9]/g, '_');
+  const targetUri = `${FileSystem.cacheDirectory}DearDay_${safeDate}.pdf`;
+
+  try {
+    await FileSystem.copyAsync({ from: rawUri, to: targetUri });
+  } catch (e) {
+    // Fallback to rawUri if copy fails
+  }
+
+  const fileInfo = await FileSystem.getInfoAsync(targetUri);
+  const shareUri = fileInfo.exists ? targetUri : rawUri;
+
   const canShare = await Sharing.isAvailableAsync();
   if (canShare) {
-    await Sharing.shareAsync(uri, {
+    await Sharing.shareAsync(shareUri, {
       mimeType: 'application/pdf',
       dialogTitle: `Dear Day — ${formatFullDate(day.date)}`,
       UTI: 'com.adobe.pdf',

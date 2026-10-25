@@ -20,6 +20,7 @@ import { useDiary } from '@/contexts/DiaryContext';
 import { CategoryPicker } from '@/components/CategoryPicker';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
 import { BrandLogoHorizontal, BrandLogoLoader } from '@/components/BrandLogo';
+import { getCategoryById } from '@/constants/categories';
 import { exportDayAsPdf } from '@/lib/pdfExport';
 import { randomPrompt } from '@/constants/placeholders';
 import { uid, todayStr, formatFullDate } from '@/lib/data';
@@ -465,7 +466,7 @@ function LogModalContent() {
                       <ImageIcon size={18} color={colors.foreground} weight="bold" />
                     )}
                     <Text style={[styles.actionRowText, { color: colors.foreground }]}>
-                      {sharingImage ? 'Generating Image...' : 'Share Day as Image (Instagram / Social)'}
+                      {sharingImage ? 'Generating Image...' : 'Share as an image'}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -530,7 +531,7 @@ function LogModalContent() {
         </View>
       </Modal>
 
-      {/* Off-screen Pristine Share Card with Official Dear Day Logo Imprint */}
+      {/* Off-screen Archival 2x2 Share Card with Official Dear Day Logo Imprint */}
       <View
         ref={shareCardRef}
         collapsable={false}
@@ -538,31 +539,51 @@ function LogModalContent() {
         style={styles.shareExportCard}
       >
         <View style={styles.shareBrandHeader}>
-          <BrandLogoHorizontal size={26} color="#E8593A" />
-          <Text style={styles.shareSubtitle}>Archival Memoir · 4 Moments</Text>
+          <BrandLogoHorizontal size={24} color="#E8593A" />
+          <Text style={styles.shareSubtitle}>ARCHIVAL MEMOIR · DAILY MOMENTS</Text>
         </View>
 
-        <Text style={styles.shareDateText}>{formatFullDate(targetDate)}</Text>
+        <View style={styles.shareDateBlock}>
+          <Text style={styles.shareDateText}>{formatFullDate(targetDate)}</Text>
+          <View style={styles.shareDateAccentLine} />
+        </View>
 
         <View style={styles.shareGrid}>
-          {slots.map((s, idx) => (
-            <View key={s.id} style={styles.shareCell}>
-              {s.photos[0] ? (
-                <Image source={{ uri: s.photos[0] }} style={styles.sharePhoto} resizeMode="cover" />
-              ) : (
-                <View style={styles.shareEmptyPhoto}>
-                  <Text style={styles.shareEmptyPhotoText}>0{idx + 1}</Text>
+          {slots.map((s, idx) => {
+            const cat = getCategoryById(s.category);
+            const hasPhoto = Boolean(s.photos && s.photos[0]);
+            const textContent = s.text.trim();
+            return (
+              <View key={s.id} style={styles.shareCell}>
+                <View style={styles.shareMediaWrap}>
+                  {hasPhoto ? (
+                    <Image source={{ uri: s.photos[0] }} style={styles.sharePhoto} resizeMode="cover" />
+                  ) : (
+                    <View style={styles.shareEmptyPhoto}>
+                      <Text style={styles.shareSlotBadge}>MOMENT 0{idx + 1}</Text>
+                      <Text style={styles.shareEmptyPhotoPrompt} numberOfLines={2}>
+                        {cat.label}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={[styles.shareCatTag, { backgroundColor: cat.color + '22', borderColor: cat.color + '55' }]}>
+                    <Text style={[styles.shareCatTagText, { color: cat.color }]}>
+                      {cat.label}
+                    </Text>
+                  </View>
                 </View>
-              )}
-              <Text style={styles.shareCaption} numberOfLines={2}>
-                {s.text.trim() || '—'}
-              </Text>
-            </View>
-          ))}
+                <View style={styles.shareTextWrap}>
+                  <Text style={styles.shareCaption} numberOfLines={3}>
+                    {textContent || 'A moment quietly observed.'}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
         </View>
 
         <View style={styles.shareFooter}>
-          <Text style={styles.shareFooterText}>Captured with Dear Day · app.daily5.android</Text>
+          <Text style={styles.shareFooterText}>Captured with Dear Day · Archival Edition</Text>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -1152,69 +1173,117 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
   },
 
-  /* Offscreen Share Card */
+  /* Offscreen Archival 2x2 Share Card */
   shareExportCard: {
     position: 'absolute',
     left: -9999,
-    width: 380,
-    backgroundColor: '#F7F4EF',
-    padding: 24,
+    width: 420,
+    backgroundColor: '#F9F6F0',
+    padding: 20,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E2DBD2',
-    gap: 16,
+    borderColor: '#E6DFD5',
+    gap: 14,
   },
   shareBrandHeader: {
     alignItems: 'center',
     gap: 4,
   },
   shareSubtitle: {
-    fontSize: 11,
-    fontFamily: 'Inter_500Medium',
-    color: '#7A746E',
-    letterSpacing: 0.5,
+    fontSize: 9.5,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#8C827A',
+    letterSpacing: 1.5,
+  },
+  shareDateBlock: {
+    alignItems: 'center',
+    gap: 6,
   },
   shareDateText: {
     fontSize: 18,
     fontFamily: 'PlayfairDisplay_700Bold',
     color: '#1C1916',
     textAlign: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2DBD2',
-    paddingBottom: 10,
+  },
+  shareDateAccentLine: {
+    width: 36,
+    height: 2,
+    backgroundColor: '#E8593A',
+    borderRadius: 1,
   },
   shareGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'space-between',
     gap: 12,
   },
   shareCell: {
-    width: 160,
-    gap: 6,
+    width: 184,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E8E2D8',
+    padding: 8,
+    gap: 8,
+  },
+  shareMediaWrap: {
+    position: 'relative',
+    width: '100%',
+    height: 130,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#EBE5D8',
   },
   sharePhoto: {
-    width: 160,
-    height: 120,
-    borderRadius: 8,
+    width: '100%',
+    height: '100%',
   },
   shareEmptyPhoto: {
-    width: 160,
-    height: 120,
-    borderRadius: 8,
-    backgroundColor: '#EBE5D8',
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 8,
+    gap: 4,
+    backgroundColor: '#F3EFE6',
   },
-  shareEmptyPhotoText: {
-    fontSize: 16,
+  shareSlotBadge: {
+    fontSize: 10,
     fontFamily: 'Inter_700Bold',
-    color: '#A8A199',
+    color: '#B5ADA4',
+    letterSpacing: 0.5,
+  },
+  shareEmptyPhotoPrompt: {
+    fontSize: 12,
+    fontFamily: 'PlayfairDisplay_700Bold',
+    color: '#8C827A',
+    textAlign: 'center',
+  },
+  shareCatTag: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 99,
+    borderWidth: 0.5,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+  },
+  shareCatTagText: {
+    fontSize: 8.5,
+    fontFamily: 'Inter_600SemiBold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  shareTextWrap: {
+    minHeight: 44,
+    justifyContent: 'center',
   },
   shareCaption: {
     fontSize: 11,
     fontFamily: 'Inter_400Regular',
     color: '#1C1916',
-    lineHeight: 15,
+    lineHeight: 15.5,
   },
   shareFooter: {
     alignItems: 'center',
@@ -1223,8 +1292,9 @@ const styles = StyleSheet.create({
     borderTopColor: '#E2DBD2',
   },
   shareFooterText: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontFamily: 'Inter_500Medium',
     color: '#8C827A',
+    letterSpacing: 0.4,
   },
 });

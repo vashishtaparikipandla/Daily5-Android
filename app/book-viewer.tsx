@@ -97,10 +97,21 @@ export function BookViewerContent() {
   const topPad = insets.top + (Platform.OS === 'web' ? 67 : 0);
   const botPad = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16) + 16;
 
+  const pageIndexRef = useRef(pageIndex);
+  pageIndexRef.current = pageIndex;
+  const pagesLengthRef = useRef(pages.length);
+  pagesLengthRef.current = pages.length;
+  const isAnimatingRef = useRef(isAnimating);
+  isAnimatingRef.current = isAnimating;
+  const turnDirectionRef = useRef(turnDirection);
+  turnDirectionRef.current = turnDirection;
+
   function flipNext() {
-    if (isAnimating || pageIndex >= pages.length - 1) return;
+    if (isAnimatingRef.current || pageIndexRef.current >= pagesLengthRef.current - 1) return;
     setIsAnimating(true);
+    isAnimatingRef.current = true;
     setTurnDirection('next');
+    turnDirectionRef.current = 'next';
     flipAnim.setValue(0);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Animated.timing(flipAnim, {
@@ -108,17 +119,21 @@ export function BookViewerContent() {
       duration: 320,
       useNativeDriver: true,
     }).start(() => {
-      setPageIndex(p => p + 1);
+      setPageIndex(p => Math.min(pagesLengthRef.current - 1, p + 1));
       flipAnim.setValue(0);
       setTurnDirection(null);
+      turnDirectionRef.current = null;
       setIsAnimating(false);
+      isAnimatingRef.current = false;
     });
   }
 
   function flipPrev() {
-    if (isAnimating || pageIndex <= 0) return;
+    if (isAnimatingRef.current || pageIndexRef.current <= 0) return;
     setIsAnimating(true);
+    isAnimatingRef.current = true;
     setTurnDirection('prev');
+    turnDirectionRef.current = 'prev';
     flipAnim.setValue(1);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Animated.timing(flipAnim, {
@@ -126,10 +141,12 @@ export function BookViewerContent() {
       duration: 320,
       useNativeDriver: true,
     }).start(() => {
-      setPageIndex(p => p - 1);
+      setPageIndex(p => Math.max(0, p - 1));
       flipAnim.setValue(0);
       setTurnDirection(null);
+      turnDirectionRef.current = null;
       setIsAnimating(false);
+      isAnimatingRef.current = false;
     });
   }
 
@@ -140,41 +157,53 @@ export function BookViewerContent() {
       },
       onPanResponderGrant: () => {},
       onPanResponderMove: (_, gestureState) => {
-        if (isAnimating) return;
-        if (gestureState.dx < 0 && pageIndex < pages.length - 1) {
-          if (turnDirection !== 'next') setTurnDirection('next');
+        if (isAnimatingRef.current) return;
+        if (gestureState.dx < 0 && pageIndexRef.current < pagesLengthRef.current - 1) {
+          if (turnDirectionRef.current !== 'next') {
+            setTurnDirection('next');
+            turnDirectionRef.current = 'next';
+          }
           const prog = Math.min(1, Math.max(0, -gestureState.dx / (BOOK_CARD_WIDTH * 0.75)));
           flipAnim.setValue(prog);
-        } else if (gestureState.dx > 0 && pageIndex > 0) {
-          if (turnDirection !== 'prev') setTurnDirection('prev');
+        } else if (gestureState.dx > 0 && pageIndexRef.current > 0) {
+          if (turnDirectionRef.current !== 'prev') {
+            setTurnDirection('prev');
+            turnDirectionRef.current = 'prev';
+          }
           const prog = Math.max(0, Math.min(1, 1 - gestureState.dx / (BOOK_CARD_WIDTH * 0.75)));
           flipAnim.setValue(prog);
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (isAnimating) return;
-        if (turnDirection === 'next') {
+        if (isAnimatingRef.current) return;
+        const currentDir = turnDirectionRef.current;
+        if (currentDir === 'next') {
           if (gestureState.dx < -50 || gestureState.vx < -0.3) {
             setIsAnimating(true);
+            isAnimatingRef.current = true;
             Animated.timing(flipAnim, {
               toValue: 1,
               duration: 240,
               useNativeDriver: true,
             }).start(() => {
-              setPageIndex(p => Math.min(pages.length - 1, p + 1));
+              setPageIndex(p => Math.min(pagesLengthRef.current - 1, p + 1));
               flipAnim.setValue(0);
               setTurnDirection(null);
+              turnDirectionRef.current = null;
               setIsAnimating(false);
+              isAnimatingRef.current = false;
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             });
           } else {
             Animated.spring(flipAnim, { toValue: 0, useNativeDriver: true }).start(() => {
               setTurnDirection(null);
+              turnDirectionRef.current = null;
             });
           }
-        } else if (turnDirection === 'prev') {
+        } else if (currentDir === 'prev') {
           if (gestureState.dx > 50 || gestureState.vx > 0.3) {
             setIsAnimating(true);
+            isAnimatingRef.current = true;
             Animated.timing(flipAnim, {
               toValue: 0,
               duration: 240,
@@ -183,14 +212,19 @@ export function BookViewerContent() {
               setPageIndex(p => Math.max(0, p - 1));
               flipAnim.setValue(0);
               setTurnDirection(null);
+              turnDirectionRef.current = null;
               setIsAnimating(false);
+              isAnimatingRef.current = false;
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             });
           } else {
             Animated.spring(flipAnim, { toValue: 1, useNativeDriver: true }).start(() => {
               setTurnDirection(null);
+              turnDirectionRef.current = null;
             });
           }
+        } else {
+          flipAnim.setValue(0);
         }
       },
     })

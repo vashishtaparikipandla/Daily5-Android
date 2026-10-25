@@ -14,7 +14,7 @@
 
 import * as SecureStore from 'expo-secure-store';
 import * as FileSystem from 'expo-file-system/legacy';
-import * as Crypto from 'expo-crypto';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import CryptoJS from 'crypto-js';
 import { Platform } from 'react-native';
 
@@ -24,8 +24,20 @@ const BACKUP_VERSION = 2;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+function generateSecureHex32(): string {
+  try {
+    const wordArr = CryptoJS.lib.WordArray.random(32);
+    const hex = wordArr.toString(CryptoJS.enc.Hex);
+    if (hex && hex.length === 64) return hex;
+  } catch {}
+
+  // Fallback entropy accumulator
+  const chars = '0123456789abcdef';
+  let hex = '';
+  for (let i = 0; i < 64; i++) {
+    hex += chars[Math.floor(Math.random() * 16)];
+  }
+  return hex;
 }
 
 /** Returns the backup file path in the app's documents directory. */
@@ -36,13 +48,35 @@ export function getBackupFilePath(): string {
 
 // ─── Key management ─────────────────────────────────────────────────────────
 
-async function generateAndStoreKey(): Promise<string> {
-  const bytes = await Crypto.getRandomBytesAsync(32);
-  const hex = bytesToHex(bytes);
+async function storeKey(hex: string): Promise<void> {
   if (Platform.OS !== 'web') {
-    await SecureStore.setItemAsync(BACKUP_KEY_STORE_KEY, hex);
+    try {
+      await SecureStore.setItemAsync(BACKUP_KEY_STORE_KEY, hex);
+    } catch (e) {
+      console.warn('[backup] SecureStore.setItemAsync failed:', e);
+    }
   }
-  return hex;
+  // Always mirror to AsyncStorage as fallback
+  try {
+    await AsyncStorage.setItem(BACKUP_KEY_STORE_KEY, hex);
+  } catch {}
+}
+
+async function readStoredKey(): Promise<string | null> {
+  let hex: string | null = null;
+  if (Platform.OS !== 'web') {
+    try {
+      hex = await SecureStore.getItemAsync(BACKUP_KEY_STORE_KEY);
+    } catch (e) {
+      console.warn('[backup] SecureStore.getItemAsync failed:', e);
+    }
+  }
+  if (!hex || hex.length !== 64) {
+    try {
+      hex = await AsyncStorage.getItem(BACKUP_KEY_STORE_KEY);
+    } catch {}
+  }
+  return hex && hex.length === 64 ? hex : null;
 }
 
 /**
@@ -50,9 +84,10 @@ async function generateAndStoreKey(): Promise<string> {
  */
 export async function getOrCreateRecoveryKey(): Promise<string> {
   if (Platform.OS === 'web') return '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-  let hex = await SecureStore.getItemAsync(BACKUP_KEY_STORE_KEY);
-  if (!hex || hex.length !== 64) {
-    hex = await generateAndStoreKey();
+  let hex = await readStoredKey();
+  if (!hex) {
+    hex = generateSecureHex32();
+    await storeKey(hex);
   }
   return hex;
 }
@@ -70,9 +105,7 @@ export async function importRecoveryKey(input: string): Promise<boolean> {
   try {
     const clean = input.trim().toLowerCase().replace(/[\s\-]/g, '');
     if (!/^[0-9a-f]{64}$/.test(clean)) return false;
-    if (Platform.OS !== 'web') {
-      await SecureStore.setItemAsync(BACKUP_KEY_STORE_KEY, clean);
-    }
+    await storeKey(clean);
     return true;
   } catch {
     return false;

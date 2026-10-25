@@ -184,8 +184,8 @@ export function DriveBackupProvider({ children }: { children: React.ReactNode })
 
       const payload: BackupPayload = JSON.parse(dlResult.data);
       const data = await decryptBackup(payload);
-      if (!data || !Array.isArray(data)) return false;
-      return restoreFromData(data as Book[]);
+      if (!data) return false;
+      return restoreFromData(data);
     } catch {
       return false;
     }
