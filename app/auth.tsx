@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 import { useApp } from '@/contexts/AppContext';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BrandLogoFull } from '@/components/BrandLogo';
 
 function GoogleIcon({ size = 20 }: { size?: number }) {
   return (
@@ -209,10 +210,10 @@ export default function AuthScreen() {
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad, paddingBottom: botPad }]}>
       {/* Brand Identity */}
       <View style={styles.logoArea}>
-        <Text style={[styles.appName, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-          Dear Day
+        <BrandLogoFull width={100} height={102} color={colors.primary} />
+        <Text style={[styles.tagline, { color: colors.mutedForeground, marginTop: 4 }]}>
+          your days, remembered
         </Text>
-        <Text style={[styles.tagline, { color: colors.mutedForeground }]}>your days, remembered</Text>
       </View>
 
       {/* Auth Actions */}

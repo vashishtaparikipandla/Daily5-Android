@@ -20,6 +20,7 @@ import { Lock, Fingerprint } from 'phosphor-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '@/contexts/AppContext';
 import { useColors } from '@/hooks/useColors';
+import { BrandLogoIcon, BrandLogoLoader } from '@/components/BrandLogo';
 
 function BiometricLock({ onUnlock }: { onUnlock: () => Promise<boolean> }) {
   const colors = useColors();
@@ -50,7 +51,7 @@ function BiometricLock({ onUnlock }: { onUnlock: () => Promise<boolean> }) {
     >
       <View style={styles.center}>
         <View style={[styles.icon, { backgroundColor: colors.accentLight }]}>
-          <Lock size={36} color={colors.primary} weight="fill" />
+          <BrandLogoIcon size={46} color={colors.primary} />
         </View>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
           Dear Day is locked
@@ -70,7 +71,7 @@ function BiometricLock({ onUnlock }: { onUnlock: () => Promise<boolean> }) {
         activeOpacity={0.85}
       >
         {loading ? (
-          <ActivityIndicator color={colors.primaryForeground} />
+          <BrandLogoLoader size={24} color={colors.primaryForeground} />
         ) : (
           <>
             <Fingerprint size={20} color={colors.primaryForeground} />

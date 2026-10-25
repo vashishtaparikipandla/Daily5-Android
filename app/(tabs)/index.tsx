@@ -15,6 +15,7 @@ import { TonightCard } from '@/components/TonightCard';
 import { EntrySlot } from '@/components/EntrySlot';
 import { FtuoTour } from '@/components/FtuoTour';
 import { StreakCalendarModal } from '@/components/StreakCalendarModal';
+import { BrandLogoIcon } from '@/components/BrandLogo';
 import { todayStr } from '@/lib/data';
 import { getUnreadNotificationCount } from '@/lib/notifications';
 
@@ -108,6 +109,10 @@ export default function TodayTab() {
         {/* Date header + Notification Bell */}
         <View style={styles.headerRow}>
           <View style={styles.dateHeader}>
+            <View style={styles.brandRow}>
+              <BrandLogoIcon size={16} color={colors.primary} />
+              <Text style={[styles.brandText, { color: colors.primary }]}>DEAR DAY</Text>
+            </View>
             <Text style={[styles.dayOfWeek, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
               {dayOfWeek}
             </Text>
@@ -410,6 +415,17 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Inter_600SemiBold',
     letterSpacing: 0.2,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  brandText: {
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 1.2,
   },
   dayOfWeek: { fontSize: 26, letterSpacing: 0.2 },
   fullDate: { fontSize: 16 },

@@ -28,6 +28,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { BrandLogoIcon } from '@/components/BrandLogo';
 
 const { width: SW } = Dimensions.get('window');
 
@@ -208,10 +209,7 @@ function BookVisual() {
         <View style={visualStyles.bookCover}>
           <Text style={visualStyles.bookMonth}>July 2026</Text>
           <View style={visualStyles.bookPattern}>
-            <Coffee size={18} color="rgba(255,255,255,0.9)" />
-            <Airplane size={18} color="rgba(255,255,255,0.9)" />
-            <Heart size={18} color="rgba(255,255,255,0.9)" />
-            <BookOpen size={18} color="rgba(255,255,255,0.9)" />
+            <BrandLogoIcon size={34} color="rgba(255,255,255,0.95)" />
           </View>
           <Text style={visualStyles.bookBrand}>DEAR DAY</Text>
         </View>

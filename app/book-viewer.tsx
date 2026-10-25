@@ -26,6 +26,7 @@ import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiary } from '@/contexts/DiaryContext';
 import { BookCover } from '@/components/BookCover';
+import { BrandLogoLoader } from '@/components/BrandLogo';
 import { VisualLayoutPicker } from '@/components/VisualLayoutPicker';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
 import { exportBookAsPdf } from '@/lib/pdfExport';
@@ -237,7 +238,7 @@ export function BookViewerContent() {
             style={styles.headerBtn}
           >
             {exporting ? (
-              <ActivityIndicator size="small" color={colors.primary} />
+              <BrandLogoLoader size={20} color={colors.primary} />
             ) : (
               <ShareNetwork size={22} color={colors.primary} />
             )}

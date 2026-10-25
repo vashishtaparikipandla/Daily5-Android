@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { BrandLogoLoader } from '@/components/BrandLogo';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive';
 export type ButtonSize = 'lg' | 'md' | 'sm';
@@ -120,7 +121,7 @@ export function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={textColor} />
+        <BrandLogoLoader size={size === 'sm' ? 18 : size === 'md' ? 22 : 24} color={textColor} />
       ) : (
         <View style={[styles.contentRow, { gap }]}>
           {iconPosition === 'left' && icon}

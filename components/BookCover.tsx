@@ -4,6 +4,7 @@ import { Lock } from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { bookDisplayName } from '@/lib/data';
 import type { Book, BookFontType } from '@/lib/data';
+import { BrandLogoIcon } from '@/components/BrandLogo';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -132,11 +133,12 @@ export function BookCover({ book, onPress, size = 'grid', customWidth }: Props) 
           />
         </View>
       ) : (
-        <View style={styles.motifRow}>
-          <View style={[styles.motifDot, { backgroundColor: palette.text }]} />
-          <View style={[styles.motifDot, { backgroundColor: palette.text }]} />
-          <View style={[styles.motifDot, { backgroundColor: palette.text }]} />
-          <View style={[styles.motifDot, { backgroundColor: palette.text }]} />
+        <View style={styles.motifWrap}>
+          <BrandLogoIcon
+            size={size === 'small' ? 22 : size === 'large' ? 34 : size === 'medium' ? 26 : 28}
+            color={palette.text}
+            style={{ opacity: 0.7 }}
+          />
         </View>
       )}
 
@@ -219,17 +221,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  motifRow: {
-    flexDirection: 'row',
-    gap: 6,
-    justifyContent: 'center',
+  motifWrap: {
     alignItems: 'center',
-    opacity: 0.35,
-  },
-  motifDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    justifyContent: 'center',
+    marginVertical: 4,
   },
   photoInsetWrap: {
     alignSelf: 'center',
