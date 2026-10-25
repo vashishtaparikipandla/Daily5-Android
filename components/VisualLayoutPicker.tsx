@@ -26,18 +26,6 @@ export const LAYOUT_DEFS: LayoutOptionDef[] = [
     description: '4 wide horizontal letterbox strips stacked elegantly.',
   },
   {
-    id: 'hero',
-    title: 'Hero Highlight',
-    tag: 'Editorial',
-    description: '1 dominant focal highlight on top + 3 vignettes below.',
-  },
-  {
-    id: 'magazine',
-    title: 'Editorial Spread',
-    tag: 'Alternating',
-    description: 'Alternating photo and quote story blocks across two rows.',
-  },
-  {
     id: 'polaroid',
     title: 'Polaroid Cards',
     tag: 'Scrapbook',
@@ -94,47 +82,6 @@ export function VisualLayoutPicker({
                 <View style={[styles.wfLine, { backgroundColor: textColor, width: '60%' }]} />
               </View>
             ))}
-          </View>
-        </View>
-      );
-    }
-
-    if (id === 'hero') {
-      return (
-        <View style={[styles.wireframeBox, { backgroundColor: paperBg }]}>
-          <View style={styles.wfHeroCol}>
-            <View style={[styles.wfHeroTop, { backgroundColor: boxColor }]} />
-            <View style={[styles.wfLine, { backgroundColor: textColor, width: '90%', marginVertical: 2 }]} />
-            <View style={styles.wfHeroMicroRow}>
-              {[0, 1, 2].map((i) => (
-                <View key={i} style={[styles.wfHeroMicroSquare, { backgroundColor: boxColor }]} />
-              ))}
-            </View>
-          </View>
-        </View>
-      );
-    }
-
-    if (id === 'magazine') {
-      return (
-        <View style={[styles.wireframeBox, { backgroundColor: paperBg }]}>
-          <View style={styles.wfMagCol}>
-            {/* Row 1: photo left, text right */}
-            <View style={styles.wfMagRow}>
-              <View style={[styles.wfMagPhoto, { backgroundColor: boxColor }]} />
-              <View style={styles.wfMagTextCol}>
-                <View style={[styles.wfLine, { backgroundColor: textColor, width: '100%' }]} />
-                <View style={[styles.wfLine, { backgroundColor: textColor, width: '70%' }]} />
-              </View>
-            </View>
-            {/* Row 2: text left, photo right */}
-            <View style={styles.wfMagRow}>
-              <View style={styles.wfMagTextCol}>
-                <View style={[styles.wfLine, { backgroundColor: textColor, width: '100%' }]} />
-                <View style={[styles.wfLine, { backgroundColor: textColor, width: '70%' }]} />
-              </View>
-              <View style={[styles.wfMagPhoto, { backgroundColor: boxColor }]} />
-            </View>
           </View>
         </View>
       );

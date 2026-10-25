@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, FlatList,
-  Dimensions, Platform, Alert, ActivityIndicator, Image,
-  Modal, ScrollView, Animated,
+  View, Text, StyleSheet, TouchableOpacity,
+  Dimensions, Platform, Alert, Image,
+  Modal, ScrollView, Animated, PanResponder,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
@@ -35,7 +35,7 @@ import type { Book, DayLog, Entry, PageLayoutType, BookFontType } from '@/lib/da
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PAGE_WIDTH = SCREEN_WIDTH;
-const BOOK_CARD_WIDTH = Math.min(SCREEN_WIDTH - 36, 380);
+const BOOK_CARD_WIDTH = Math.min(SCREEN_WIDTH - 24, 440);
 
 function resolveBodyFont(font?: BookFontType): { fontFamily: string } {
   if (font === 'sans') return { fontFamily: 'Inter_500Medium' };
@@ -63,9 +63,10 @@ export function BookViewerContent() {
   const insets = useSafeAreaInsets();
   const { getBook, lockCurrentMonth, toggleHideDayInBook, updateBookConfig } = useDiary();
 
-  const flatRef = useRef<any>(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
   const [pageIndex, setPageIndex] = useState(0);
+  const [turnDirection, setTurnDirection] = useState<'next' | 'prev' | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const flipAnim = useRef(new Animated.Value(0)).current;
   const [exporting, setExporting] = useState(false);
   const [showLayoutModal, setShowLayoutModal] = useState(false);
 
@@ -96,12 +97,104 @@ export function BookViewerContent() {
   const topPad = insets.top + (Platform.OS === 'web' ? 67 : 0);
   const botPad = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16) + 16;
 
-  function scrollToPage(index: number) {
-    if (index < 0 || index >= pages.length) return;
+  function flipNext() {
+    if (isAnimating || pageIndex >= pages.length - 1) return;
+    setIsAnimating(true);
+    setTurnDirection('next');
+    flipAnim.setValue(0);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setPageIndex(index);
-    flatRef.current?.scrollToIndex({ index, animated: true });
+    Animated.timing(flipAnim, {
+      toValue: 1,
+      duration: 320,
+      useNativeDriver: true,
+    }).start(() => {
+      setPageIndex(p => p + 1);
+      flipAnim.setValue(0);
+      setTurnDirection(null);
+      setIsAnimating(false);
+    });
   }
+
+  function flipPrev() {
+    if (isAnimating || pageIndex <= 0) return;
+    setIsAnimating(true);
+    setTurnDirection('prev');
+    flipAnim.setValue(1);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Animated.timing(flipAnim, {
+      toValue: 0,
+      duration: 320,
+      useNativeDriver: true,
+    }).start(() => {
+      setPageIndex(p => p - 1);
+      flipAnim.setValue(0);
+      setTurnDirection(null);
+      setIsAnimating(false);
+    });
+  }
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dx) > 16 && Math.abs(gestureState.dy) < 40;
+      },
+      onPanResponderGrant: () => {},
+      onPanResponderMove: (_, gestureState) => {
+        if (isAnimating) return;
+        if (gestureState.dx < 0 && pageIndex < pages.length - 1) {
+          if (turnDirection !== 'next') setTurnDirection('next');
+          const prog = Math.min(1, Math.max(0, -gestureState.dx / (BOOK_CARD_WIDTH * 0.75)));
+          flipAnim.setValue(prog);
+        } else if (gestureState.dx > 0 && pageIndex > 0) {
+          if (turnDirection !== 'prev') setTurnDirection('prev');
+          const prog = Math.max(0, Math.min(1, 1 - gestureState.dx / (BOOK_CARD_WIDTH * 0.75)));
+          flipAnim.setValue(prog);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (isAnimating) return;
+        if (turnDirection === 'next') {
+          if (gestureState.dx < -50 || gestureState.vx < -0.3) {
+            setIsAnimating(true);
+            Animated.timing(flipAnim, {
+              toValue: 1,
+              duration: 240,
+              useNativeDriver: true,
+            }).start(() => {
+              setPageIndex(p => Math.min(pages.length - 1, p + 1));
+              flipAnim.setValue(0);
+              setTurnDirection(null);
+              setIsAnimating(false);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            });
+          } else {
+            Animated.spring(flipAnim, { toValue: 0, useNativeDriver: true }).start(() => {
+              setTurnDirection(null);
+            });
+          }
+        } else if (turnDirection === 'prev') {
+          if (gestureState.dx > 50 || gestureState.vx > 0.3) {
+            setIsAnimating(true);
+            Animated.timing(flipAnim, {
+              toValue: 0,
+              duration: 240,
+              useNativeDriver: true,
+            }).start(() => {
+              setPageIndex(p => Math.max(0, p - 1));
+              flipAnim.setValue(0);
+              setTurnDirection(null);
+              setIsAnimating(false);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            });
+          } else {
+            Animated.spring(flipAnim, { toValue: 1, useNativeDriver: true }).start(() => {
+              setTurnDirection(null);
+            });
+          }
+        }
+      },
+    })
+  ).current;
 
   async function handleToggleHide(date: string) {
     Haptics.selectionAsync();
@@ -160,6 +253,190 @@ export function BookViewerContent() {
   const currentItem = pages[pageIndex];
   const currentDay = currentItem?.day;
   const isCurrentDayHidden = currentDay ? hiddenDays.includes(currentDay.date) : false;
+
+  const rotateY = flipAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '-180deg'],
+  });
+
+  const turningOpacity = flipAnim.interpolate({
+    inputRange: [0, 0.49, 0.5, 1],
+    outputRange: [1, 1, 0, 0],
+  });
+
+  const turningShadowOpacity = flipAnim.interpolate({
+    inputRange: [0, 0.35, 0.5, 1],
+    outputRange: [0, 0.5, 0, 0],
+  });
+
+  const underlyingShadowOpacity = flipAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0.35, 0.15, 0],
+  });
+
+  const turningItem =
+    turnDirection === 'prev'
+      ? pageIndex > 0
+        ? pages[pageIndex - 1]
+        : null
+      : pages[pageIndex];
+
+  const underlyingItem =
+    turnDirection === 'prev'
+      ? pages[pageIndex]
+      : pageIndex < pages.length - 1
+      ? pages[pageIndex + 1]
+      : null;
+
+  function renderPage(item: PageItem, isTop: boolean) {
+    if (item.type === 'cover') {
+      const coverBg = book!.coverColor || '#231F1C';
+      return (
+        <View style={[styles.bookCard, styles.hardboundCard, { backgroundColor: coverBg }]}>
+          {/* Thick Hardbound Left Spine (34dp) */}
+          <View style={styles.hardboundSpine}>
+            <View style={styles.spineRibbonStitch} />
+            <View style={styles.spineGoldFoilStripe} />
+          </View>
+
+          {/* Brass Corner Accents */}
+          <View style={[styles.cornerBrass, styles.cornerTopRight]} />
+          <View style={[styles.cornerBrass, styles.cornerBottomRight]} />
+
+          {/* Gold Foil Embossed Cover Frame & Inset */}
+          <View style={styles.hardboundInner}>
+            {/* Series Header with Rules */}
+            <View style={styles.hardboundSeriesRow}>
+              <View style={styles.goldSeriesRule} />
+              <Text style={styles.hardboundSeriesLabel}>DEAR DAY ARCHIVAL MEMOIR</Text>
+              <View style={styles.goldSeriesRule} />
+            </View>
+
+            {/* Debossed Gold Title & Subtitle */}
+            <View style={styles.hardboundTitleCenter}>
+              <Text style={styles.hardboundVolumeTag}>
+                VOL. {book!.monthKey.replace('-', ' • ')}
+              </Text>
+              <Text
+                style={[styles.hardboundTitleText, { fontFamily: 'PlayfairDisplay_700Bold' }]}
+                numberOfLines={3}
+              >
+                {bookDisplayName(book!)}
+              </Text>
+              {book!.description ? (
+                <Text style={styles.hardboundDescText} numberOfLines={2}>
+                  “{book!.description}”
+                </Text>
+              ) : null}
+            </View>
+
+            {/* Archival Seal & Tactile Turn CTA */}
+            <View style={styles.hardboundFooter}>
+              <View style={styles.archivalSealBox}>
+                <Sparkle size={13} color="#D4AF37" weight="fill" />
+                <Text style={styles.archivalSealText}>
+                  ARCHIVAL FIRST EDITION • COTTON PAPER
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.openVolumeBtn}
+                onPress={flipNext}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.openVolumeBtnText}>Open Volume</Text>
+                <CaretRight size={14} color="#F7F4EF" weight="bold" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Silk Ribbon Bookmark */}
+            <View style={[styles.silkRibbon, { backgroundColor: colors.primary }]} />
+          </View>
+        </View>
+      );
+    }
+
+    const day = item.day!;
+    const isHidden = hiddenDays.includes(day.date);
+    const slots = Array.from({ length: 4 }, (_, i) => day.entries[i] ?? null);
+    const hasEmptySlots = day.entries.length < 4;
+
+    const layoutToUse = selectedLayout || day.layout || 'quad';
+    const headingFont = resolveHeadingFont(selectedFont);
+    const bodyFont = resolveBodyFont(selectedFont);
+
+    const openEditor = () => {
+      router.push({ pathname: '/log-modal', params: { date: day.date } });
+    };
+
+    return (
+      <View
+        style={[
+          styles.bookCard,
+          styles.paperPage,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.borderStrong,
+            opacity: isHidden ? 0.6 : 1,
+          },
+        ]}
+      >
+        {/* Book Spine gutter shadow on left */}
+        <View style={styles.spineGutter} />
+
+        {/* Left red notebook margin rule */}
+        <View style={[styles.marginRule, { backgroundColor: colors.marginLine || '#E8593A44' }]} />
+
+        {/* Page Content */}
+        <View style={styles.dayInner}>
+          {/* Clean Archival Date Heading (No in-page layout picker) */}
+          <View style={styles.dayHeader}>
+            <Text style={[styles.dayDate, { color: colors.foreground }, headingFont]}>
+              {formatFullDate(day.date)}
+            </Text>
+            <Text style={[styles.dayPageNum, { color: colors.tertiary }]}>
+              p. {item.index}
+            </Text>
+          </View>
+
+          {/* Hidden Watermark */}
+          {isHidden && (
+            <View style={styles.hiddenWatermark}>
+              <EyeSlash size={16} color={colors.destructive} />
+              <Text style={[styles.hiddenWatermarkText, { color: colors.destructive }]}>
+                Page hidden from print & export
+              </Text>
+            </View>
+          )}
+
+          {/* 3 Core Photo-First Layout Engines */}
+          <View style={styles.layoutEngineContainer}>
+            {layoutToUse === 'strips' ? (
+              renderStripsLayout(slots, colors, bodyFont, openEditor)
+            ) : layoutToUse === 'polaroid' ? (
+              renderPolaroidLayout(slots, colors, bodyFont, openEditor)
+            ) : (
+              renderQuadLayout(slots, colors, bodyFont, openEditor)
+            )}
+          </View>
+
+          {/* Fill empty moments CTA */}
+          {hasEmptySlots && !book!.locked && (
+            <TouchableOpacity
+              style={[styles.fillEmptyBtn, { borderColor: colors.border, backgroundColor: colors.accentLight }]}
+              onPress={openEditor}
+              activeOpacity={0.8}
+            >
+              <PencilSimple size={14} color={colors.primary} />
+              <Text style={[styles.fillEmptyBtnText, { color: colors.primary }]}>
+                Add remaining memories ({4 - day.entries.length} left)
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -260,278 +537,57 @@ export function BookViewerContent() {
         </View>
       </View>
 
-      {/* 3D Animated Book Spread FlatList with Authentic Page Turn & Roll */}
-      <Animated.FlatList
-        ref={flatRef}
-        data={pages}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        keyExtractor={(_, i) => String(i)}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: true }
-        )}
-        scrollEventThrottle={16}
-        onMomentumScrollEnd={(e) => {
-          const idx = Math.round(e.nativeEvent.contentOffset.x / PAGE_WIDTH);
-          if (idx !== pageIndex) {
-            setPageIndex(idx);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          }
-        }}
-        renderItem={({ item, index }) => {
-          // 3D Perspective Roll & Spine Anchor Interpolation
-          const inputRange = [(index - 1) * PAGE_WIDTH, index * PAGE_WIDTH, (index + 1) * PAGE_WIDTH];
-
-          const rotateY = scrollX.interpolate({
-            inputRange,
-            outputRange: ['45deg', '0deg', '-55deg'],
-            extrapolate: 'clamp',
-          });
-
-          const scale = scrollX.interpolate({
-            inputRange,
-            outputRange: [0.93, 1, 0.93],
-            extrapolate: 'clamp',
-          });
-
-          const shadowOpacity = scrollX.interpolate({
-            inputRange,
-            outputRange: [0.35, 0, 0.55],
-            extrapolate: 'clamp',
-          });
-
-          if (item.type === 'cover') {
-            const coverBg = book.coverColor || '#231F1C';
-            return (
-              <Animated.View
-                style={[
-                  styles.pageSlide,
-                  {
-                    width: PAGE_WIDTH,
-                    transform: [
-                      { perspective: 1200 },
-                      { scale },
-                      { rotateY },
-                    ],
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.bookCard,
-                    styles.hardboundCard,
-                    { backgroundColor: coverBg },
-                  ]}
-                >
-                  {/* Thick Hardbound Left Spine (34dp) */}
-                  <View style={styles.hardboundSpine}>
-                    <View style={styles.spineRibbonStitch} />
-                    <View style={styles.spineGoldFoilStripe} />
-                  </View>
-
-                  {/* Brass Corner Accents */}
-                  <View style={[styles.cornerBrass, styles.cornerTopRight]} />
-                  <View style={[styles.cornerBrass, styles.cornerBottomRight]} />
-
-                  {/* Gold Foil Embossed Cover Frame & Inset */}
-                  <View style={styles.hardboundInner}>
-                    {/* Series Header with Rules */}
-                    <View style={styles.hardboundSeriesRow}>
-                      <View style={styles.goldSeriesRule} />
-                      <Text style={styles.hardboundSeriesLabel}>DAILY FIVE ARCHIVAL MEMOIR</Text>
-                      <View style={styles.goldSeriesRule} />
-                    </View>
-
-                    {/* Debossed Gold Title & Subtitle */}
-                    <View style={styles.hardboundTitleCenter}>
-                      <Text style={styles.hardboundVolumeTag}>
-                        VOL. {book.monthKey.replace('-', ' • ')}
-                      </Text>
-                      <Text
-                        style={[styles.hardboundTitleText, { fontFamily: 'PlayfairDisplay_700Bold' }]}
-                        numberOfLines={3}
-                      >
-                        {bookDisplayName(book)}
-                      </Text>
-                      {book.description ? (
-                        <Text style={styles.hardboundDescText} numberOfLines={2}>
-                          “{book.description}”
-                        </Text>
-                      ) : null}
-                    </View>
-
-                    {/* Archival Seal & Tactile Turn CTA */}
-                    <View style={styles.hardboundFooter}>
-                      <View style={styles.archivalSealBox}>
-                        <Sparkle size={13} color="#D4AF37" weight="fill" />
-                        <Text style={styles.archivalSealText}>
-                          ARCHIVAL FIRST EDITION • COTTON PAPER
-                        </Text>
-                      </View>
-
-                      <TouchableOpacity
-                        style={styles.openVolumeBtn}
-                        onPress={() => scrollToPage(1)}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={styles.openVolumeBtnText}>Open Volume</Text>
-                        <CaretRight size={14} color="#F7F4EF" weight="bold" />
-                      </TouchableOpacity>
-                    </View>
-
-                    {/* Silk Ribbon Bookmark hanging from bottom */}
-                    <View style={[styles.silkRibbon, { backgroundColor: colors.primary }]} />
-                  </View>
-                </View>
-
-                {/* Dynamic Spine Turn Shadow Overlay */}
-                <Animated.View
-                  pointerEvents="none"
-                  style={[
-                    StyleSheet.absoluteFillObject,
-                    {
-                      backgroundColor: '#000',
-                      opacity: shadowOpacity,
-                      borderRadius: 20,
-                      marginVertical: 14,
-                      marginHorizontal: (PAGE_WIDTH - BOOK_CARD_WIDTH) / 2,
-                    },
-                  ]}
-                />
-              </Animated.View>
-            );
-          }
-
-          const day = item.day!;
-          const isHidden = hiddenDays.includes(day.date);
-          const slots = Array.from({ length: 4 }, (_, i) => day.entries[i] ?? null);
-          const hasEmptySlots = day.entries.length < 4;
-
-          // selectedLayout takes active precedence for live preview
-          const layoutToUse = selectedLayout || day.layout || 'quad';
-          const headingFont = resolveHeadingFont(selectedFont);
-          const bodyFont = resolveBodyFont(selectedFont);
-
-          const openEditor = () => {
-            router.push({ pathname: '/log-modal', params: { date: day.date } });
-          };
-
-          return (
+      {/* Authentic StPageFlip 3D Stacked Book Viewport */}
+      <View style={styles.bookStage} {...panResponder.panHandlers}>
+        {/* Underlying Page (already situated beneath) */}
+        {underlyingItem && (
+          <View style={styles.stackedPageUnderneath}>
+            {renderPage(underlyingItem, false)}
             <Animated.View
+              pointerEvents="none"
               style={[
-                styles.pageSlide,
-                {
-                  width: PAGE_WIDTH,
-                  transform: [
-                    { perspective: 1200 },
-                    { scale },
-                    { rotateY },
-                  ],
-                },
+                styles.underlyingPageShadow,
+                { opacity: underlyingShadowOpacity },
               ]}
-            >
-              <View
-                style={[
-                  styles.bookCard,
-                  styles.paperPage,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.borderStrong,
-                    opacity: isHidden ? 0.6 : 1,
-                  },
-                ]}
-              >
-                {/* Book Spine gutter shadow on left */}
-                <View style={styles.spineGutter} />
+            />
+          </View>
+        )}
 
-                {/* Left red notebook margin rule */}
-                <View style={[styles.marginRule, { backgroundColor: colors.marginLine || '#E8593A44' }]} />
+        {/* Flipping Top Page with 3D Spine-Anchored RotateY */}
+        {turningItem && (
+          <Animated.View
+            style={[
+              styles.stackedPageTop,
+              {
+                opacity: turningOpacity,
+                transform: [
+                  { perspective: 1400 },
+                  { translateX: -BOOK_CARD_WIDTH / 2 },
+                  { rotateY },
+                  { translateX: BOOK_CARD_WIDTH / 2 },
+                ],
+              },
+            ]}
+          >
+            {renderPage(turningItem, true)}
 
-                {/* Page Content */}
-                <View style={styles.dayInner}>
-                  {/* Date Heading */}
-                  <View style={styles.dayHeader}>
-                    <View>
-                      <Text style={[styles.dayDate, { color: colors.foreground }, headingFont]}>
-                        {formatFullDate(day.date)}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.layoutPickerPill}
-                        onPress={() => setShowLayoutModal(true)}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Sparkle size={11} color={colors.primary} weight="fill" />
-                        <Text style={[styles.layoutPickerPillText, { color: colors.primary }]}>
-                          Layout: {layoutToUse.toUpperCase()} ▾
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                    <Text style={[styles.dayPageNum, { color: colors.tertiary }]}>
-                      p. {item.index}
-                    </Text>
-                  </View>
-
-                  {/* Hidden Watermark */}
-                  {isHidden && (
-                    <View style={styles.hiddenWatermark}>
-                      <EyeSlash size={16} color={colors.destructive} />
-                      <Text style={[styles.hiddenWatermarkText, { color: colors.destructive }]}>
-                        Page hidden from print & export
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* 5 Distinct Photo-First Layout Engines */}
-                  <View style={styles.layoutEngineContainer}>
-                    {layoutToUse === 'quad' && renderQuadLayout(slots, colors, bodyFont, openEditor)}
-                    {layoutToUse === 'strips' && renderStripsLayout(slots, colors, bodyFont, openEditor)}
-                    {layoutToUse === 'hero' && renderHeroLayout(slots, colors, bodyFont, openEditor)}
-                    {layoutToUse === 'magazine' && renderMagazineLayout(slots, colors, bodyFont, openEditor)}
-                    {layoutToUse === 'polaroid' && renderPolaroidLayout(slots, colors, bodyFont, openEditor)}
-                  </View>
-
-                  {/* Fill empty moments CTA if day has room */}
-                  {hasEmptySlots && !book.locked && (
-                    <TouchableOpacity
-                      style={[styles.fillEmptyBtn, { borderColor: colors.border, backgroundColor: colors.accentLight }]}
-                      onPress={openEditor}
-                      activeOpacity={0.8}
-                    >
-                      <PencilSimple size={14} color={colors.primary} />
-                      <Text style={[styles.fillEmptyBtnText, { color: colors.primary }]}>
-                        Add remaining memories ({4 - day.entries.length} left)
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-
-              {/* Dynamic Spine Turn Shadow Overlay */}
-              <Animated.View
-                pointerEvents="none"
-                style={[
-                  StyleSheet.absoluteFillObject,
-                  {
-                    backgroundColor: '#000',
-                    opacity: shadowOpacity,
-                    borderRadius: 20,
-                    marginVertical: 14,
-                    marginHorizontal: (PAGE_WIDTH - BOOK_CARD_WIDTH) / 2,
-                  },
-                ]}
-              />
-            </Animated.View>
-          );
-        }}
-      />
+            {/* Dynamic Spine / Paper Peel Gradient Shadow */}
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.turningPageShadow,
+                { opacity: turningShadowOpacity },
+              ]}
+            />
+          </Animated.View>
+        )}
+      </View>
 
       {/* Tactile Book Footer with Page Flip Controls */}
       <View style={[styles.footer, { paddingBottom: botPad, borderTopColor: colors.border }]}>
         <TouchableOpacity
           style={[styles.navPageBtn, { opacity: pageIndex === 0 ? 0.3 : 1 }]}
-          onPress={() => scrollToPage(pageIndex - 1)}
+          onPress={flipPrev}
           disabled={pageIndex === 0}
           accessibilityRole="button"
           accessibilityLabel="Previous page"
@@ -549,7 +605,7 @@ export function BookViewerContent() {
 
         <TouchableOpacity
           style={[styles.navPageBtn, { opacity: pageIndex >= pages.length - 1 ? 0.3 : 1 }]}
-          onPress={() => scrollToPage(pageIndex + 1)}
+          onPress={flipNext}
           disabled={pageIndex >= pages.length - 1}
           accessibilityRole="button"
           accessibilityLabel="Next page"
@@ -757,102 +813,6 @@ function renderStripsLayout(slots: (Entry | null)[], colors: any, bodyFont: any,
   );
 }
 
-function renderHeroLayout(slots: (Entry | null)[], colors: any, bodyFont: any, onOpenLog: () => void) {
-  const hero = slots[0];
-  const subs = slots.slice(1);
-  const heroPhoto = hero?.photos?.[0];
-
-  return (
-    <View style={styles.heroContainer}>
-      <TouchableOpacity style={styles.heroBox} onPress={onOpenLog} activeOpacity={0.85}>
-        <View style={[styles.heroPhotoWrap, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-          {heroPhoto ? (
-            <Image source={{ uri: heroPhoto }} style={styles.heroPhoto} resizeMode="cover" />
-          ) : (
-            <View style={styles.emptyPhotoBox}>
-              <Camera size={22} color={colors.tertiary} />
-              <Text style={[styles.emptyPhotoText, { color: colors.tertiary }]}>+ Hero Photo</Text>
-            </View>
-          )}
-          <View style={styles.heroBadge}>
-            <Text style={styles.heroBadgeText}>★ HERO MOMENT</Text>
-          </View>
-        </View>
-        <Text style={[styles.heroCaption, bodyFont, { color: colors.foreground }]} numberOfLines={2}>
-          {hero?.text || 'Tap to record the highlight of today'}
-        </Text>
-      </TouchableOpacity>
-
-      <View style={styles.microRow}>
-        {subs.map((entry, idx) => {
-          const photo = entry?.photos?.[0];
-          return (
-            <TouchableOpacity key={idx} style={styles.microCell} onPress={onOpenLog} activeOpacity={0.85}>
-              <View style={[styles.microPhotoWrap, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                {photo ? (
-                  <Image source={{ uri: photo }} style={styles.microPhoto} resizeMode="cover" />
-                ) : (
-                  <View style={styles.emptyPhotoBoxMicro}>
-                    <Camera size={14} color={colors.tertiary} />
-                  </View>
-                )}
-              </View>
-              <Text style={[styles.microCaption, bodyFont, { color: colors.foreground }]} numberOfLines={2}>
-                {entry?.text || `Moment 0${idx + 2}`}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
-function renderMagazineLayout(slots: (Entry | null)[], colors: any, bodyFont: any, onOpenLog: () => void) {
-  const m1 = slots[0];
-  const m2 = slots[1];
-
-  return (
-    <View style={styles.magazineContainer}>
-      <View style={styles.magazineRow}>
-        <TouchableOpacity style={styles.magazinePhotoCol} onPress={onOpenLog} activeOpacity={0.85}>
-          {m1?.photos?.[0] ? (
-            <Image source={{ uri: m1.photos[0] }} style={styles.magazinePhoto} resizeMode="cover" />
-          ) : (
-            <View style={[styles.emptyPhotoBox, { backgroundColor: colors.muted }]}>
-              <Camera size={18} color={colors.tertiary} />
-            </View>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.magazineTextCol} onPress={onOpenLog} activeOpacity={0.85}>
-          <Text style={[styles.magazineTag, { color: colors.primary }]}>{m1?.category?.toUpperCase() || '01 · MOMENT'}</Text>
-          <Text style={[styles.magazineStory, bodyFont, { color: colors.foreground }]} numberOfLines={3}>
-            {m1?.text || 'Tap to record memory...'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.magazineRow}>
-        <TouchableOpacity style={styles.magazineTextCol} onPress={onOpenLog} activeOpacity={0.85}>
-          <Text style={[styles.magazineTag, { color: colors.primary }]}>{m2?.category?.toUpperCase() || '02 · MOMENT'}</Text>
-          <Text style={[styles.magazineStory, bodyFont, { color: colors.foreground }]} numberOfLines={3}>
-            {m2?.text || 'Tap to record memory...'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.magazinePhotoCol} onPress={onOpenLog} activeOpacity={0.85}>
-          {m2?.photos?.[0] ? (
-            <Image source={{ uri: m2.photos[0] }} style={styles.magazinePhoto} resizeMode="cover" />
-          ) : (
-            <View style={[styles.emptyPhotoBox, { backgroundColor: colors.muted }]}>
-              <Camera size={18} color={colors.tertiary} />
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
 function renderPolaroidLayout(slots: (Entry | null)[], colors: any, bodyFont: any, onOpenLog: () => void) {
   return (
     <View style={styles.polaroidGrid}>
@@ -941,7 +901,42 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
   },
 
-  /* Page Slide & Authentic Book Spread */
+  /* Authentic StPageFlip Stage & Stacked Page Turn */
+  bookStage: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    position: 'relative',
+  },
+  stackedPageUnderneath: {
+    position: 'absolute',
+    width: BOOK_CARD_WIDTH,
+    height: '96%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  stackedPageTop: {
+    width: BOOK_CARD_WIDTH,
+    height: '96%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+    backfaceVisibility: 'hidden',
+  },
+  underlyingPageShadow: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#000000',
+    borderRadius: 20,
+    zIndex: 10,
+  },
+  turningPageShadow: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#000000',
+    borderRadius: 20,
+    zIndex: 10,
+  },
   pageSlide: {
     flex: 1,
     alignItems: 'center',
@@ -950,7 +945,7 @@ const styles = StyleSheet.create({
   },
   bookCard: {
     width: BOOK_CARD_WIDTH,
-    height: '96%',
+    height: '100%',
     borderRadius: 20,
     borderWidth: 1.5,
     overflow: 'hidden',

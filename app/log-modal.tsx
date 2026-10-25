@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, Platform, Alert, KeyboardAvoidingView, Image,
@@ -8,18 +8,22 @@ import { router, useLocalSearchParams } from 'expo-router';
 import {
   X, Lock, WarningCircle, BookmarkSimple, CheckCircle, BookOpen,
   Camera, TrashSimple, Sparkle, Check, DotsThreeVertical, Star,
-  ShareNetwork, Export,
+  ShareNetwork, Export, Image as ImageIcon,
 } from 'phosphor-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiary } from '@/contexts/DiaryContext';
 import { CategoryPicker } from '@/components/CategoryPicker';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
+import { BrandLogoHorizontal, BrandLogoLoader } from '@/components/BrandLogo';
+import { exportDayAsPdf } from '@/lib/pdfExport';
 import { randomPrompt } from '@/constants/placeholders';
 import { uid, todayStr, formatFullDate } from '@/lib/data';
-import type { Entry, CategoryId, PageLayoutType } from '@/lib/data';
+import type { Entry, CategoryId, PageLayoutType, DayLog } from '@/lib/data';
 
 const MAX_CHARS = 120;
 const COUNTER_THRESHOLD = Math.floor(MAX_CHARS * 0.75);
@@ -49,7 +53,7 @@ function LogModalContent() {
   const { date: paramDate } = useLocalSearchParams<{ date?: string }>();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { getDayLog, upsertDayEntries, customBooks, createCustomBook } = useDiary();
+  const { getDayLog, upsertDayEntries, toggleFavoriteDay, customBooks, createCustomBook } = useDiary();
 
   const targetDate = paramDate || todayStr();
   const today = todayStr();
@@ -75,7 +79,10 @@ function LogModalContent() {
   const [saving, setSaving] = useState(false);
   const [lockedError, setLockedError] = useState(false);
   const [showMoreModal, setShowMoreModal] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(() => !!existingLog?.isFavorite);
+  const [sharingImage, setSharingImage] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const shareCardRef = useRef<View>(null);
 
   function updateSlot(index: number, updates: Partial<SlotState>) {
     if (slots[index].isImmutable && updates.text !== undefined) {
@@ -148,7 +155,7 @@ function LogModalContent() {
     }
 
     setSaving(true);
-    const success = await upsertDayEntries(targetDate, entries, [], selectedBooks, selectedLayout);
+    const success = await upsertDayEntries(targetDate, entries, [], selectedBooks, selectedLayout, isFavorite);
 
     if (!success) {
       setSaving(false);
@@ -160,6 +167,65 @@ function LogModalContent() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSaving(false);
     router.dismiss();
+  }
+
+  async function handleShareDayImage() {
+    Haptics.selectionAsync();
+    setSharingImage(true);
+    try {
+      if (!shareCardRef.current) {
+        Alert.alert('Error', 'Could not access day card view.');
+        return;
+      }
+      const uri = await captureRef(shareCardRef, {
+        format: 'png',
+        quality: 1.0,
+        result: 'tmpfile',
+      });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: `Dear Day — ${formatFullDate(targetDate)}`,
+        });
+      } else {
+        await Share.share({
+          title: `Dear Day — ${formatFullDate(targetDate)}`,
+          message: `Memories from ${formatFullDate(targetDate)} on Dear Day: https://play.google.com/store/apps/details?id=app.daily5.android`,
+        });
+      }
+    } catch {
+      Alert.alert('Share Failed', 'Could not render day card image.');
+    } finally {
+      setSharingImage(false);
+    }
+  }
+
+  async function handleExportDayPdf() {
+    Haptics.selectionAsync();
+    setExportingPdf(true);
+    try {
+      const activeEntries = slots
+        .filter(s => s.text.trim().length > 0 || s.photos.length > 0)
+        .map(s => ({
+          id: s.id,
+          text: s.text.trim(),
+          category: s.category,
+          photos: s.photos,
+        }));
+      const dayLogToExport: DayLog = {
+        date: targetDate,
+        entries: activeEntries,
+        extras: existingLog?.extras ?? [],
+        layout: selectedLayout,
+        isFavorite,
+      };
+      await exportDayAsPdf(dayLogToExport);
+    } catch {
+      Alert.alert('Export Failed', 'Could not generate day PDF.');
+    } finally {
+      setExportingPdf(false);
+    }
   }
 
   const topPad = insets.top + (Platform.OS === 'web' ? 67 : 0);
@@ -361,14 +427,16 @@ function LogModalContent() {
                 </View>
               </View>
 
-              {/* 3. Action Rows: Favorites, Share, Export */}
+              {/* 3. Action Rows: Favorites, Share as Image, Export PDF, Share Link */}
               <View style={[styles.actionRowsCard, { backgroundColor: colors.muted, borderColor: colors.border }]}>
                 {/* Favorite */}
                 <TouchableOpacity
                   style={styles.actionRow}
-                  onPress={() => {
+                  onPress={async () => {
                     Haptics.selectionAsync();
-                    setIsFavorite(f => !f);
+                    const nextVal = !isFavorite;
+                    setIsFavorite(nextVal);
+                    await toggleFavoriteDay(targetDate);
                   }}
                   activeOpacity={0.7}
                 >
@@ -383,7 +451,49 @@ function LogModalContent() {
 
                 <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
 
-                {/* Share this day */}
+                {/* Share as Image (Instagram / Social) with Dear Day Logo Imprint */}
+                <TouchableOpacity
+                  style={styles.actionRow}
+                  onPress={handleShareDayImage}
+                  disabled={sharingImage}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    {sharingImage ? (
+                      <BrandLogoLoader size={18} color={colors.primary} />
+                    ) : (
+                      <ImageIcon size={18} color={colors.foreground} weight="bold" />
+                    )}
+                    <Text style={[styles.actionRowText, { color: colors.foreground }]}>
+                      {sharingImage ? 'Generating Image...' : 'Share Day as Image (Instagram / Social)'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
+
+                {/* Export as Archival PDF */}
+                <TouchableOpacity
+                  style={styles.actionRow}
+                  onPress={handleExportDayPdf}
+                  disabled={exportingPdf}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    {exportingPdf ? (
+                      <BrandLogoLoader size={18} color={colors.primary} />
+                    ) : (
+                      <Export size={18} color={colors.foreground} weight="bold" />
+                    )}
+                    <Text style={[styles.actionRowText, { color: colors.foreground }]}>
+                      {exportingPdf ? 'Exporting PDF...' : 'Export Day as Archival PDF'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
+
+                {/* Share Link to Day */}
                 <TouchableOpacity
                   style={styles.actionRow}
                   onPress={async () => {
@@ -391,7 +501,7 @@ function LogModalContent() {
                     try {
                       await Share.share({
                         title: `Dear Day — ${formatFullDate(targetDate)}`,
-                        message: `Check out my memories from ${formatFullDate(targetDate)} on Dear Day: https://dearday.app/d/${targetDate}`,
+                        message: `Check out my memories from ${formatFullDate(targetDate)} on Dear Day: https://play.google.com/store/apps/details?id=app.daily5.android`,
                       });
                     } catch {}
                   }}
@@ -400,27 +510,7 @@ function LogModalContent() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <ShareNetwork size={18} color={colors.foreground} weight="bold" />
                     <Text style={[styles.actionRowText, { color: colors.foreground }]}>
-                      Share this Day
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                <View style={[styles.actionDivider, { backgroundColor: colors.border }]} />
-
-                {/* Export as PDF */}
-                <TouchableOpacity
-                  style={styles.actionRow}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setShowMoreModal(false);
-                    Alert.alert('Export Day', 'Exporting single day spread as archival PDF...');
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Export size={18} color={colors.foreground} weight="bold" />
-                    <Text style={[styles.actionRowText, { color: colors.foreground }]}>
-                      Export Day (PDF / Image)
+                      Share Day Link
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -439,6 +529,42 @@ function LogModalContent() {
           </View>
         </View>
       </Modal>
+
+      {/* Off-screen Pristine Share Card with Official Dear Day Logo Imprint */}
+      <View
+        ref={shareCardRef}
+        collapsable={false}
+        pointerEvents="none"
+        style={styles.shareExportCard}
+      >
+        <View style={styles.shareBrandHeader}>
+          <BrandLogoHorizontal size={26} color="#E8593A" />
+          <Text style={styles.shareSubtitle}>Archival Memoir · 4 Moments</Text>
+        </View>
+
+        <Text style={styles.shareDateText}>{formatFullDate(targetDate)}</Text>
+
+        <View style={styles.shareGrid}>
+          {slots.map((s, idx) => (
+            <View key={s.id} style={styles.shareCell}>
+              {s.photos[0] ? (
+                <Image source={{ uri: s.photos[0] }} style={styles.sharePhoto} resizeMode="cover" />
+              ) : (
+                <View style={styles.shareEmptyPhoto}>
+                  <Text style={styles.shareEmptyPhotoText}>0{idx + 1}</Text>
+                </View>
+              )}
+              <Text style={styles.shareCaption} numberOfLines={2}>
+                {s.text.trim() || '—'}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.shareFooter}>
+          <Text style={styles.shareFooterText}>Captured with Dear Day · app.daily5.android</Text>
+        </View>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -1024,5 +1150,81 @@ const styles = StyleSheet.create({
   moreDoneBtnText: {
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
+  },
+
+  /* Offscreen Share Card */
+  shareExportCard: {
+    position: 'absolute',
+    left: -9999,
+    width: 380,
+    backgroundColor: '#F7F4EF',
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2DBD2',
+    gap: 16,
+  },
+  shareBrandHeader: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  shareSubtitle: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+    color: '#7A746E',
+    letterSpacing: 0.5,
+  },
+  shareDateText: {
+    fontSize: 18,
+    fontFamily: 'PlayfairDisplay_700Bold',
+    color: '#1C1916',
+    textAlign: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2DBD2',
+    paddingBottom: 10,
+  },
+  shareGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  shareCell: {
+    width: 160,
+    gap: 6,
+  },
+  sharePhoto: {
+    width: 160,
+    height: 120,
+    borderRadius: 8,
+  },
+  shareEmptyPhoto: {
+    width: 160,
+    height: 120,
+    borderRadius: 8,
+    backgroundColor: '#EBE5D8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareEmptyPhotoText: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    color: '#A8A199',
+  },
+  shareCaption: {
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
+    color: '#1C1916',
+    lineHeight: 15,
+  },
+  shareFooter: {
+    alignItems: 'center',
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E2DBD2',
+  },
+  shareFooterText: {
+    fontSize: 10,
+    fontFamily: 'Inter_500Medium',
+    color: '#8C827A',
   },
 });

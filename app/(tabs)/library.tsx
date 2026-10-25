@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, Platform, Modal, Dimensions, Alert, ActivityIndicator, ScrollView, Image,
+  TextInput, Platform, Modal, Dimensions, Alert, ScrollView, Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
@@ -26,6 +26,7 @@ import {
   type PageLayoutType,
 } from '@/lib/data';
 import { exportBookAsPdf } from '@/lib/pdfExport';
+import { BrandLogoLoader } from '@/components/BrandLogo';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_GAP = 14;
@@ -39,7 +40,7 @@ export default function LibraryTab() {
 
   const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'monthly' | 'custom'>('all');
+  const [filter, setFilter] = useState<'all' | 'monthly' | 'custom' | 'favorites'>('all');
 
   // New Book Studio States
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -69,6 +70,7 @@ export default function LibraryTab() {
     .filter(b => {
       if (filter === 'monthly') return !b.isCustom;
       if (filter === 'custom') return b.isCustom && !b.isSample;
+      if (filter === 'favorites') return b.days.some(d => d.isFavorite);
       return true;
     })
     .filter(b => {
@@ -239,9 +241,16 @@ export default function LibraryTab() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterRow}
         >
-          {(['all', 'monthly', 'custom'] as const).map(tab => {
+          {(['all', 'monthly', 'custom', 'favorites'] as const).map(tab => {
             const active = filter === tab;
-            const label = tab === 'all' ? 'All Books' : tab === 'monthly' ? 'Monthly Volumes' : 'Custom Collections';
+            const label =
+              tab === 'all'
+                ? 'All Books'
+                : tab === 'monthly'
+                ? 'Monthly Volumes'
+                : tab === 'custom'
+                ? 'Custom Collections'
+                : 'Favorites';
             return (
               <TouchableOpacity
                 key={tab}
@@ -341,7 +350,7 @@ export default function LibraryTab() {
                     accessibilityLabel={`Share ${bookTitle}`}
                   >
                     {isSharing ? (
-                      <ActivityIndicator size="small" color={colors.primary} />
+                      <BrandLogoLoader size={16} />
                     ) : (
                       <>
                         <ShareNetwork size={14} color={colors.foreground} weight="bold" />
@@ -351,15 +360,15 @@ export default function LibraryTab() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.bookActionBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    style={[styles.bookActionBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
                     onPress={() => handlePrintBook(item)}
                     activeOpacity={0.75}
                     hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
                     accessibilityRole="button"
                     accessibilityLabel={`Order print for ${bookTitle}`}
                   >
-                    <Printer size={14} color={colors.primaryForeground} weight="bold" />
-                    <Text style={[styles.bookActionText, { color: colors.primaryForeground }]}>Print</Text>
+                    <Printer size={14} color={colors.foreground} weight="bold" />
+                    <Text style={[styles.bookActionText, { color: colors.foreground }]}>Print</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -631,8 +640,6 @@ export default function LibraryTab() {
                   {[
                     { id: 'quad' as const, name: '2×2 Quad' },
                     { id: 'strips' as const, name: 'Filmstrips' },
-                    { id: 'hero' as const, name: 'Hero + 3' },
-                    { id: 'magazine' as const, name: 'Magazine' },
                     { id: 'polaroid' as const, name: 'Polaroid' },
                   ].map(lo => {
                     const active = selectedLayout === lo.id;

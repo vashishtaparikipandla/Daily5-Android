@@ -43,6 +43,7 @@ interface DiaryContextValue {
   deleteCustomBook: (monthKey: string) => Promise<void>;
   addDayToCustomBook: (customMonthKey: string, date: string, entries?: Entry[]) => Promise<boolean>;
   toggleHideDayInBook: (bookMonthKey: string, date: string) => Promise<void>;
+  toggleFavoriteDay: (date: string) => Promise<boolean>;
   /** Returns false (and does nothing) if the target book is locked. */
   upsertDayEntries: (
     date: string,
@@ -50,6 +51,7 @@ interface DiaryContextValue {
     extras?: Entry[],
     customBookKeys?: string[],
     dayLayout?: PageLayoutType,
+    isFavorite?: boolean,
   ) => Promise<boolean>;
   lockCurrentMonth: () => Promise<void>;
   getOnThisDay: () => { book: Book; day: DayLog }[];
@@ -64,7 +66,7 @@ interface DiaryContextValue {
    * Restore books from already-decrypted data (e.g. from a Drive download).
    * Saves to AsyncStorage and updates in-memory state.
    */
-  restoreFromData: (data: Book[]) => Promise<boolean>;
+  restoreFromData: (data: unknown) => Promise<boolean>;
   /** ISO string of the last successful backup, or null. */
   lastBackupTime: Date | null;
   /** Refresh the last backup time display. */
@@ -163,8 +165,13 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
   async function restoreFromBackup(): Promise<boolean> {
     try {
       const data = await loadBackupFromFile();
-      if (!data || !Array.isArray(data)) return false;
-      const booksData = data as Book[];
+      let booksData: Book[] | null = null;
+      if (Array.isArray(data)) {
+        booksData = data as Book[];
+      } else if (data && typeof data === 'object' && Array.isArray((data as any).books)) {
+        booksData = (data as any).books as Book[];
+      }
+      if (!booksData || booksData.length === 0) return false;
       await saveBooks(booksData);
       setBooks(booksData);
       return true;
@@ -174,11 +181,17 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
   }
 
   /** Restore books from already-decrypted data (e.g. downloaded from Drive). */
-  async function restoreFromData(data: Book[]): Promise<boolean> {
+  async function restoreFromData(data: unknown): Promise<boolean> {
     try {
-      if (!data || !Array.isArray(data) || data.length === 0) return false;
-      await saveBooks(data);
-      setBooks(data);
+      let booksData: Book[] | null = null;
+      if (Array.isArray(data)) {
+        booksData = data as Book[];
+      } else if (data && typeof data === 'object' && Array.isArray((data as any).books)) {
+        booksData = (data as any).books as Book[];
+      }
+      if (!booksData || booksData.length === 0) return false;
+      await saveBooks(booksData);
+      setBooks(booksData);
       return true;
     } catch {
       return false;
@@ -299,12 +312,35 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
     return true;
   }
 
+  async function toggleFavoriteDay(date: string): Promise<boolean> {
+    let nextFav = false;
+    const updated = books.map(b => {
+      const hasDay = b.days.some(d => d.date === date);
+      if (!hasDay) return b;
+      return {
+        ...b,
+        days: b.days.map(d => {
+          if (d.date === date) {
+            nextFav = !d.isFavorite;
+            return { ...d, isFavorite: nextFav };
+          }
+          return d;
+        }),
+      };
+    });
+    await saveBooks(updated);
+    setBooks(updated);
+    if (backupEnabled) performBackup(updated).catch(() => {});
+    return nextFav;
+  }
+
   async function upsertDayEntries(
     date: string,
     entries: Entry[],
     extras: Entry[] = [],
     customBookKeys?: string[],
     dayLayout?: PageLayoutType,
+    isFavorite?: boolean,
   ): Promise<boolean> {
     const mk = date.slice(0, 7);
     const today = todayStr();
@@ -344,11 +380,31 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
           return {
             ...b,
             days: b.days.map(d =>
-              d.date === date ? { ...d, entries: finalEntries, extras, layout: dayLayout || d.layout || layoutToUse } : d
+              d.date === date
+                ? {
+                    ...d,
+                    entries: finalEntries,
+                    extras,
+                    layout: dayLayout || d.layout || layoutToUse,
+                    isFavorite: isFavorite !== undefined ? isFavorite : d.isFavorite,
+                  }
+                : d
             ),
           };
         }
-        return { ...b, days: [...b.days, { date, entries: finalEntries, extras, layout: layoutToUse }] };
+        return {
+          ...b,
+          days: [
+            ...b.days,
+            {
+              date,
+              entries: finalEntries,
+              extras,
+              layout: layoutToUse,
+              isFavorite: isFavorite ?? false,
+            },
+          ],
+        };
       }
 
       // 2. Also sync to any selected custom books
@@ -358,11 +414,31 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
           return {
             ...b,
             days: b.days.map(d =>
-              d.date === date ? { ...d, entries: finalEntries, extras, layout: dayLayout || d.layout || layoutToUse } : d
+              d.date === date
+                ? {
+                    ...d,
+                    entries: finalEntries,
+                    extras,
+                    layout: dayLayout || d.layout || layoutToUse,
+                    isFavorite: isFavorite !== undefined ? isFavorite : d.isFavorite,
+                  }
+                : d
             ),
           };
         }
-        return { ...b, days: [...b.days, { date, entries: finalEntries, extras, layout: layoutToUse }] };
+        return {
+          ...b,
+          days: [
+            ...b.days,
+            {
+              date,
+              entries: finalEntries,
+              extras,
+              layout: layoutToUse,
+              isFavorite: isFavorite ?? false,
+            },
+          ],
+        };
       }
 
       return b;
@@ -377,7 +453,15 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
           locked: false,
           pageLayout: 'quad',
           fontFamily: 'playfair',
-          days: [{ date, entries: finalEntries, extras, layout: dayLayout || 'quad' }],
+          days: [
+            {
+              date,
+              entries: finalEntries,
+              extras,
+              layout: dayLayout || 'quad',
+              isFavorite: isFavorite ?? false,
+            },
+          ],
         },
       ];
     }
@@ -474,6 +558,7 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
       getBook, getTodayBook, getTodayLog, getDayLog,
       customBooks, sampleBooks, monthlyBooks,
       createCustomBook, updateBookConfig, deleteCustomBook, addDayToCustomBook, toggleHideDayInBook,
+      toggleFavoriteDay,
       upsertDayEntries, lockCurrentMonth, getOnThisDay,
       totalMoments, totalDays, streakCount,
       performBackup: () => performBackup(),

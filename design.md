@@ -86,9 +86,9 @@ Users can customize the body font of an entire book volume:
 
 ---
 
-## 4. The 5 Archival Photo-First Layout Engines
+## 4. The 3 Archival Photo-First Layout Engines
 
-Each day spread in a book supports 5 distinct layout reflow options:
+Each day spread in a book supports 3 curated archival layout reflow options (pruned from legacy 5 to keep the creation flow delightfully focused and uncluttered):
 
 ### 1. Gallery 2×2 (`quad`)
 - **Structure:** 4 balanced square photo frames arranged in a 2×2 grid.
@@ -101,22 +101,12 @@ Each day spread in a book supports 5 distinct layout reflow options:
 - **Caption:** Split layout beneath banner — caption on left, category pill on right.
 - **Best For:** Landscapes, street photography, travel days, and panoramas.
 
-### 3. Hero Highlight (`hero`)
-- **Structure:** 1 dominant wide focal hero photograph occupying top 55% of the page + 3 micro square vignettes beneath.
-- **Caption:** Dedicated 2-line quote for the hero; micro-captions for secondary vignettes.
-- **Best For:** Landmark celebrations, birthdays, weddings, concerts, and major milestones.
-
-### 4. Editorial Magazine Spread (`magazine`)
-- **Structure:** Alternating 2×2 layout — Row 1 has photo on left and text story on right; Row 2 has text on left and photo on right.
-- **Caption:** Long-form quote pacing with literary indentation.
-- **Best For:** Thoughtful reflection, deep conversations, and creative writing.
-
-### 5. Polaroid Scrapbook (`polaroid`)
+### 3. Polaroid Scrapbook (`polaroid`)
 - **Structure:** 4 tactile white instant-film cards with organic physical tilt angles (`-2.5°`, `+3°`, `-1.8°`, `+2.2°`) and soft realistic dropshadows.
 - **Caption:** Centered ink-written caption inside the bottom white Polaroid chin.
 - **Best For:** Casual snapshots, playful days with friends, and vintage scrapbook feel.
 
-*Rule: Never use internal development terms like "Figma Ref" in user-facing UI. Always show visual wireframe diagrams (`VisualLayoutPicker`).*
+*Rule: Never use internal development terms like "Figma Ref" in user-facing UI. Always show visual wireframe diagrams (`VisualLayoutPicker`). Layout options are accessed exclusively from the top book studio header, never inside content pages.*
 
 ---
 
@@ -130,13 +120,14 @@ Each day spread in a book supports 5 distinct layout reflow options:
 - **Archival Seal:** Circular gold insignia: `ARCHIVAL FIRST EDITION • COTTON PAPER`.
 - **Bookmark Ribbon:** Hanging silk ribbon marker (`#E8593A`) extending below the book card edge.
 
-### Realistic 3D Page Turn
-- Built with `Animated.FlatList` with `useNativeDriver: true`.
-- Interpolates horizontal scroll offset (`scrollX`):
-  - **`perspective: 1200`** creates authentic depth.
-  - **`rotateY`:** interpolates from `+45deg` (incoming from left) to `0deg` (flat) to `-55deg` (turning towards spine on left).
-  - **`scale`:** interpolates from `0.93` to `1.0` to `0.93` to simulate physical page lift.
-  - **`gutter shadow`:** an absolute overlay that smoothly deepens to `0.55 opacity` as the page turns, simulating light falling into the binding gutter.
+### Realistic 3D Stacked Page Roll (StPageFlip Architecture)
+- Eliminates flat horizontal carousel sliding in favor of single-page viewport stacked turning:
+  - **Stationary Underlying Base:** The incoming page sits stationary directly underneath.
+  - **Spine-Anchored 3D Transform:** The turning page pivots with left spine anchor:
+    `transform: [{ perspective: 1400 }, { translateX: -W/2 }, { rotateY: '-180deg' to '0deg' }, { translateX: W/2 }]`.
+  - **Dynamic Paper Shadow Overlays:** Graduated shadows sweep across the turning page and the underlying stationary sheet, replicating realistic paper curl curvature.
+  - **Single Page Focus:** Viewport focuses on one page at a time with smooth gesture (`PanResponder`) and button flip transitions.
+  - **Full-Width Hardbound Cover:** `BOOK_CARD_WIDTH = Math.min(SCREEN_WIDTH - 24, 440)` for both cover and inside spreads.
 
 ---
 
@@ -246,5 +237,31 @@ Each day spread in a book supports 5 distinct layout reflow options:
      - Google Account (`user@gmail.com`)
      - One-tap "Back Up Now" button.
    - Automatic restore prompt on reinstallation when previous archives are discovered in Google Drive.
+
+---
+
+## 11. Single Primary CTA Per Viewport Standard
+
+To maintain calm, focused, and distraction-free cognitive flow:
+1. **Rule of One:** Every viewport MUST have strictly one prominent primary CTA (`backgroundColor: colors.primary`).
+2. **Secondary Demotion:** All parallel or secondary actions (such as "Print" and "Share" on individual book cards in the Library, "Cancel", "Clear Search", or carousel "← Back") MUST use secondary or outline styling (`backgroundColor: colors.muted` or `colors.card`, `borderColor: colors.border`, `color: colors.foreground`).
+3. **No Visual Competition:** In the Library view, `+ New Book` is the sole primary CTA, preventing multiple conflicting terracotta buttons across each grid card.
+
+---
+
+## 12. Universal Brand Logo & Organic Loader Standards
+
+1. **Official Brand Logo (`BrandLogo.tsx`):**
+   - Brand mark: Organic botanical coral/sprout mark in `#E8593A` (aspect ratio 1.473).
+   - Horizontal and vertical lockups with serif lettering.
+   - Applied to app icons (`icon.png`, `adaptive-icon.png`) on an uncoated `#F7F4EF` archival background.
+2. **Argon Gentle Sway Loader (`BrandLogoLoader`):**
+   - Replaced all generic OS `ActivityIndicator` spinners with `BrandLogoLoader`.
+   - Physics: Anchored at the root bottom center (`transformOrigin: '50% 100%'`).
+   - Harmonic motion: Sway rotation (-2.5° to +2.5°), skew (-3° to +3°), and subtle breathing scale (1.0 to 1.04).
+3. **Social & Archival Export:**
+   - **Multi-page Book PDF:** Complete high-resolution photobook PDF with archival colophon page ("DEAR DAY ARCHIVAL PRESS", acid-free finish).
+   - **Single Day Card Sharing:** Offscreen rasterization via `react-native-view-shot` with "Dear Day" branding imprinted at the top, formatted as a 1080p card ready for social sharing.
+
 
 

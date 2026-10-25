@@ -7,8 +7,9 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Platform,
-  Alert, TextInput, ActivityIndicator, ScrollView, Clipboard,
+  Alert, TextInput, ScrollView,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import {
   ArrowLeft,
@@ -22,6 +23,7 @@ import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getOrCreateRecoveryKey, formatRecoveryKey, importRecoveryKey } from '@/lib/backup';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
+import { BrandLogoLoader } from '@/components/BrandLogo';
 
 function BackupKeyContent() {
   const colors = useColors();
@@ -52,7 +54,7 @@ function BackupKeyContent() {
   async function handleCopy() {
     if (!recoveryKey) return;
     try {
-      Clipboard.setString(formatRecoveryKey(recoveryKey));
+      await Clipboard.setStringAsync(formatRecoveryKey(recoveryKey));
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {
@@ -117,7 +119,9 @@ function BackupKeyContent() {
         <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>Your recovery key</Text>
         <View style={[styles.keyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {loading ? (
-            <ActivityIndicator color={colors.primary} style={{ padding: 20 }} />
+            <View style={{ padding: 24, alignItems: 'center' }}>
+              <BrandLogoLoader size={36} />
+            </View>
           ) : recoveryKey ? (
             <>
               <View style={styles.keyDisplay}>
@@ -189,7 +193,7 @@ function BackupKeyContent() {
                   disabled={importing}
                 >
                   {importing
-                    ? <ActivityIndicator size="small" color={colors.primaryForeground} />
+                    ? <BrandLogoLoader size={16} />
                     : <Text style={[styles.importBtnLabel, { color: colors.primaryForeground }]}>Import</Text>}
                 </TouchableOpacity>
               </View>

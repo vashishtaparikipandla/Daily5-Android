@@ -2,7 +2,7 @@ export type CategoryId =
   | 'food' | 'travel' | 'people' | 'work'
   | 'health' | 'learning' | 'home' | 'love' | 'other';
 
-export type PageLayoutType = 'quad' | 'strips' | 'hero' | 'magazine' | 'polaroid';
+export type PageLayoutType = 'quad' | 'strips' | 'polaroid';
 export type BookFontType = 'playfair' | 'garamond' | 'sans' | 'typewriter';
 
 export interface BookCoverConfig {
@@ -46,6 +46,7 @@ export interface DayLog {
   extras: Entry[];
   bookIds?: string[]; // IDs of custom books this day is assigned to
   layout?: PageLayoutType; // Layout for this day's page in photobook
+  isFavorite?: boolean; // User favorited day
 }
 
 export interface Book {

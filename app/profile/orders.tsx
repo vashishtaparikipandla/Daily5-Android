@@ -1,9 +1,10 @@
 import React, { useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Platform,
-  FlatList, ActivityIndicator, RefreshControl,
+  FlatList, RefreshControl,
 } from 'react-native';
 import { router } from 'expo-router';
+import { BrandLogoLoader } from '@/components/BrandLogo';
 import { MapPin, ArrowLeft, ArrowsClockwise, Package, BookOpen } from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -122,7 +123,7 @@ function OrdersContent() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} />
+          <BrandLogoLoader size={36} />
         </View>
       ) : orders.length === 0 ? (
         <EmptyState

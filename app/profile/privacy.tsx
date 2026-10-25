@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Platform,
-  Alert, Switch, ActivityIndicator, ScrollView, Modal,
+  Alert, Switch, ScrollView, Modal,
 } from 'react-native';
 import { router } from 'expo-router';
 import {
@@ -32,6 +32,7 @@ import { useDriveBackup, DriveSchedule } from '@/contexts/DriveBackupContext';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
 import { exportBackupFile, importBackupFromFilePicker } from '@/lib/backup';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import { BrandLogoLoader } from '@/components/BrandLogo';
 
 const WEB_CLIENT_ID = '205619709770-c7cabrrdedn0nnndifceo9cbo387llcd.apps.googleusercontent.com';
 
@@ -116,7 +117,7 @@ function PrivacyContent() {
   const insets = useSafeAreaInsets();
   const { user, biometricEnabled, setBiometricEnabled, deleteAccount, backupEnabled, setBackupEnabled,
           driveConnected, driveAccount, setDriveConnection, disconnectGoogleDrive, getDriveToken } = useApp();
-  const { performBackup, restoreFromBackup, restoreFromData, lastBackupTime, refreshBackupTime } = useDiary();
+  const { books, performBackup, restoreFromBackup, restoreFromData, lastBackupTime, refreshBackupTime } = useDiary();
   const {
     driveWorking, lastDriveBackupTime, driveSchedule,
     setDriveSchedule, backupToDrive, restoreFromDrive, refreshDriveBackupTime,
@@ -198,7 +199,7 @@ function PrivacyContent() {
   }
 
   async function handleExport() {
-    try { await exportBackupFile(); }
+    try { await exportBackupFile(books); }
     catch (e: unknown) { Alert.alert('Export failed', e instanceof Error ? e.message : 'Unknown error'); }
   }
 
@@ -399,7 +400,7 @@ function PrivacyContent() {
               </Text>
             </View>
             {togglingBiometric
-              ? <ActivityIndicator size="small" color={colors.primary} />
+              ? <BrandLogoLoader size={18} />
               : <Switch value={biometricEnabled} onValueChange={handleBiometricToggle}
                   thumbColor={biometricEnabled ? colors.primaryForeground : colors.tertiary}
                   trackColor={{ true: colors.primary, false: colors.border }} />}
@@ -418,7 +419,7 @@ function PrivacyContent() {
               </Text>
             </View>
             {togglingBackup
-              ? <ActivityIndicator size="small" color={colors.primary} />
+              ? <BrandLogoLoader size={18} />
               : <Switch value={backupEnabled} onValueChange={handleBackupToggle}
                   thumbColor={backupEnabled ? colors.primaryForeground : colors.tertiary}
                   trackColor={{ true: colors.primary, false: colors.border }} />}
@@ -436,7 +437,7 @@ function PrivacyContent() {
                 {lastBackupTime ? `Last saved: ${formatTime(lastBackupTime)}` : 'Create instant encrypted copy'}
               </Text>
             </View>
-            {backingUp ? <ActivityIndicator size="small" color={colors.primary} /> : <CaretRight size={16} color={colors.tertiary} />}
+            {backingUp ? <BrandLogoLoader size={18} /> : <CaretRight size={16} color={colors.tertiary} />}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -473,7 +474,7 @@ function PrivacyContent() {
               <Text style={[styles.rowLabel, { color: colors.foreground }]}>Import backup file</Text>
               <Text style={[styles.rowSub, { color: colors.tertiary }]}>Restore memories from a .d5b file</Text>
             </View>
-            {importing ? <ActivityIndicator size="small" color={colors.primary} /> : <CaretRight size={16} color={colors.tertiary} />}
+            {importing ? <BrandLogoLoader size={18} /> : <CaretRight size={16} color={colors.tertiary} />}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -512,7 +513,7 @@ function PrivacyContent() {
               <TouchableOpacity style={[styles.row, styles.connectBtn, { backgroundColor: colors.accentLight }]}
                 onPress={handleConnectDrive} disabled={connectingDrive}>
                 {connectingDrive
-                  ? <ActivityIndicator size="small" color={colors.primary} />
+                  ? <BrandLogoLoader size={18} />
                   : <><CloudArrowUp size={18} color={colors.primary} />
                      <Text style={[styles.connectLabel, { color: colors.primary }]}>Connect Google Drive</Text></>}
               </TouchableOpacity>
@@ -534,7 +535,7 @@ function PrivacyContent() {
               <TouchableOpacity style={[styles.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
                 onPress={handleReconnectDrive} disabled={connectingDrive}>
                 {connectingDrive
-                  ? <ActivityIndicator size="small" color={colors.primary} />
+                  ? <BrandLogoLoader size={18} />
                   : <><ArrowsClockwise size={20} color={colors.primary} />
                      <Text style={[styles.rowLabel, { color: colors.primary, flex: 1 }]}>Reconnect</Text></>}
               </TouchableOpacity>
@@ -569,7 +570,7 @@ function PrivacyContent() {
                 <CloudArrowUp size={20} color={colors.mutedForeground} />
                 <Text style={[styles.rowLabel, { color: colors.foreground, flex: 1 }]}>Back up to Drive now</Text>
                 {driveWorking
-                  ? <ActivityIndicator size="small" color={colors.primary} />
+                  ? <BrandLogoLoader size={18} />
                   : <CaretRight size={16} color={colors.tertiary} />}
               </TouchableOpacity>
 
@@ -580,7 +581,7 @@ function PrivacyContent() {
                 <CloudArrowDown size={20} color={colors.mutedForeground} />
                 <Text style={[styles.rowLabel, { color: colors.foreground, flex: 1 }]}>Restore from Drive</Text>
                 {driveWorking
-                  ? <ActivityIndicator size="small" color={colors.primary} />
+                  ? <BrandLogoLoader size={18} />
                   : <CaretRight size={16} color={colors.tertiary} />}
               </TouchableOpacity>
 

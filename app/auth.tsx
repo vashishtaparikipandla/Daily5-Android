@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
+  View, Text, StyleSheet, TouchableOpacity,
   Platform, TextInput, Modal, Alert, KeyboardAvoidingView, ScrollView,
 } from 'react-native';
+import { BrandLogoLoader } from '@/components/BrandLogo';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { router } from 'expo-router';
@@ -230,7 +231,7 @@ export default function AuthScreen() {
           activeOpacity={0.8}
         >
           {loading ? (
-            <ActivityIndicator size="small" color={colors.primary} />
+            <BrandLogoLoader size={20} />
           ) : (
             <>
               <GoogleIcon size={20} />
@@ -347,7 +348,7 @@ export default function AuthScreen() {
               disabled={telegramLoading}
             >
               {telegramLoading ? (
-                <ActivityIndicator size="small" color={colors.primaryForeground} />
+                <BrandLogoLoader size={20} color={colors.primaryForeground} />
               ) : (
                 <Text style={[styles.modalPrimaryBtnText, { color: colors.primaryForeground }]}>
                   Confirm & Open Diary →
@@ -411,7 +412,7 @@ export default function AuthScreen() {
                   disabled={emailLoading}
                 >
                   {emailLoading ? (
-                    <ActivityIndicator size="small" color={colors.primaryForeground} />
+                    <BrandLogoLoader size={20} color={colors.primaryForeground} />
                   ) : (
                     <Text style={[styles.modalPrimaryBtnText, { color: colors.primaryForeground }]}>
                       Generate Magic Code →
@@ -470,7 +471,7 @@ export default function AuthScreen() {
                   disabled={emailLoading}
                 >
                   {emailLoading ? (
-                    <ActivityIndicator size="small" color={colors.primaryForeground} />
+                    <BrandLogoLoader size={20} color={colors.primaryForeground} />
                   ) : (
                     <Text style={[styles.modalPrimaryBtnText, { color: colors.primaryForeground }]}>
                       Verify & Open Diary →

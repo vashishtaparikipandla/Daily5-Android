@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  TextInput, Platform, ActivityIndicator, Alert, KeyboardAvoidingView,
+  TextInput, Platform, Alert, KeyboardAvoidingView,
 } from 'react-native';
+import { BrandLogoLoader } from '@/components/BrandLogo';
 import { router, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
@@ -287,7 +288,7 @@ function PaymentStep({
         activeOpacity={0.85}
       >
         {placing ? (
-          <ActivityIndicator color={colors.primaryForeground} />
+          <BrandLogoLoader size={20} color={colors.primaryForeground} />
         ) : (
           <>
             <CreditCard size={18} color={colors.primaryForeground} />

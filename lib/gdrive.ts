@@ -12,8 +12,8 @@
  *   should catch that and prompt the user to reconnect.
  */
 
-const BACKUP_FILE_NAME = 'daily5_backup.d5b';
-const BOUNDARY = 'daily5bnd';
+const BACKUP_FILE_NAME = 'dearday_backup.d5b';
+const BOUNDARY = 'deardaybnd';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ export async function listBackupFiles(
   accessToken: string,
 ): Promise<DriveResult<DriveFile[]>> {
   try {
-    const q = encodeURIComponent(`name='${BACKUP_FILE_NAME}'`);
+    const q = encodeURIComponent(`name='dearday_backup.d5b' or name='daily5_backup.d5b'`);
     const fields = encodeURIComponent('files(id,name,modifiedTime)');
     const url = `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${q}&fields=${fields}`;
     const res = await fetch(url, { headers: authHeader(accessToken) });

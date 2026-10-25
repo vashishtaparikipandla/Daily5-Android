@@ -63,12 +63,7 @@ const CATEGORY_CHIPS = [
   { icon: BookOpen, color: '#C43A6F', label: 'Learn' },
 ];
 
-const GENERATION_PRESETS = [
-  { label: 'Gen Z', year: '2002', date: '2002-01-01' },
-  { label: 'Millennial', year: '1995', date: '1995-01-01' },
-  { label: '90s Kid', year: '1990', date: '1990-01-01' },
-  { label: 'Gen X', year: '1980', date: '1980-01-01' },
-];
+
 
 // ─── Slide 0: Glowing Floating Lamp ──────────────────────────────────────────
 
@@ -380,48 +375,8 @@ export default function OnboardingScreen() {
                 When were you born?
               </Text>
               <Text style={[styles.sub, { color: colors.mutedForeground }]}>
-                We'll illuminate your life's tapestry in weeks. Pre-filled with an example below.
+                We'll use this to show you something.
               </Text>
-            </View>
-
-            {/* Generational Quick Presets */}
-            <View style={styles.presetWrap}>
-              <Text style={[styles.presetTitle, { color: colors.tertiary }]}>QUICK SELECTION</Text>
-              <View style={styles.presetChipsRow}>
-                {GENERATION_PRESETS.map((item) => {
-                  const isSelected = dob === item.date;
-                  return (
-                    <TouchableOpacity
-                      key={item.label}
-                      style={[
-                        styles.presetChip,
-                        {
-                          backgroundColor: isSelected ? colors.primary : colors.muted,
-                          borderColor: isSelected ? colors.primary : colors.border,
-                        },
-                      ]}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        setDob(item.date);
-                        setDobError('');
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.presetChipText,
-                          {
-                            color: isSelected ? '#FFFFFF' : colors.foreground,
-                            fontFamily: isSelected ? 'Inter_600SemiBold' : 'Inter_400Regular',
-                          },
-                        ]}
-                      >
-                        {item.label} ({item.year})
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
             </View>
 
             {/* Input field with smart auto-formatting */}
@@ -548,10 +503,10 @@ export default function OnboardingScreen() {
                 <ArrowLeft size={20} color={colors.foreground} />
               </TouchableOpacity>
               <Text style={[styles.headingLife, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-                Your Life in 4,160 Weeks
+                An 80-year life has 4,160 weeks.
               </Text>
               <Text style={[styles.subLife, { color: colors.mutedForeground }]}>
-                An 80-year lifespan rendered dot by dot. The terracotta squares are behind you.
+                You've already lived {livedWeeks.toLocaleString()}. How many of them do you remember?
               </Text>
             </View>
 
@@ -696,8 +651,28 @@ export default function OnboardingScreen() {
               ))}
             </View>
 
-            {/* Bottom Primary CTA */}
-            <View style={styles.bottomCtaRow}>
+            {/* Bottom Primary & Secondary CTAs */}
+            <View style={[styles.bottomCtaRow, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+              {slide > 0 && (
+                <TouchableOpacity
+                  style={[
+                    styles.prevBtn,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                  ]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    const prev = slide - 1;
+                    setSlide(prev);
+                    slideRef.current?.scrollToIndex({ index: prev, animated: true });
+                  }}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous slide"
+                >
+                  <Text style={[styles.prevBtnText, { color: colors.foreground }]}>← Back</Text>
+                </TouchableOpacity>
+              )}
+
               {slide < SLIDES.length - 1 ? (
                 <TouchableOpacity
                   style={[styles.btn, { backgroundColor: colors.primary, flex: 1 }]}
@@ -708,6 +683,8 @@ export default function OnboardingScreen() {
                     slideRef.current?.scrollToIndex({ index: next, animated: true });
                   }}
                   activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel="Next slide"
                 >
                   <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Next →</Text>
                 </TouchableOpacity>
@@ -716,6 +693,8 @@ export default function OnboardingScreen() {
                   style={[styles.btn, { backgroundColor: colors.primary, flex: 1 }]}
                   onPress={handleStart}
                   activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel="Get Started"
                 >
                   <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Get Started ✨</Text>
                 </TouchableOpacity>
@@ -1127,7 +1106,22 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
   },
+  prevBtn: {
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  prevBtnText: {
+    fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+  },
   bottomCtaRow: {
     width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
 });

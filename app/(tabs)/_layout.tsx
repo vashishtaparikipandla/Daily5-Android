@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { BrandLogoLoader } from '@/components/BrandLogo';
 import { useColorScheme } from 'react-native';
 import { Tabs, Redirect } from 'expo-router';
 import {
@@ -64,7 +65,7 @@ function BiometricLock({ onUnlock }: { onUnlock: () => Promise<boolean> }) {
         activeOpacity={0.85}
       >
         {loading ? (
-          <ActivityIndicator color={colors.primaryForeground} />
+          <BrandLogoLoader size={22} color={colors.primaryForeground} />
         ) : (
           <>
             <Fingerprint size={20} color={colors.primaryForeground} weight="bold" />

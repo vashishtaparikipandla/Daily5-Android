@@ -122,18 +122,40 @@ function coverPageHtml(book: Book): string {
     </div>`;
 }
 
+function colophonPageHtml(book: Book): string {
+  return `
+    <div class="page colophon-page">
+      <div class="colophon-inner">
+        <div class="colophon-seal">❖</div>
+        <h3 class="colophon-press">DEAR DAY ARCHIVAL PRESS</h3>
+        <p class="colophon-volume">${escHtml(bookDisplayName(book))}</p>
+        <div class="colophon-rule"></div>
+        <p class="colophon-text">Archival First Edition · Acid-Free Cotton Paper Finish</p>
+        <p class="colophon-text">Bound for a lifetime of remembering</p>
+        <p class="colophon-quote">“The unexamined life is not worth living; the unremembered day is lost.”</p>
+        <p class="colophon-sub">Preserved with Dear Day · app.daily5.android</p>
+      </div>
+    </div>`;
+}
+
 // ─── Full HTML document ───────────────────────────────────────────────────────
 
-function buildHtml(book: Book): string {
+function buildHtml(book: Book, includeColophon: boolean = true): string {
   const hidden = book.hiddenDays ?? [];
   const sortedDays = [...book.days]
     .filter(d => d.entries.length > 0 && !hidden.includes(d.date))
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  const pages = [
+  const pageItems = [
     coverPageHtml(book),
     ...sortedDays.map(d => dayPageHtml(d, book)),
-  ].join('\n');
+  ];
+
+  if (includeColophon && sortedDays.length > 0) {
+    pageItems.push(colophonPageHtml(book));
+  }
+
+  const pages = pageItems.join('\n');
 
   return `<!DOCTYPE html>
 <html>
@@ -333,6 +355,68 @@ function buildHtml(book: Book): string {
     margin-top: auto;
   }
 
+  /* ── Colophon ── */
+  .colophon-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: ${PAPER};
+  }
+  .colophon-inner {
+    max-width: 140mm;
+    padding: 24mm 16mm;
+    border: 0.5pt solid ${BORDER};
+    border-radius: 6mm;
+    background: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4mm;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+  }
+  .colophon-seal {
+    font-size: 26pt;
+    color: ${PRIMARY};
+  }
+  .colophon-press {
+    font-family: 'Inter', sans-serif;
+    font-size: 11pt;
+    letter-spacing: 0.2em;
+    font-weight: 700;
+    color: ${PRIMARY};
+  }
+  .colophon-volume {
+    font-family: 'Playfair Display', serif;
+    font-size: 20pt;
+    color: ${INK};
+  }
+  .colophon-rule {
+    width: 36mm;
+    height: 1.5px;
+    background: ${PRIMARY}55;
+    margin: 2mm 0;
+  }
+  .colophon-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 9.5pt;
+    color: ${MUTED};
+    line-height: 1.5;
+  }
+  .colophon-quote {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 11pt;
+    color: ${INK};
+    margin-top: 4mm;
+  }
+  .colophon-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 8.5pt;
+    color: ${MUTED};
+    margin-top: 2mm;
+  }
+
   /* ── Print overrides ── */
   @page {
     size: A4 portrait;
@@ -374,6 +458,27 @@ export async function exportBookAsPdf(book: Book): Promise<void> {
     await Sharing.shareAsync(uri, {
       mimeType: 'application/pdf',
       dialogTitle: `Export ${monthLabel(book.monthKey)}`,
+      UTI: 'com.adobe.pdf',
+    });
+  }
+}
+
+/**
+ * Generate and share a single Day memory page as an archival PDF.
+ */
+export async function exportDayAsPdf(day: DayLog): Promise<void> {
+  const dummyBook: Book = {
+    monthKey: day.date.slice(0, 7),
+    locked: false,
+    days: [day],
+  };
+  const html = buildHtml(dummyBook, false);
+  const { uri } = await Print.printToFileAsync({ html, base64: false });
+  const canShare = await Sharing.isAvailableAsync();
+  if (canShare) {
+    await Sharing.shareAsync(uri, {
+      mimeType: 'application/pdf',
+      dialogTitle: `Dear Day — ${formatFullDate(day.date)}`,
       UTI: 'com.adobe.pdf',
     });
   }

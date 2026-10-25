@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Switch, TouchableOpacity,
-  Platform, ScrollView, Alert, ActivityIndicator,
+  Platform, ScrollView, Alert,
 } from 'react-native';
 import { router } from 'expo-router';
+import { BrandLogoLoader } from '@/components/BrandLogo';
 import {
   ArrowLeft,
   EnvelopeSimple,
@@ -173,7 +174,9 @@ function NotificationsContent() {
         <Text style={[styles.sectionHeading, { color: colors.tertiary }]}>Notification Preferences</Text>
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
           {loading ? (
-            <ActivityIndicator style={{ padding: 24 }} size="small" color={colors.primary} />
+            <View style={{ padding: 24, alignItems: 'center' }}>
+              <BrandLogoLoader size={36} />
+            </View>
           ) : (
             items.map((item, i) => (
               <View
@@ -197,98 +200,6 @@ function NotificationsContent() {
               </View>
             ))
           )}
-        </View>
-
-        {/* Audit & Dummy Scenarios */}
-        <Text style={[styles.sectionHeading, { color: colors.tertiary }]}>Audit & Test Scenarios</Text>
-        <Text style={[styles.sectionSub, { color: colors.mutedForeground }]}>
-          Test each scenario immediately to verify sound, vibration, device banners, and in-app logging.
-        </Text>
-
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
-          <TouchableOpacity
-            style={[styles.testRow, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
-            onPress={() => handleTestScenario('nightly', 'Nightly 9:00 PM Reminder')}
-            disabled={testingType !== null}
-          >
-            <View style={[styles.testIconWrap, { backgroundColor: '#E8593A18' }]}>
-              <Moon size={18} color="#E8593A" weight="fill" />
-            </View>
-            <View style={styles.testMeta}>
-              <Text style={[styles.testLabel, { color: colors.foreground }]}>Nightly 9:00 PM Reminder</Text>
-              <Text style={[styles.testSub, { color: colors.mutedForeground }]}>"Tonight in 4 moments"</Text>
-            </View>
-            {testingType === 'nightly' ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <View style={[styles.triggerPill, { backgroundColor: colors.accentLight }]}>
-                <Text style={[styles.triggerPillText, { color: colors.primary }]}>Fire Test</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.testRow, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
-            onPress={() => handleTestScenario('onThisDay', 'On This Day Capsule')}
-            disabled={testingType !== null}
-          >
-            <View style={[styles.testIconWrap, { backgroundColor: '#C47B3A18' }]}>
-              <Hourglass size={18} color="#C47B3A" weight="fill" />
-            </View>
-            <View style={styles.testMeta}>
-              <Text style={[styles.testLabel, { color: colors.foreground }]}>On This Day Morning Capsule</Text>
-              <Text style={[styles.testSub, { color: colors.mutedForeground }]}>"A memory from October 2025"</Text>
-            </View>
-            {testingType === 'onThisDay' ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <View style={[styles.triggerPill, { backgroundColor: colors.accentLight }]}>
-                <Text style={[styles.triggerPillText, { color: colors.primary }]}>Fire Test</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.testRow, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}
-            onPress={() => handleTestScenario('bookReady', 'Monthly Book Bound Alert')}
-            disabled={testingType !== null}
-          >
-            <View style={[styles.testIconWrap, { backgroundColor: '#2E7D3218' }]}>
-              <BookOpen size={18} color="#2E7D32" weight="fill" />
-            </View>
-            <View style={styles.testMeta}>
-              <Text style={[styles.testLabel, { color: colors.foreground }]}>Monthly Book Ready</Text>
-              <Text style={[styles.testSub, { color: colors.mutedForeground }]}>"October 2026 is bound!"</Text>
-            </View>
-            {testingType === 'bookReady' ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <View style={[styles.triggerPill, { backgroundColor: colors.accentLight }]}>
-                <Text style={[styles.triggerPillText, { color: colors.primary }]}>Fire Test</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.testRow}
-            onPress={() => handleTestScenario('orderUpdates', 'Order Shipped Alert')}
-            disabled={testingType !== null}
-          >
-            <View style={[styles.testIconWrap, { backgroundColor: '#1976D218' }]}>
-              <Package size={18} color="#1976D2" weight="fill" />
-            </View>
-            <View style={styles.testMeta}>
-              <Text style={[styles.testLabel, { color: colors.foreground }]}>Order & Delivery Update</Text>
-              <Text style={[styles.testSub, { color: colors.mutedForeground }]}>"Hardcover printed & shipped"</Text>
-            </View>
-            {testingType === 'orderUpdates' ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <View style={[styles.triggerPill, { backgroundColor: colors.accentLight }]}>
-                <Text style={[styles.triggerPillText, { color: colors.primary }]}>Fire Test</Text>
-              </View>
-            )}
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>

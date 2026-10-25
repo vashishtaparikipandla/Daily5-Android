@@ -187,9 +187,13 @@ export async function deleteBackupFile(): Promise<void> {
 
 // ─── Share / Import ─────────────────────────────────────────────────────────
 
-/** Share the backup file via the OS sharing sheet. */
-export async function exportBackupFile(): Promise<void> {
-  const exists = await backupFileExists();
+/** Share the backup file via the OS sharing sheet. If none exists, creates one first from current data. */
+export async function exportBackupFile(fallbackData?: unknown): Promise<void> {
+  let exists = await backupFileExists();
+  if (!exists && fallbackData) {
+    await saveBackupToFile(fallbackData);
+    exists = true;
+  }
   if (!exists) {
     throw new Error('No local backup file found. Tap "Back up now" first to generate one.');
   }

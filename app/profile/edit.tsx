@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  Platform, Alert, Image, ActivityIndicator,
+  Platform, Alert, Image,
 } from 'react-native';
 import { router } from 'expo-router';
+import { BrandLogoLoader } from '@/components/BrandLogo';
 import { ArrowLeft, Camera } from 'phosphor-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useColors } from '@/hooks/useColors';
@@ -109,7 +110,7 @@ function EditProfileContent() {
         </Text>
         <TouchableOpacity onPress={handleSave} disabled={saving}>
           {saving ? (
-            <ActivityIndicator size="small" color={colors.primary} />
+            <BrandLogoLoader size={18} />
           ) : (
             <Text style={[styles.saveBtn, { color: colors.primary }]}>Save</Text>
           )}

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Platform, ActivityIndicator, Alert,
+  Platform, Alert,
 } from 'react-native';
 import { router } from 'expo-router';
+import { BrandLogoLoader } from '@/components/BrandLogo';
 import {
   ArrowLeft,
   Moon,
@@ -195,7 +196,7 @@ function NotificationsContent() {
       {/* List */}
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="small" color={colors.primary} />
+          <BrandLogoLoader size={36} />
         </View>
       ) : filtered.length === 0 ? (
         <EmptyState
@@ -206,8 +207,6 @@ function NotificationsContent() {
               ? 'You have read all your notifications.'
               : 'Evening 9 PM archival reminders, habit updates, and photobook prints will appear here.'
           }
-          actionLabel="Trigger Test Reminder"
-          onAction={handleSendSample}
         />
       ) : (
         <FlatList
