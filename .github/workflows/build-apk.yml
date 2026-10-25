@@ -1,0 +1,71 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    name: Build Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build Android Release APK
+        run: |
+          cd android
+          ./gradlew assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxMetaspaceSize=512m"
+
+      - name: Prepare APK output
+        run: |
+          mkdir -p build-output
+          APK_FILE=$(find android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          if [ -f "$APK_FILE" ]; then
+            cp "$APK_FILE" build-output/DearDay-Build14.apk
+            echo "Found APK at $APK_FILE"
+          else
+            echo "Error: No APK found!"
+            exit 1
+          fi
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DearDay-Build14-APK
+          path: build-output/DearDay-Build14.apk
+          retention-days: 14
+
+      - name: Job Summary
+        run: |
+          echo "### 🚀 Dear Day Android APK Built Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "Your APK has been compiled directly on GitHub Actions runners without consuming any EAS cloud quota." >> $GITHUB_STEP_SUMMARY
+          echo "- **Version Code:** 14" >> $GITHUB_STEP_SUMMARY
+          echo "- **File:** [DearDay-Build14-APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
