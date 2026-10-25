@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Image, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import { Camera, X } from 'phosphor-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 
 interface Props {
@@ -37,6 +38,7 @@ export function PhotoPicker({ photos, onChange, maxPhotos = 2 }: Props) {
       allowsEditing: true, aspect: [4, 3], quality: 0.8,
     });
     if (!result.canceled && result.assets[0]) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       onChange([...photos, result.assets[0].uri]);
     }
   }
@@ -47,11 +49,13 @@ export function PhotoPicker({ photos, onChange, maxPhotos = 2 }: Props) {
       allowsEditing: true, aspect: [4, 3], quality: 0.8,
     });
     if (!result.canceled && result.assets[0]) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       onChange([...photos, result.assets[0].uri]);
     }
   }
 
   function remove(index: number) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onChange(photos.filter((_, i) => i !== index));
   }
 

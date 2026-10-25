@@ -22,6 +22,8 @@ import { useApp } from '@/contexts/AppContext';
 import { useDiary } from '@/contexts/DiaryContext';
 import { StreakCalendarModal } from '@/components/StreakCalendarModal';
 import { BrandLogoIcon } from '@/components/BrandLogo';
+import { getHonorificTitle, computeMilestoneStats, ARCHIVAL_STAMPS } from '@/lib/milestones';
+import { ArchivalStamp } from '@/components/ArchivalStamp';
 
 interface SectionItem {
   icon: (color: string) => React.ReactNode;
@@ -42,6 +44,10 @@ export default function ProfileTab() {
   const { user, signOut } = useApp();
   const { books, totalDays, totalMoments, streakCount } = useDiary();
   const [showStreakModal, setShowStreakModal] = useState(false);
+
+  const honorific = getHonorificTitle(streakCount);
+  const milestoneStats = React.useMemo(() => computeMilestoneStats(books, streakCount), [books, streakCount]);
+  const unlockedStampsCount = ARCHIVAL_STAMPS.filter(s => s.isUnlocked(milestoneStats)).length;
 
   const topPad = insets.top + (Platform.OS === 'web' ? 67 : 0);
   const botPad = insets.bottom + 90;
@@ -169,6 +175,12 @@ export default function ProfileTab() {
             {user?.name ?? 'You'}
           </Text>
           <Text style={[styles.email, { color: colors.mutedForeground }]}>{user?.email}</Text>
+
+          {/* Archival Honorific Rank Badge */}
+          <View style={[styles.honorificPill, { backgroundColor: colors.accentLight, borderColor: colors.primary + '35' }]}>
+            <Text style={styles.honorificBadge}>{honorific.badge}</Text>
+            <Text style={[styles.honorificTitle, { color: colors.primary }]}>{honorific.title}</Text>
+          </View>
         </View>
 
         {/* Stats Row */}
@@ -212,6 +224,38 @@ export default function ProfileTab() {
               </View>
             );
           })}
+        </View>
+
+        {/* Archival Passport & Milestone Stamps Album */}
+        <View style={styles.section}>
+          <View style={styles.passportHeaderRow}>
+            <View>
+              <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold', fontSize: 16 }]}>
+                Archival Passport & Stamps
+              </Text>
+              <Text style={[styles.passportSubtitle, { color: colors.mutedForeground }]}>
+                {unlockedStampsCount} of {ARCHIVAL_STAMPS.length} collected · Tap stamp to inspect
+              </Text>
+            </View>
+            <View style={[styles.passportRankChip, { backgroundColor: colors.accentLight }]}>
+              <Text style={[styles.passportRankChipText, { color: colors.primary }]}>
+                {honorific.title}
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.stampAlbumCard, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stampScroll}>
+              {ARCHIVAL_STAMPS.map(stamp => (
+                <ArchivalStamp
+                  key={stamp.id}
+                  stamp={stamp}
+                  isUnlocked={stamp.isUnlocked(milestoneStats)}
+                  size="compact"
+                />
+              ))}
+            </ScrollView>
+          </View>
         </View>
 
         {/* Sections */}
@@ -274,6 +318,24 @@ const styles = StyleSheet.create({
   avatarLetter: { fontSize: 30, fontFamily: 'PlayfairDisplay_700Bold' },
   name: { fontSize: 22, letterSpacing: 0.2 },
   email: { fontSize: 13, fontFamily: 'Inter_400Regular' },
+  honorificPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 99,
+    borderWidth: 1,
+    marginTop: 2,
+  },
+  honorificBadge: {
+    fontSize: 12,
+  },
+  honorificTitle: {
+    fontSize: 12,
+    fontFamily: 'PlayfairDisplay_700Bold',
+    letterSpacing: 0.2,
+  },
   statsRow: {
     flexDirection: 'row',
     borderRadius: 12,
@@ -283,6 +345,38 @@ const styles = StyleSheet.create({
   stat: { flex: 1, alignItems: 'center', gap: 2 },
   statValue: { fontSize: 22 },
   statLabel: { fontSize: 11, fontFamily: 'Inter_500Medium' },
+  passportHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    paddingBottom: 4,
+  },
+  passportSubtitle: {
+    fontSize: 11.5,
+    fontFamily: 'Inter_400Regular',
+    marginTop: 1,
+  },
+  passportRankChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 99,
+  },
+  passportRankChipText: {
+    fontSize: 11,
+    fontFamily: 'Inter_700Bold',
+  },
+  stampAlbumCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  stampScroll: {
+    paddingHorizontal: 4,
+    gap: 8,
+    alignItems: 'center',
+  },
   section: { gap: 6 },
   sectionTitle: { fontSize: 11, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.8, textTransform: 'uppercase', paddingLeft: 4 },
   sectionCard: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },

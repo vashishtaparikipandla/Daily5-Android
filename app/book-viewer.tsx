@@ -20,6 +20,8 @@ import {
   Check,
   Sparkle,
   X,
+  FilmStrip,
+  LockSimple,
 } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
@@ -28,6 +30,7 @@ import { useDiary } from '@/contexts/DiaryContext';
 import { BookCover } from '@/components/BookCover';
 import { BrandLogoLoader } from '@/components/BrandLogo';
 import { VisualLayoutPicker } from '@/components/VisualLayoutPicker';
+import { WeeklyReelModal } from '@/components/WeeklyReelModal';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
 import { exportBookAsPdf } from '@/lib/pdfExport';
 import { bookDisplayName, formatShortDate, formatFullDate } from '@/lib/data';
@@ -69,6 +72,8 @@ export function BookViewerContent() {
   const flipAnim = useRef(new Animated.Value(0)).current;
   const [exporting, setExporting] = useState(false);
   const [showLayoutModal, setShowLayoutModal] = useState(false);
+  const [showVolumeReel, setShowVolumeReel] = useState(false);
+  const [showSealModal, setShowSealModal] = useState(false);
 
   const book = getBook(mk ?? '');
   const [selectedLayout, setSelectedLayout] = useState<PageLayoutType>(book?.pageLayout || 'quad');
@@ -244,7 +249,7 @@ export function BookViewerContent() {
 
   async function handleLock() {
     Alert.alert(
-      'Lock this volume?',
+      'Lock & Seal this volume?',
       "Locking permanently closes this book and preserves it as archival print. No further changes can be made.",
       [
         { text: 'Cancel', style: 'cancel' },
@@ -253,7 +258,7 @@ export function BookViewerContent() {
           onPress: async () => {
             await lockCurrentMonth();
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.back();
+            setShowSealModal(true);
           },
         },
       ],
@@ -369,18 +374,30 @@ export function BookViewerContent() {
               <View style={styles.archivalSealBox}>
                 <Sparkle size={13} color="#D4AF37" weight="fill" />
                 <Text style={styles.archivalSealText}>
-                  ARCHIVAL FIRST EDITION • COTTON PAPER
+                  {book!.locked ? 'ARCHIVAL SEALED • PERMANENT' : 'ARCHIVAL FIRST EDITION • COTTON PAPER'}
                 </Text>
               </View>
 
-              <TouchableOpacity
-                style={styles.openVolumeBtn}
-                onPress={flipNext}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.openVolumeBtnText}>Open Volume</Text>
-                <CaretRight size={14} color="#F7F4EF" weight="bold" />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                {!book!.locked && (
+                  <TouchableOpacity
+                    style={[styles.openVolumeBtn, { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.3)', borderWidth: 1 }]}
+                    onPress={handleLock}
+                    activeOpacity={0.8}
+                  >
+                    <LockSimple size={13} color="#F7F4EF" weight="bold" />
+                    <Text style={styles.openVolumeBtnText}>Seal Book</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={styles.openVolumeBtn}
+                  onPress={flipNext}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.openVolumeBtnText}>Open Volume</Text>
+                  <CaretRight size={14} color="#F7F4EF" weight="bold" />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Silk Ribbon Bookmark */}
@@ -499,6 +516,22 @@ export function BookViewerContent() {
         </View>
 
         <View style={styles.headerActions}>
+          {/* Watch Volume Retrospective Story Reel */}
+          {sortedDays.length > 0 && (
+            <TouchableOpacity
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setShowVolumeReel(true);
+              }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.headerBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Watch Volume Reel"
+            >
+              <FilmStrip size={20} color={colors.primary} weight="bold" />
+            </TouchableOpacity>
+          )}
+
           {/* Layout & Typography Studio Trigger */}
           <TouchableOpacity
             onPress={() => setShowLayoutModal(true)}
@@ -772,6 +805,70 @@ export function BookViewerContent() {
                 Apply to Book ✓
               </Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Volume Retrospective Story Reel Modal ──────────────────────── */}
+      <WeeklyReelModal
+        visible={showVolumeReel}
+        onClose={() => setShowVolumeReel(false)}
+        weeklyDays={sortedDays}
+        streakCount={book.days.length}
+        title={`VOL. ${book.monthKey} RETROSPECTIVE`}
+        subtitle="Archival memories in review"
+        summaryTitle="Volume in Review"
+        summarySubtitle={`${book.days.length} days captured and preserved.`}
+      />
+
+      {/* ── Archival Wax Seal Ceremony Modal ───────────────────────────── */}
+      <Modal
+        visible={showSealModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSealModal(false)}
+      >
+        <View style={styles.sealModalOverlay}>
+          <View style={[styles.sealModalCard, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
+            <View style={styles.sealWaxRing}>
+              <View style={styles.sealWaxCore}>
+                <Sparkle size={32} color="#F7F4EF" weight="fill" />
+              </View>
+            </View>
+
+            <Text style={[styles.sealModalTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+              Volume Bound & Sealed
+            </Text>
+            <Text style={[styles.sealModalSub, { color: colors.mutedForeground }]}>
+              This edition of {bookDisplayName(book)} is now permanently closed and preserved in your archival library.
+            </Text>
+
+            <View style={styles.sealActionRow}>
+              <TouchableOpacity
+                style={[styles.sealActionSecondary, { borderColor: colors.border }]}
+                onPress={() => {
+                  setShowSealModal(false);
+                  router.back();
+                }}
+              >
+                <Text style={[styles.sealActionSecondaryText, { color: colors.foreground }]}>
+                  Back to Library
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.sealActionPrimary, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  setShowSealModal(false);
+                  setShowVolumeReel(true);
+                }}
+              >
+                <FilmStrip size={16} color={colors.primaryForeground} weight="bold" />
+                <Text style={[styles.sealActionPrimaryText, { color: colors.primaryForeground }]}>
+                  Watch Reel
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1669,6 +1766,87 @@ const styles = StyleSheet.create({
   },
   modalDoneBtnText: {
     fontSize: 15,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  sealModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  sealModalCard: {
+    width: '100%',
+    maxWidth: 360,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: 'center',
+  },
+  sealWaxRing: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: '#C4472A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    backgroundColor: 'rgba(196, 71, 42, 0.1)',
+  },
+  sealWaxCore: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#C4472A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
+  sealModalTitle: {
+    fontSize: 22,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  sealModalSub: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 20,
+  },
+  sealActionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  sealActionSecondary: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sealActionSecondaryText: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  sealActionPrimary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  sealActionPrimaryText: {
+    fontSize: 13,
     fontFamily: 'Inter_600SemiBold',
   },
 });

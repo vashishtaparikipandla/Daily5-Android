@@ -4,7 +4,7 @@ import {
   Platform, Dimensions,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { Bell, Fire, Sparkle, ArrowRight, BookOpen, Check } from 'phosphor-react-native';
+import { Bell, Fire, Sparkle, ArrowRight, BookOpen, Check, CaretRight, FilmStrip } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { useColors } from '@/hooks/useColors';
@@ -15,8 +15,10 @@ import { TonightCard } from '@/components/TonightCard';
 import { EntrySlot } from '@/components/EntrySlot';
 import { FtuoTour } from '@/components/FtuoTour';
 import { StreakCalendarModal } from '@/components/StreakCalendarModal';
+import { WeeklyReelModal } from '@/components/WeeklyReelModal';
 import { BrandLogoIcon } from '@/components/BrandLogo';
-import { todayStr } from '@/lib/data';
+import { todayStr, type DayLog } from '@/lib/data';
+import { getHonorificTitle } from '@/lib/milestones';
 import { getUnreadNotificationCount } from '@/lib/notifications';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -31,6 +33,7 @@ export default function TodayTab() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [celebrate, setCelebrate] = useState(false);
   const [showStreakModal, setShowStreakModal] = useState(false);
+  const [showWeeklyReel, setShowWeeklyReel] = useState(false);
   const confettiRef = useRef<any>(null);
   const hasCelebratedToday = useRef(false);
 
@@ -87,6 +90,12 @@ export default function TodayTab() {
     }
     return days;
   }, [today, getDayLog]);
+
+  const honorific = getHonorificTitle(streakCount);
+  const weeklyDaysLogs = useMemo(() => {
+    return weekDays.map(w => getDayLog(w.dateStr)).filter(Boolean) as DayLog[];
+  }, [weekDays, getDayLog]);
+  const hasWeeklyMoments = weeklyDaysLogs.some(d => d.entries.length > 0);
 
   const dayOfWeek = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' });
   const fullDate = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
@@ -159,7 +168,7 @@ export default function TodayTab() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.streakTitle, { color: colors.foreground }]}>
-                  {streakCount > 0 ? `${streakCount}-Day Streak` : 'Start Your Streak'}
+                  {streakCount > 0 ? `${streakCount}-Day Streak · ${honorific.title}` : 'Start Your Streak'}
                 </Text>
                 <Text style={[styles.streakSubtitle, { color: colors.mutedForeground }]} numberOfLines={1}>
                   {streakCount > 0
@@ -237,6 +246,33 @@ export default function TodayTab() {
               </View>
             ))}
           </View>
+
+          {/* Sunday Edition / Weekly Story Reel Trigger */}
+          {hasWeeklyMoments && (
+            <TouchableOpacity
+              style={[styles.weeklyReelBanner, { borderTopColor: colors.border }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setShowWeeklyReel(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={styles.weeklyReelLeft}>
+                <View style={[styles.reelIconCircle, { backgroundColor: colors.accentLight }]}>
+                  <FilmStrip size={15} color={colors.primary} weight="bold" />
+                </View>
+                <View>
+                  <Text style={[styles.weeklyReelTitle, { color: colors.foreground }]}>
+                    The Sunday Edition · 7-Day Reel
+                  </Text>
+                  <Text style={[styles.weeklyReelSubtitle, { color: colors.mutedForeground }]}>
+                    Relive this week's moments in a visual story
+                  </Text>
+                </View>
+              </View>
+              <CaretRight size={16} color={colors.primary} weight="bold" />
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={[styles.hairline, { backgroundColor: colors.border }]} />
@@ -383,6 +419,13 @@ export default function TodayTab() {
       <StreakCalendarModal
         visible={showStreakModal}
         onClose={() => setShowStreakModal(false)}
+      />
+
+      <WeeklyReelModal
+        visible={showWeeklyReel}
+        onClose={() => setShowWeeklyReel(false)}
+        weeklyDays={weeklyDaysLogs}
+        streakCount={streakCount}
       />
     </PaperBackground>
   );
@@ -532,6 +575,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
+  },
+  weeklyReelBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    marginTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  weeklyReelLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  reelIconCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weeklyReelTitle: {
+    fontSize: 12.5,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  weeklyReelSubtitle: {
+    fontSize: 10.5,
+    fontFamily: 'Inter_400Regular',
+    marginTop: 1,
   },
 
   notifBtn: {
