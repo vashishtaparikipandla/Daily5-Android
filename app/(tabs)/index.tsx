@@ -16,8 +16,10 @@ import { EntrySlot } from '@/components/EntrySlot';
 import { FtuoTour } from '@/components/FtuoTour';
 import { StreakCalendarModal } from '@/components/StreakCalendarModal';
 import { WeeklyReelModal } from '@/components/WeeklyReelModal';
+import { PhotobookPageSpread } from '@/components/PhotobookPageSpread';
+import { PolaroidTuckModal } from '@/components/PolaroidTuckModal';
 import { BrandLogoIcon } from '@/components/BrandLogo';
-import { todayStr, type DayLog } from '@/lib/data';
+import { todayStr, uid, type DayLog, type Entry } from '@/lib/data';
 import { getHonorificTitle } from '@/lib/milestones';
 import { getUnreadNotificationCount } from '@/lib/notifications';
 
@@ -29,11 +31,13 @@ const CELEBRATION_COLORS = ['#E8593A', '#C47B3A', '#2D3F2A', '#D8B4C0', '#F2E8DC
 export default function TodayTab() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { getTodayLog, getDayLog, getOnThisDay, streakCount } = useDiary();
+  const { getTodayLog, getDayLog, getOnThisDay, streakCount, upsertDayEntries } = useDiary();
   const [unreadCount, setUnreadCount] = useState(0);
   const [celebrate, setCelebrate] = useState(false);
   const [showStreakModal, setShowStreakModal] = useState(false);
   const [showWeeklyReel, setShowWeeklyReel] = useState(false);
+  const [viewingDate, setViewingDate] = useState<string>(todayStr());
+  const [activeTuckSlot, setActiveTuckSlot] = useState<number | null>(null);
   const confettiRef = useRef<any>(null);
   const hasCelebratedToday = useRef(false);
 
@@ -46,6 +50,8 @@ export default function TodayTab() {
   const today = todayStr();
   const todayLog = getTodayLog();
   const entries = todayLog?.entries ?? [];
+  const currentLog = getDayLog(viewingDate);
+  const currentEntries = currentLog?.entries ?? [];
   const onThisDay = getOnThisDay();
   const isComplete = entries.length === 4;
 
@@ -57,6 +63,38 @@ export default function TodayTab() {
       confettiRef.current?.start();
     }
   }, [isComplete]);
+
+  function flipPrevDay() {
+    const d = new Date(viewingDate + 'T12:00:00');
+    d.setDate(d.getDate() - 1);
+    setViewingDate(d.toISOString().slice(0, 10));
+  }
+
+  function flipNextDay() {
+    if (viewingDate >= today) return;
+    const d = new Date(viewingDate + 'T12:00:00');
+    d.setDate(d.getDate() + 1);
+    setViewingDate(d.toISOString().slice(0, 10));
+  }
+
+  async function handleSavePolaroid(newEntry: Entry, slotIdx: number) {
+    const existingLog = getDayLog(viewingDate);
+    const cur = existingLog ? [...existingLog.entries] : [];
+    while (cur.length < slotIdx) {
+      cur.push({ id: uid(), text: '', photos: [] });
+    }
+    cur[slotIdx] = newEntry;
+    const clean = cur.filter(e => e && (e.text?.trim() || e.photos?.length));
+    await upsertDayEntries(viewingDate, clean);
+  }
+
+  async function handleDeletePolaroid(slotIdx: number) {
+    const existingLog = getDayLog(viewingDate);
+    if (!existingLog) return;
+    const cur = [...existingLog.entries];
+    cur.splice(slotIdx, 1);
+    await upsertDayEntries(viewingDate, cur);
+  }
 
   // Compute Monday–Sunday for current week with logging status
   const weekDays = useMemo(() => {
@@ -213,7 +251,7 @@ export default function TodayTab() {
                     styles.weekDayCircle,
                     { borderColor: colors.border, backgroundColor: colors.muted },
                     item.hasEntry && { backgroundColor: colors.primary, borderColor: colors.primary },
-                    item.isToday && !item.hasEntry && {
+                    item.dateStr === viewingDate && {
                       borderColor: colors.primary,
                       borderWidth: 2,
                       backgroundColor: colors.accentLight,
@@ -223,7 +261,7 @@ export default function TodayTab() {
                   onPress={() => {
                     if (!item.isFuture) {
                       Haptics.selectionAsync();
-                      router.push({ pathname: '/log-modal', params: { date: item.dateStr } });
+                      setViewingDate(item.dateStr);
                     }
                   }}
                   disabled={item.isFuture}
@@ -277,71 +315,35 @@ export default function TodayTab() {
 
         <View style={[styles.hairline, { backgroundColor: colors.border }]} />
 
-        {/* Celebration Banner when 4/4 moments captured */}
-        {isComplete && (
-          <View style={[styles.celebrationCard, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={[styles.celebrationIconWrap, { backgroundColor: colors.accentLight }]}>
-                <Sparkle size={18} color={colors.primary} weight="fill" />
-              </View>
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[styles.celebrationTitle, { color: colors.foreground }]}>
-                  Today's Story is Complete ✨
-                </Text>
-                <Text style={[styles.celebrationSubtitle, { color: colors.mutedForeground }]}>
-                  You captured all 4 fragments. Your daily page has been preserved.
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={[styles.flipPageBtn, { backgroundColor: colors.accentLight, borderColor: colors.border }]}
-              onPress={() => {
-                Haptics.selectionAsync();
-                router.push({ pathname: '/book-viewer', params: { monthKey: today.slice(0, 7) } });
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Flip today's page in book"
-              activeOpacity={0.8}
-            >
-              <BookOpen size={15} color={colors.primary} weight="bold" />
-              <Text style={[styles.flipPageBtnText, { color: colors.primary }]}>
-                Flip Today's Page in Book →
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* The Central Nostalgic Photobook Album Page */}
+        <PhotobookPageSpread
+          dateStr={viewingDate}
+          dayLog={currentLog}
+          onTuckPhoto={slotIdx => {
+            setActiveTuckSlot(slotIdx);
+          }}
+          onFlipPrev={flipPrevDay}
+          onFlipNext={flipNextDay}
+          canFlipNext={viewingDate < today}
+          onOpenFullBook={() => {
+            Haptics.selectionAsync();
+            router.push({ pathname: '/book-viewer', params: { monthKey: viewingDate.slice(0, 7) } });
+          }}
+        />
 
-        {/* Logged entries for today */}
-        {entries.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={[styles.sectionLabel, { color: colors.tertiary }]}>
-                {entries.length === 4 ? "Today's 4 Moments" : `${entries.length} of 4 Moments Recorded`}
-              </Text>
-              <TouchableOpacity
-                onPress={openLog}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityRole="button"
-                accessibilityLabel="Edit today's moments"
-              >
-                <Text style={[styles.editLink, { color: colors.primary }]}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-            {entries.map((entry, i) => (
-              <EntrySlot
-                key={entry.id}
-                entry={entry}
-                slotNumber={i + 1}
-                onPress={openLog}
-              />
-            ))}
-          </View>
-        )}
-
-        {/* Tonight card / Add remaining CTA */}
-        {entries.length < 4 && (
-          <TonightCard onPress={openLog} entryCount={entries.length} />
-        )}
+        {/* Full-Day Multi-Entry Link */}
+        <View style={styles.editorLinkRow}>
+          <TouchableOpacity
+            onPress={openLog}
+            activeOpacity={0.7}
+            style={styles.editorLinkBtn}
+          >
+            <BookOpen size={14} color={colors.mutedForeground} />
+            <Text style={[styles.editorLinkText, { color: colors.mutedForeground }]}>
+              Open in multi-slot inscription editor →
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {/* On This Day — Archival & Distinct Time Capsule Styling */}
         {onThisDay.length > 0 && (
@@ -426,6 +428,18 @@ export default function TodayTab() {
         onClose={() => setShowWeeklyReel(false)}
         weeklyDays={weeklyDaysLogs}
         streakCount={streakCount}
+      />
+
+      {/* Polaroid Tucking & Handwritten Inscription Modal */}
+      <PolaroidTuckModal
+        visible={activeTuckSlot !== null}
+        onClose={() => setActiveTuckSlot(null)}
+        slotIndex={activeTuckSlot ?? 0}
+        dateStr={viewingDate}
+        initialEntry={currentEntries[activeTuckSlot ?? 0] ?? null}
+        onSave={handleSavePolaroid}
+        onDelete={handleDeletePolaroid}
+        isImmutable={viewingDate < today && !!currentEntries[activeTuckSlot ?? 0]?.text}
       />
     </PaperBackground>
   );
@@ -633,6 +647,21 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   hairline: { height: 1, marginVertical: 2 },
+  editorLinkRow: {
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  editorLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  editorLinkText: {
+    fontSize: 11.5,
+    fontFamily: 'Inter_500Medium',
+  },
   celebrationCard: {
     gap: 10,
     padding: 14,

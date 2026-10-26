@@ -250,6 +250,9 @@ function PrivacyContent() {
       });
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const response = await GoogleSignin.signIn();
+      if ((response as any).type === 'cancelled') {
+        return;
+      }
       const tokens = await GoogleSignin.getTokens();
       const gUser = (response as any).data?.user || (response as any).user;
       const email = gUser?.email || user?.email || driveAccount || 'Google User';

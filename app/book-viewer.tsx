@@ -242,8 +242,8 @@ export function BookViewerContent() {
     Alert.alert(
       willHide ? 'Day Hidden' : 'Day Restored',
       willHide
-        ? 'This day is hidden from print orders and PDF exports. Your diary memories remain safe.'
-        : 'This day will now be included in print orders and PDF exports.',
+        ? 'This day is hidden from volume exports. Your memories remain safe in your diary.'
+        : 'This day will now be included in volume exports.',
     );
   }
 
@@ -574,32 +574,20 @@ export function BookViewerContent() {
             </TouchableOpacity>
           )}
 
-          {/* Export PDF */}
+          {/* Export Keepsake PDF */}
           <TouchableOpacity
             onPress={handleExportPdf}
             disabled={exporting}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={styles.headerBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Export Keepsake PDF"
           >
             {exporting ? (
               <BrandLogoLoader size={20} color={colors.primary} />
             ) : (
               <ShareNetwork size={22} color={colors.primary} />
             )}
-          </TouchableOpacity>
-
-          {/* Print Order */}
-          <TouchableOpacity
-            onPress={() =>
-              router.push({
-                pathname: '/order-flow',
-                params: { monthKey: book.monthKey },
-              } as any)
-            }
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={styles.headerBtn}
-          >
-            <Printer size={22} color={colors.primary} />
           </TouchableOpacity>
         </View>
       </View>

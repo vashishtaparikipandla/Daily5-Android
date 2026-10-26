@@ -81,9 +81,9 @@ export default function AuthScreen() {
   useEffect(() => {
     try {
       GoogleSignin.configure({
-        scopes: ['https://www.googleapis.com/auth/drive.appdata'],
+        scopes: ['email', 'profile'],
         webClientId: WEB_CLIENT_ID,
-        offlineAccess: true,
+        offlineAccess: false,
       });
     } catch (e) {
       console.warn('Failed to configure GoogleSignin:', e);
@@ -96,39 +96,59 @@ export default function AuthScreen() {
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const response = await GoogleSignin.signIn();
-      const tokens = await GoogleSignin.getTokens();
 
-      const user = (response as any).data?.user || (response as any).user;
-      const email = user?.email || '';
+      // Check for v16+ response structure:
+      if ((response as any).type === 'cancelled') {
+        // User dismissed the Google sheet
+        return;
+      }
+
+      const resData = (response as any).data || response;
+      const user = resData?.user;
+      if (!user) {
+        return;
+      }
+
+      const email = user.email || '';
+      const idToken = resData.idToken || '';
+
+      let accessToken: string | undefined = undefined;
+      try {
+        const tokens = await GoogleSignin.getTokens();
+        accessToken = tokens?.accessToken;
+      } catch (tokenErr) {
+        console.log('Optional access token retrieval note:', tokenErr);
+      }
+
       await signIn(
         {
-          name: user?.name || 'User',
+          name: user.name || 'User',
           email,
-          avatar: user?.photo || undefined,
+          avatar: user.photo || undefined,
         },
-        tokens.accessToken,
+        accessToken || idToken,
       );
-
-      // Auto-connect Google Drive with the granted token
-      if (tokens.accessToken && email) {
-        try {
-          await setDriveConnection(email, tokens.accessToken, Date.now() + 3600 * 1000);
-        } catch (driveErr) {
-          console.warn('Auto drive connection warning:', driveErr);
-        }
-      }
 
       router.replace('/biometric-setup');
     } catch (err: any) {
-      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
-        // user cancelled
+      if (
+        err.code === statusCodes.SIGN_IN_CANCELLED ||
+        err.message?.includes('cancelled') ||
+        err.message?.includes('canceled')
+      ) {
+        // User dismissed Google sign-in dialog — clean exit, no error text
+        return;
       } else if (err.code === statusCodes.IN_PROGRESS) {
-        // in progress
+        // In progress
+        return;
       } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         setError('Google Play Services is not available or outdated.');
+      } else if (err.message?.includes('getTokens requires a user to be signed in')) {
+        // Handled silently
+        return;
       } else {
-        setError(err.message || 'Google sign-in failed. Try Telegram or Email login below.');
-        console.error('Google Sign-In Error:', err);
+        setError('Google sign-in could not be completed. You can also use Email or Explore with Demo.');
+        console.warn('Google Sign-In Error:', err);
       }
     } finally {
       setLoading(false);

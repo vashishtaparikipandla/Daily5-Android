@@ -108,11 +108,6 @@ export default function ProfileTab() {
           label: 'Data & Cloud Backup Settings',
           route: '/profile/privacy',
         },
-        {
-          icon: color => <Package size={19} color={color} weight="regular" />,
-          label: 'Print Orders',
-          route: '/profile/orders',
-        },
       ],
     },
     {

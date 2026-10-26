@@ -22,6 +22,7 @@ import {
   ArrowLeft,
   CalendarBlank,
   Sparkle,
+  Images,
 } from 'phosphor-react-native';
 import { router } from 'expo-router';
 import { useApp } from '@/contexts/AppContext';
@@ -34,23 +35,23 @@ const { width: SW } = Dimensions.get('window');
 
 const SLIDES = [
   {
-    title: 'Life is short.',
-    body: 'The moments that matter most are often the ones you almost forgot. Capture them before they fade into the background.',
-    visual: 'lamp',
+    title: 'Remember the\nfamily albums?',
+    body: 'The heavy leather covers, sleeve pockets, and glossy prints. Sitting on the rug with loved ones, turning pages and reliving the moments that mattered most.',
+    visual: 'album',
   },
   {
-    title: 'Every night,\nchoose 4.',
-    body: "Not because the rest don't count — but because focused curation turns passing days into enduring stories.",
+    title: 'Thousands of photos.\nZero memories.',
+    body: 'Today, our memories get buried in camera rolls and lost to digital noise. When every snapshot is saved, nothing is remembered.',
     visual: 'dots',
   },
   {
-    title: 'Not just\nthe good days.',
-    body: 'Hard days, small victories, quiet coffees, twisted ankles. Every real human chapter belongs in your book.',
+    title: 'Every night,\ntuck 4 into paper.',
+    body: 'Select 4 small moments of your day. Slide them into your tactile album sleeve with a handwritten note. The real, human fragments of life.',
     visual: 'icons',
   },
   {
-    title: 'Every month\nbecomes a book.',
-    body: 'A real, tangible volume you can flip through with hardcover elegance, share as a PDF, or order into physical print.',
+    title: 'A living album,\nbound for life.',
+    body: 'Each day turns into a physical-style book page. Month by month, your days become a bound keepsake volume to flip through and cherish forever.',
     visual: 'book',
   },
 ];
@@ -63,36 +64,48 @@ const CATEGORY_CHIPS = [
   { icon: BookOpen, color: '#C43A6F', label: 'Learn' },
 ];
 
+// ─── Slide 0: Nostalgic Photo Album Sleeve & Sliding Polaroid ───────────────
 
-
-// ─── Slide 0: Glowing Floating Lamp ──────────────────────────────────────────
-
-function LampVisual() {
-  const floatAnim = useSharedValue(0);
+function AlbumSleeveVisual() {
+  const slideAnim = useSharedValue(-24);
 
   useEffect(() => {
-    floatAnim.value = withRepeat(
+    slideAnim.value = withRepeat(
       withSequence(
-        withTiming(-12, { duration: 1600, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 1600, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 1600, easing: Easing.out(Easing.cubic) }),
+        withTiming(-24, { duration: 1600, easing: Easing.inOut(Easing.cubic) }),
       ),
       -1,
-      false,
+      true,
     );
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: floatAnim.value }],
+    transform: [{ translateY: slideAnim.value }, { rotate: '-2deg' }],
   }));
 
   return (
     <View style={visualStyles.centerBox}>
-      <View style={visualStyles.lampGlow} />
-      <Animated.View style={[visualStyles.lampContainer, animatedStyle]}>
-        <View style={visualStyles.lampCircle}>
-          <Lightbulb size={68} color="#E8593A" weight="duotone" />
-        </View>
-      </Animated.View>
+      {/* Background Archival Album Page with Leather Trim & Corner Slits */}
+      <View style={visualStyles.albumPageMock}>
+        <View style={visualStyles.mockSpineStitch} />
+        <View style={[visualStyles.mockCornerMount, { top: 12, left: 24 }]} />
+        <View style={[visualStyles.mockCornerMount, { top: 12, right: 24 }]} />
+        <View style={[visualStyles.mockCornerMount, { bottom: 12, left: 24 }]} />
+        <View style={[visualStyles.mockCornerMount, { bottom: 12, right: 24 }]} />
+
+        {/* Sliding Mini Polaroid Photo */}
+        <Animated.View style={[visualStyles.polaroidCard, animatedStyle]}>
+          <View style={visualStyles.polaroidPhotoArea}>
+            <Images size={28} color="#C47B3A" weight="duotone" />
+            <Text style={visualStyles.polaroidMetaStamp}>JUL 24</Text>
+          </View>
+          <View style={visualStyles.polaroidChin}>
+            <View style={visualStyles.mockHandwriting1} />
+            <View style={visualStyles.mockHandwriting2} />
+          </View>
+        </Animated.View>
+      </View>
     </View>
   );
 }
@@ -606,7 +619,7 @@ export default function OnboardingScreen() {
 
             {/* Centered Graphic Zone */}
             <View style={styles.visualStage}>
-              {slide === 0 && <LampVisual />}
+              {slide === 0 && <AlbumSleeveVisual />}
               {slide === 1 && <DotsVisual />}
               {slide === 2 && <CategoryChipsVisual />}
               {slide === 3 && <BookVisual />}
@@ -716,6 +729,89 @@ const visualStyles = StyleSheet.create({
     justifyContent: 'center',
     height: 190,
     position: 'relative',
+  },
+  albumPageMock: {
+    width: 220,
+    height: 170,
+    borderRadius: 12,
+    backgroundColor: '#FDFBF7',
+    borderWidth: 1.5,
+    borderColor: '#E8E3D9',
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  mockSpineStitch: {
+    position: 'absolute',
+    left: 8,
+    top: 8,
+    bottom: 8,
+    width: 2,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#C4472A88',
+  },
+  mockCornerMount: {
+    position: 'absolute',
+    width: 14,
+    height: 14,
+    borderColor: '#C4472A66',
+    borderWidth: 1.5,
+    borderRadius: 2,
+  },
+  polaroidCard: {
+    width: 130,
+    height: 145,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 6,
+    padding: 7,
+    borderWidth: 1,
+    borderColor: '#E8E3D9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  polaroidPhotoArea: {
+    width: '100%',
+    height: 95,
+    backgroundColor: 'rgba(232, 89, 58, 0.08)',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 0.5,
+    borderColor: 'rgba(232, 89, 58, 0.2)',
+  },
+  polaroidMetaStamp: {
+    fontSize: 9,
+    fontFamily: 'Inter_700Bold',
+    color: '#C47B3A',
+    letterSpacing: 1,
+    marginTop: 4,
+  },
+  polaroidChin: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    gap: 4,
+  },
+  mockHandwriting1: {
+    height: 3,
+    backgroundColor: '#2C2A2644',
+    borderRadius: 2,
+    width: '80%',
+  },
+  mockHandwriting2: {
+    height: 3,
+    backgroundColor: '#2C2A2622',
+    borderRadius: 2,
+    width: '55%',
   },
   lampGlow: {
     position: 'absolute',

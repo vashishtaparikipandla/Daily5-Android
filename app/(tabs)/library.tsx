@@ -286,7 +286,7 @@ export default function LibraryTab() {
               Explore Sample Volume
             </Text>
             <Text style={[styles.sampleBannerText, { color: colors.mutedForeground }]}>
-              Tap "Kyoto Journey" below to preview how bound layouts, photos, and daily moments look in print.
+              Tap "Kyoto Journey" below to preview how bound layouts, photos, and daily moments look in your personal archive.
             </Text>
           </View>
           <TouchableOpacity
@@ -338,10 +338,10 @@ export default function LibraryTab() {
                   onPress={() => openBook(item)}
                 />
 
-                {/* Quick Share & Print Actions */}
+                {/* Quick Share Action */}
                 <View style={[styles.bookActionsRow, { width: BOOK_WIDTH }]}>
                   <TouchableOpacity
-                    style={[styles.bookActionBtn, { backgroundColor: colors.accentLight, borderColor: colors.border }]}
+                    style={[styles.bookActionBtn, { backgroundColor: colors.accentLight, borderColor: colors.border, flex: 1 }]}
                     onPress={() => handleShareBook(item)}
                     disabled={isSharing}
                     activeOpacity={0.75}
@@ -354,21 +354,9 @@ export default function LibraryTab() {
                     ) : (
                       <>
                         <ShareNetwork size={14} color={colors.foreground} weight="bold" />
-                        <Text style={[styles.bookActionText, { color: colors.foreground }]}>Share</Text>
+                        <Text style={[styles.bookActionText, { color: colors.foreground }]}>Share Volume</Text>
                       </>
                     )}
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.bookActionBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
-                    onPress={() => handlePrintBook(item)}
-                    activeOpacity={0.75}
-                    hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Order print for ${bookTitle}`}
-                  >
-                    <Printer size={14} color={colors.foreground} weight="bold" />
-                    <Text style={[styles.bookActionText, { color: colors.foreground }]}>Print</Text>
                   </TouchableOpacity>
                 </View>
               </View>
