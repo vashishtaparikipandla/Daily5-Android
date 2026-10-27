@@ -990,28 +990,79 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
       )}
 
       {/* ==================================================================
-          3D BOOK VIEWPORT (WITH 1900PX PERSPECTIVE & AMBIENT GYROSCOPE)
+          AUTHENTIC STUDIO TABLETOP DESK WITH MULTI-LAYER DEPTH SHADOWS
           ================================================================== */}
       <div
-        ref={bookViewportRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
+        className="tabletop-desk-stage"
         style={{
           width: '100%',
-          maxWidth: 390,
-          height: 575,
+          maxWidth: 400,
+          margin: '0 auto',
           position: 'relative',
+          borderRadius: 24,
+          padding: '10px 8px 6px 8px',
+          background: 'radial-gradient(ellipse 95% 85% at 50% 32%, #F8F2E8 0%, #EFE8DA 52%, #DFD3BD 100%)',
+          boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.95), inset 0 -2px 8px rgba(45, 30, 18, 0.08), 0 16px 36px -6px rgba(36, 22, 12, 0.22)',
+          border: '1px solid #DFD4C0',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          perspective: '1900px',
-          perspectiveOrigin: '50% 48%',
-          padding: isCoverView ? '8px 18px 44px 18px' : '6px 12px 4px 34px',
-          touchAction: 'pan-y'
+          overflow: 'hidden'
         }}
       >
-        {/* HORIZONTAL ACTION PILL BAR (REVEALED ON TAP & HOLD ON COVER) */}
+        {/* Tabletop fine wood grain sheen / ambient lighting overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 38%, rgba(40,25,12,0.05) 100%)',
+            borderRadius: 24,
+            zIndex: 0
+          }}
+        />
+
+        {/* 3D BOOK VIEWPORT (WITH 1900PX PERSPECTIVE & AMBIENT GYROSCOPE) */}
+        <div
+          ref={bookViewportRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          style={{
+            width: '100%',
+            maxWidth: 384,
+            height: 512,
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            perspective: '1900px',
+            perspectiveOrigin: '50% 48%',
+            padding: isCoverView ? '6px 16px 36px 16px' : '4px 10px 4px 28px',
+            touchAction: 'pan-y',
+            zIndex: 2
+          }}
+        >
+          {/* Dynamic Tabletop Desk Contact Shadow Beneath Book */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: isCoverView ? 16 : 8,
+              left: isCoverView ? '16%' : '8%',
+              right: isCoverView ? '16%' : '6%',
+              height: isCoverView ? 34 : 26,
+              borderRadius: '50%',
+              background: isCoverView
+                ? 'radial-gradient(ellipse at center, rgba(28, 16, 8, 0.55) 0%, rgba(38, 22, 12, 0.28) 45%, transparent 75%)'
+                : 'radial-gradient(ellipse at center, rgba(28, 16, 8, 0.45) 0%, rgba(38, 22, 12, 0.20) 50%, transparent 78%)',
+              filter: 'blur(9px)',
+              transform: `translateY(${isCoverView ? 22 : 16}px) scaleX(${1 + Math.abs(activeTilt.y) * 0.012})`,
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
+
+          {/* HORIZONTAL ACTION PILL BAR (REVEALED ON TAP & HOLD ON COVER) */}
         {isCoverView && (
           <div
             className="cover-context-menu"
@@ -1282,7 +1333,8 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                 backgroundColor: currentLinen.main,
                 backgroundImage:
                   'repeating-linear-gradient(0deg, rgba(255,255,255,0.09) 0px, rgba(255,255,255,0.09) 1px, transparent 1px, transparent 3px), repeating-linear-gradient(90deg, rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 1px, transparent 1px, transparent 3px), linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(0,0,0,0.12) 100%)',
-                boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.6), inset 0 -2px 6px rgba(0,0,0,0.18), 0 18px 38px rgba(35, 26, 20, 0.24)'
+                boxShadow:
+                  'inset 0 1px 2px rgba(255,255,255,0.7), inset 0 -2px 6px rgba(0,0,0,0.22), 0 6px 12px -2px rgba(25, 16, 10, 0.35), 0 24px 44px -6px rgba(28, 18, 10, 0.42), 0 42px 68px -12px rgba(35, 22, 12, 0.32), -4px 0 8px rgba(25, 16, 10, 0.25)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 4 }}>
@@ -1511,18 +1563,19 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                padding: '14px 14px 14px 18px',
+                padding: '10px 12px 6px 16px',
                 zIndex: 20,
                 overflow: 'hidden',
                 backgroundColor: '#FCFBF8',
                 backgroundImage:
                   'radial-gradient(rgba(0,0,0,0.018) 1px, transparent 0), linear-gradient(to right, rgba(45,35,25,0.12) 0%, rgba(45,35,25,0.03) 6%, transparent 15%, transparent 95%, rgba(45,35,25,0.02) 100%)',
                 backgroundSize: '14px 14px, 100% 100%',
-                boxShadow: 'inset 1px 0 0 rgba(255,255,255,0.8), 0 8px 24px rgba(35, 26, 20, 0.12)'
+                boxShadow:
+                  'inset 1px 0 0 rgba(255,255,255,0.8), -6px 14px 28px rgba(32, 20, 12, 0.20), 8px 22px 38px rgba(28, 18, 10, 0.28), 0 32px 50px rgba(35, 22, 12, 0.16)'
               }}
             >
               {/* Day Header */}
-              <div style={{ borderBottom: '1px solid #EAE3D5', paddingBottom: 6 }}>
+              <div style={{ borderBottom: '1px solid #EAE3D5', paddingBottom: 4 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: '#8C7A6B' }}>
                   <span>
                     {dowName} • {monthName.slice(0, 3).toUpperCase()} {activePage}, {currentYear}
@@ -1567,10 +1620,10 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
-                  columnGap: 12,
-                  rowGap: 10,
-                  margin: 'auto 0',
-                  padding: '6px 0'
+                  columnGap: 10,
+                  rowGap: 6,
+                  margin: '2px 0',
+                  padding: '2px 0'
                 }}
               >
                 {[0, 1, 2, 3].map((slotIdx) => {
@@ -1586,7 +1639,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                           onClick={() => handleLockedSlotTap(slotIdx)}
                           className={shakingLockSlot === slotIdx ? 'animate-lock-shake' : ''}
                           style={{
-                            aspectRatio: '4 / 3.65',
+                            aspectRatio: '4 / 3.4',
                             borderRadius: 4,
                             backgroundColor: '#EFECE5',
                             padding: 6,
@@ -1612,7 +1665,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                       <div
                         onClick={() => handleSlotClick(slotIdx)}
                         style={{
-                          aspectRatio: '4 / 3.65',
+                          aspectRatio: '4 / 3.4',
                           borderRadius: 4,
                           backgroundColor: '#EFECE5',
                           padding: 5,
@@ -1970,6 +2023,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
           </div>
         )}
       </div>
+      </div> {/* tabletop-desk-stage */}
 
       {/* 2-LINE CAPTION EDITOR MODAL */}
       {captionEditor && (

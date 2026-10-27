@@ -1,52 +1,32 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, Platform } from 'react-native';
-import { Lock } from 'phosphor-react-native';
-import { useColors } from '@/hooks/useColors';
+import { Lock, Camera, BookOpen } from 'phosphor-react-native';
 import { bookDisplayName } from '@/lib/data';
-import type { Book, BookFontType } from '@/lib/data';
-import { BrandLogoIcon } from '@/components/BrandLogo';
+import type { Book } from '@/lib/data';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Procedural cover palettes
-const COVER_PALETTES = [
-  { bg: '#2D3F2A', text: '#C8D8B4' },
-  { bg: '#3D2A2F', text: '#D8B4C0' },
-  { bg: '#2A3A4A', text: '#B4C8D8' },
-  { bg: '#4A3A1A', text: '#D8C8A0' },
-  { bg: '#1A2F3F', text: '#A0B8C8' },
-  { bg: '#3F2A1A', text: '#D0B090' },
-  { bg: '#2A1A3F', text: '#B8A8D0' },
-  { bg: '#1A3F2A', text: '#A8D0B8' },
+// Authentic Heirloom Linen Themes matching Argon
+export const LINEN_THEMES = [
+  { name: 'Terracotta', main: '#8B4A34', spine: '#6B3524', border: '#7A3F2C', text: '#F4ECE4' },
+  { name: 'Lavender', main: '#756A85', spine: '#5C526B', border: '#675C75', text: '#F3EEF8' },
+  { name: 'Sage', main: '#5D705C', spine: '#485947', border: '#50624F', text: '#EFF5EE' },
+  { name: 'Oatmeal', main: '#B5AA9B', spine: '#978A7A', border: '#A69A8B', text: '#2B2420' },
 ];
 
-function paletteForBook(book: Book) {
-  if (book.coverConfig?.type === 'solid' && book.coverConfig.value) {
-    const isLight = book.coverConfig.value.toLowerCase() === '#e7dfd5';
-    return { bg: book.coverConfig.value, text: isLight ? '#2B2D2F' : '#F2E8DC' };
-  }
-  if (book.coverColor) {
-    const isLight = book.coverColor.toLowerCase() === '#e7dfd5';
-    return { bg: book.coverColor, text: isLight ? '#2B2D2F' : '#F2E8DC' };
-  }
-  let hash = 0;
-  for (let i = 0; i < book.monthKey.length; i++) {
-    hash = (hash * 31 + book.monthKey.charCodeAt(i)) % COVER_PALETTES.length;
-  }
-  return COVER_PALETTES[hash];
-}
+function getThemeForBook(book: Book) {
+  const val = (book.coverConfig?.value || book.coverColor || '').toLowerCase();
+  if (val.includes('sage') || val === '#5d705c' || val === '#2f3e34') return LINEN_THEMES[2];
+  if (val.includes('lavender') || val === '#756a85') return LINEN_THEMES[1];
+  if (val.includes('oatmeal') || val === '#d8cfc2' || val === '#b5aa9b' || val === '#e7dfd5') return LINEN_THEMES[3];
+  if (val.includes('terracotta') || val === '#8b4a34' || val === '#c85a32') return LINEN_THEMES[0];
 
-function resolveFont(font?: BookFontType): { fontFamily?: string; fontWeight?: any } {
-  if (font === 'sans') {
-    return { fontFamily: 'Inter_700Bold' };
+  // Stable hash based on monthKey
+  let hash = 0;
+  for (let i = 0; i < (book.monthKey || '').length; i++) {
+    hash = (hash * 31 + book.monthKey.charCodeAt(i)) % LINEN_THEMES.length;
   }
-  if (font === 'garamond') {
-    return { fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif', fontWeight: 'bold' };
-  }
-  if (font === 'typewriter') {
-    return { fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: 'bold' };
-  }
-  return { fontFamily: 'PlayfairDisplay_700Bold' };
+  return LINEN_THEMES[hash];
 }
 
 interface Props {
@@ -57,215 +37,323 @@ interface Props {
 }
 
 export function BookCover({ book, onPress, size = 'grid', customWidth }: Props) {
-  const colors = useColors();
-  const palette = paletteForBook(book);
-  const fontStyle = resolveFont(book.fontFamily || book.coverConfig?.fontFamily);
+  const theme = getThemeForBook(book);
 
-  // Responsive book sizing for 2-column grid with minimal whitespace
+  // Sizing
   const gridW = customWidth || Math.floor((SCREEN_WIDTH - 40 - 14) / 2);
-  const gridH = Math.round(gridW * 1.36);
+  const gridH = Math.round(gridW * 1.38);
 
   let width = gridW;
   let height = gridH;
-  let fontSize = 16;
-  let subSize = 12;
 
   if (size === 'small') {
     width = 90;
     height = 125;
-    fontSize = 11;
-    subSize = 9;
   } else if (size === 'medium') {
     width = 135;
-    height = 185;
-    fontSize = 14;
-    subSize = 11;
+    height = 188;
   } else if (size === 'large') {
     width = 175;
-    height = 240;
-    fontSize = 17;
-    subSize = 13;
+    height = 242;
   }
 
-  const title = book.coverConfig?.title || bookDisplayName(book);
-  const subtitle = book.coverConfig?.subtitle;
+  const title = book.coverConfig?.title || book.title || bookDisplayName(book);
+  const subtitle = book.coverConfig?.subtitle || book.description || 'Curated daily archive';
   const daysCount = book.days.filter(d => d.entries.length > 0).length;
+  const yearStr = book.monthKey.slice(0, 4) || '2026';
 
-  const isPhotoCover = book.coverConfig?.type === 'photo' && !!book.coverConfig.value;
-  const isGradientCover = book.coverConfig?.type === 'gradient' && !!book.coverConfig.value;
+  // Find a cover photo from config, or first entry with photo
+  const coverPhoto =
+    (book.coverConfig?.type === 'photo' && book.coverConfig.value)
+      ? book.coverConfig.value
+      : (book.days.find(d => d.entries.some(e => e.photos && e.photos.length > 0))?.entries.find(e => e.photos && e.photos.length > 0)?.photos?.[0])
+      || (book.isSample ? 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=600&q=80' : null);
+
+  const isSmall = size === 'small';
+  const isMedium = size === 'medium';
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={!onPress}
-      activeOpacity={0.85}
-      accessibilityRole="button"
-      accessibilityLabel={`Book: ${title}, ${daysCount} days recorded`}
-      style={[
-        styles.cover,
-        { width, height, backgroundColor: isGradientCover ? '#1A2938' : palette.bg },
-      ]}
-    >
-      {/* Spine-like left strip with subtle embossing */}
-      <View style={styles.spine} />
+    <View style={[styles.outerWrapper, { width, height }]}>
+      {/* Tabletop Contact Shadow */}
+      <View style={[styles.tableShadow, { width: width * 0.94 }]} />
 
-      {/* Top right badges: Sample or Locked */}
-      <View style={styles.topBadges}>
-        {book.isSample && (
-          <View style={styles.sampleBadge}>
-            <Text style={styles.sampleBadgeText}>SAMPLE</Text>
+      <TouchableOpacity
+        onPress={onPress}
+        disabled={!onPress}
+        activeOpacity={0.88}
+        accessibilityRole="button"
+        accessibilityLabel={`Book: ${title}, ${daysCount} days recorded`}
+        style={[
+          styles.coverContainer,
+          {
+            width,
+            height,
+            backgroundColor: theme.main,
+            borderColor: theme.border,
+          },
+        ]}
+      >
+        {/* Left Hardcover Spine with physical stitching and depth */}
+        <View style={[styles.spineBand, { backgroundColor: theme.spine }]}>
+          <View style={styles.spineStitchLine} />
+        </View>
+
+        {/* Right Stacked Paper Pages Edge Strip */}
+        <View style={styles.pageEdgeStrip} />
+
+        {/* Top Badges (Sample or Lock) */}
+        {(book.isSample || book.locked) && (
+          <View style={styles.badgeRow}>
+            {book.isSample && (
+              <View style={styles.sampleBadge}>
+                <Text style={styles.sampleBadgeText}>SAMPLE</Text>
+              </View>
+            )}
+            {book.locked && (
+              <View style={styles.lockBadge}>
+                <Lock size={10} color="#FFFFFF" weight="fill" />
+              </View>
+            )}
           </View>
         )}
-        {book.locked && (
-          <View style={styles.lockCircle}>
-            <Lock size={11} color={palette.text} weight="fill" />
-          </View>
-        )}
-      </View>
 
-      {/* Center Art: Framed Photo Inset or 4-dots memory pattern motif */}
-      {isPhotoCover ? (
-        <View style={styles.photoInsetWrap}>
-          <Image
-            source={{ uri: book.coverConfig!.value }}
-            style={[styles.photoInset, { width: width * 0.55, height: width * 0.55 }]}
-            resizeMode="cover"
-          />
-        </View>
-      ) : (
-        <View style={styles.motifWrap}>
-          <BrandLogoIcon
-            size={size === 'small' ? 22 : size === 'large' ? 34 : size === 'medium' ? 26 : 28}
-            color={palette.text}
-            style={{ opacity: 0.7 }}
-          />
-        </View>
-      )}
-
-      {/* Book Bottom Content */}
-      <View style={styles.inner}>
-        <Text
-          style={[styles.title, { color: palette.text, fontSize }, fontStyle]}
-          numberOfLines={2}
-        >
-          {title}
-        </Text>
-
-        {subtitle ? (
-          <Text
-            style={[styles.subtitle, { color: palette.text, fontSize: subSize - 1 }]}
-            numberOfLines={1}
-          >
-            {subtitle}
+        {/* Inset Cream Debossed Card matching Argon Cover */}
+        <View style={[styles.insetCard, isSmall && styles.insetCardSmall]}>
+          {/* Foil Volume Header */}
+          <Text style={[styles.foilTag, isSmall && { fontSize: 6.5, letterSpacing: 0.8 }]}>
+            VOL. {yearStr} • ARCHIVAL LINEN
           </Text>
-        ) : null}
 
-        <View style={[styles.divider, { backgroundColor: palette.text }]} />
+          {/* Photo Frame or Camera Placeholder */}
+          <View style={[styles.photoFrame, isSmall && styles.photoFrameSmall]}>
+            {coverPhoto ? (
+              <Image source={{ uri: coverPhoto }} style={styles.coverImg} resizeMode="cover" />
+            ) : (
+              <View style={styles.emptyPhotoBox}>
+                <Camera size={isSmall ? 12 : 18} color="#A89B8C" weight="regular" />
+              </View>
+            )}
+          </View>
 
-        <Text style={[styles.count, { color: palette.text, fontSize: subSize }]}>
-          {daysCount} {daysCount === 1 ? 'day' : 'days'} recorded
-        </Text>
-      </View>
-    </TouchableOpacity>
+          {/* Debossed Typography */}
+          <Text
+            style={[styles.bookTitle, isSmall && styles.bookTitleSmall]}
+            numberOfLines={2}
+          >
+            {title}
+          </Text>
+
+          {!isSmall && (
+            <Text style={styles.bookSubtitle} numberOfLines={1}>
+              {subtitle}
+            </Text>
+          )}
+
+          {/* Days Ribbon */}
+          <View style={styles.ribbonRow}>
+            <View style={styles.ribbonLine} />
+            <Text style={[styles.ribbonText, isSmall && { fontSize: 7 }]}>
+              {daysCount} {daysCount === 1 ? 'DAY' : 'DAYS'} RECORDED
+            </Text>
+            <View style={styles.ribbonLine} />
+          </View>
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  cover: {
-    borderRadius: 8,
-    overflow: 'hidden',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.22,
-    shadowRadius: 8,
-    shadowOffset: { width: 2, height: 5 },
+  outerWrapper: {
     position: 'relative',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  spine: {
+  tableShadow: {
+    position: 'absolute',
+    bottom: -6,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: 'rgba(28, 18, 10, 0.32)',
+    ...Platform.select({
+      web: {
+        filter: 'blur(5px)',
+      } as any,
+      default: {},
+    }),
+  },
+  coverContainer: {
+    borderRadius: 10,
+    borderWidth: 1.5,
+    overflow: 'hidden',
+    position: 'relative',
+    paddingLeft: 18,
+    paddingRight: 10,
+    paddingVertical: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#201408',
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  spineBand: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
     width: 14,
-    backgroundColor: 'rgba(0,0,0,0.18)',
-    borderRightWidth: 1,
-    borderRightColor: 'rgba(255,255,255,0.08)',
-  },
-  topBadges: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
     alignItems: 'center',
-    gap: 6,
-    paddingTop: 10,
-    paddingRight: 10,
-    zIndex: 2,
+    justifyContent: 'center',
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(0,0,0,0.22)',
+  },
+  spineStitchLine: {
+    position: 'absolute',
+    left: 6,
+    top: 6,
+    bottom: 6,
+    width: 1,
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(255,255,255,0.28)',
+    borderStyle: 'dashed',
+  },
+  pageEdgeStrip: {
+    position: 'absolute',
+    right: 0,
+    top: 4,
+    bottom: 4,
+    width: 3.5,
+    borderTopRightRadius: 4,
+    borderBottomRightRadius: 4,
+    backgroundColor: '#EAE2D2',
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(0,0,0,0.15)',
+  },
+  badgeRow: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    zIndex: 10,
   },
   sampleBadge: {
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    paddingHorizontal: 6,
+    backgroundColor: 'rgba(255,255,255,0.28)',
+    paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
   },
   sampleBadgeText: {
     color: '#FFFFFF',
-    fontSize: 9,
+    fontSize: 8,
     fontFamily: 'Inter_700Bold',
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
   },
-  lockCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  motifWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 4,
-  },
-  photoInsetWrap: {
-    alignSelf: 'center',
-    marginVertical: 4,
+  lockBadge: {
+    width: 16,
+    height: 16,
     borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.25)',
-    overflow: 'hidden',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  insetCard: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#FAF6F0',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#DFD7C7',
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'space-between',
     shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
   },
-  photoInset: {
-    backgroundColor: '#333',
+  insetCardSmall: {
+    padding: 4,
   },
-  inner: {
-    paddingLeft: 22,
-    paddingRight: 12,
-    paddingBottom: 16,
-    gap: 4,
+  foilTag: {
+    fontSize: 7.5,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 1.1,
+    color: '#8C7A6B',
+    textAlign: 'center',
+    marginTop: 2,
   },
-  title: {
-    letterSpacing: 0.3,
-    lineHeight: 22,
+  photoFrame: {
+    width: '76%',
+    aspectRatio: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#DFD7C7',
+    padding: 3,
+    shadowColor: '#201408',
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    overflow: 'hidden',
   },
-  subtitle: {
-    fontFamily: 'Inter_500Medium',
-    letterSpacing: 0.2,
-    opacity: 0.8,
+  photoFrameSmall: {
+    width: '65%',
+    padding: 2,
   },
-  divider: {
-    height: 1.5,
-    width: 28,
-    borderRadius: 1,
-    marginVertical: 4,
-    opacity: 0.35,
+  coverImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 2,
   },
-  count: {
+  emptyPhotoBox: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#F5EFE6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bookTitle: {
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    fontWeight: '700',
+    fontSize: 12.5,
+    color: '#2B2420',
+    textAlign: 'center',
+    lineHeight: 16,
+    paddingHorizontal: 2,
+  },
+  bookTitleSmall: {
+    fontSize: 9,
+    lineHeight: 11,
+  },
+  bookSubtitle: {
     fontFamily: 'Inter_400Regular',
-    letterSpacing: 0.3,
-    opacity: 0.75,
+    fontSize: 9,
+    color: '#7D7165',
+    textAlign: 'center',
+    marginTop: -2,
+  },
+  ribbonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    gap: 4,
+    marginBottom: 2,
+  },
+  ribbonLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5DEC9',
+  },
+  ribbonText: {
+    fontSize: 7.5,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.8,
+    color: '#A09080',
   },
 });

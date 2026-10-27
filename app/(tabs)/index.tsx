@@ -33,8 +33,8 @@ export default function TodayTab() {
   const dayOfWeek = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' });
   const fullDate = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
-  const topPad = insets.top + (Platform.OS === 'web' ? 67 : 0);
-  const botPad = insets.bottom + 90; // room for tab bar
+  const topPad = insets.top + (Platform.OS === 'web' ? 12 : 0);
+  const botPad = insets.bottom + 80; // room for tab bar
 
   function openLog() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -45,22 +45,14 @@ export default function TodayTab() {
     <PaperBackground showMarginLine={false}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingTop: topPad + 8, paddingBottom: botPad }]}
+        contentContainerStyle={[styles.content, { paddingTop: topPad + 4, paddingBottom: botPad }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Date header + Notification Bell */}
+        {/* Compact Single-Line Brand + Notification Bell (Removes duplicate date/day) */}
         <View style={styles.headerRow}>
-          <View style={styles.dateHeader}>
-            <View style={styles.brandRow}>
-              <BrandLogoIcon size={16} color={colors.primary} />
-              <Text style={[styles.brandText, { color: colors.primary }]}>DEAR DAY</Text>
-            </View>
-            <Text style={[styles.dayOfWeek, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-              {dayOfWeek}
-            </Text>
-            <Text style={[styles.fullDate, { color: colors.mutedForeground, fontFamily: 'PlayfairDisplay_400Regular' }]}>
-              {fullDate}
-            </Text>
+          <View style={styles.brandRow}>
+            <BrandLogoIcon size={18} color={colors.primary} />
+            <Text style={[styles.brandText, { color: colors.primary }]}>DEAR DAY</Text>
           </View>
 
           <TouchableOpacity
@@ -74,7 +66,7 @@ export default function TodayTab() {
             accessibilityRole="button"
             accessibilityLabel={`Notifications, ${unreadCount > 0 ? unreadCount : 'no'} unread`}
           >
-            <Bell size={20} color={colors.foreground} weight="regular" />
+            <Bell size={18} color={colors.foreground} weight="regular" />
             {unreadCount > 0 && (
               <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
                 <Text style={styles.unreadBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -150,40 +142,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  dateHeader: { gap: 2 },
-  dateTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  streakBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  streakText: {
-    fontSize: 11,
-    fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 0.2,
+    paddingVertical: 4,
+    marginBottom: 2,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
+    gap: 8,
   },
   brandText: {
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: 'Inter_700Bold',
-    letterSpacing: 1.2,
+    letterSpacing: 1.5,
   },
-  dayOfWeek: { fontSize: 26, letterSpacing: 0.2 },
-  fullDate: { fontSize: 16 },
 
   /* 7-Day Habit Tracker Card */
   streakCard: {

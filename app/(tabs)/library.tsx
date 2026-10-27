@@ -67,9 +67,10 @@ export default function LibraryTab() {
   });
 
   const filtered = sortedBooks
+    .filter(b => !b.isSample)
     .filter(b => {
       if (filter === 'monthly') return !b.isCustom;
-      if (filter === 'custom') return b.isCustom && !b.isSample;
+      if (filter === 'custom') return b.isCustom;
       if (filter === 'favorites') return b.days.some(d => d.isFavorite);
       return true;
     })
@@ -277,39 +278,15 @@ export default function LibraryTab() {
         </ScrollView>
       </View>
 
-      {/* Exploration Callout for Sample Book */}
-      {!sampleBannerDismissed && sortedBooks.some(b => b.isSample) && filter !== 'custom' && !search && (
-        <View style={[styles.sampleBanner, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
-          <Sparkle size={16} color="#C47B3A" weight="fill" style={{ marginTop: 2 }} />
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text style={[styles.sampleBannerTitle, { color: colors.foreground }]}>
-              Explore Sample Volume
-            </Text>
-            <Text style={[styles.sampleBannerText, { color: colors.mutedForeground }]}>
-              Tap "Kyoto Journey" below to preview how bound layouts, photos, and daily moments look in your personal archive.
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={dismissSampleBanner}
-            style={styles.sampleCloseBtn}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            accessibilityRole="button"
-            accessibilityLabel="Dismiss sample announcement"
-          >
-            <X size={15} color={colors.tertiary} weight="bold" />
-          </TouchableOpacity>
-        </View>
-      )}
-
       {/* Book Grid */}
       {filtered.length === 0 ? (
         <EmptyState
           icon={BookOpen}
-          title="No Books Found"
+          title="Your Archival Library is Waiting"
           description={
             search
               ? `No photobooks found matching "${search}". Try searching another keyword.`
-              : 'Create a custom photobook or capture daily moments to bind your monthly volumes.'
+              : 'As you curate moments each month, bound archival linen volumes appear here. You can also craft a custom keepsake volume anytime.'
           }
           actionLabel={search ? 'Clear Search' : '+ Create Custom Book'}
           actionIcon={search ? X : Plus}

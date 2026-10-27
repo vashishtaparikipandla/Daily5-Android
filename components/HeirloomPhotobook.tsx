@@ -351,14 +351,24 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
         fadeOut
       />
 
-      {/* 3D BOOK STAGE */}
-      <View
-        style={[
-          styles.bookStage,
-          { width: bookWidth, height: bookHeight },
-          isCoverView && styles.bookStageCover,
-        ]}
-      >
+      {/* AUTHENTIC STUDIO TABLETOP DESK WITH SHADOWS */}
+      <View style={styles.tabletopStage}>
+        {/* Contact Shadow onto Tabletop */}
+        <View
+          style={[
+            styles.tableContactShadow,
+            isCoverView ? styles.tableContactShadowCover : styles.tableContactShadowOpen,
+          ]}
+        />
+
+        {/* 3D BOOK STAGE */}
+        <View
+          style={[
+            styles.bookStage,
+            { width: bookWidth, height: bookHeight },
+            isCoverView && styles.bookStageCover,
+          ]}
+        >
         {/* Left 3D Hardcover Spine Hinge */}
         <View
           style={[
@@ -720,6 +730,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
           </View>
         )}
       </View>
+      </View> {/* end tabletopStage */}
 
       {/* ==============================================================
           2-LINE CAPTION EDITOR MODAL (60-80 CHARS)
@@ -864,6 +875,38 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     width: '100%',
+  },
+  tabletopStage: {
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    backgroundColor: '#F8F2E8',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#DFD4C0',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    shadowColor: '#24160C',
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+  },
+  tableContactShadow: {
+    position: 'absolute',
+    bottom: 22,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(28, 16, 8, 0.38)',
+    zIndex: 1,
+  },
+  tableContactShadowCover: {
+    width: '68%',
+  },
+  tableContactShadowOpen: {
+    width: '88%',
   },
   topBar: {
     flexDirection: 'row',

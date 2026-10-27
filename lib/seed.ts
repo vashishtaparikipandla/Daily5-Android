@@ -1,7 +1,7 @@
 import { uid, monthKey, todayStr, type Book, type DayLog, type Entry, type CategoryId } from './data';
 import { saveBooks, getSeedVersion, setSeedVersion } from './storage';
 
-const SEED_VERSION = 3;
+const SEED_VERSION = 4;
 
 const SAMPLE_DAYS: { date: string; entries: { text: string; cat: CategoryId; photos: string[] }[] }[] = [
   {
@@ -90,6 +90,6 @@ export async function seedDemoData(): Promise<void> {
     hiddenDays: [],
   };
 
-  await saveBooks([currentBook, sampleBook]);
+  await saveBooks([currentBook]);
   await setSeedVersion(SEED_VERSION);
 }
