@@ -25,6 +25,7 @@ import {
   Plus,
   X,
   BookOpen,
+  Calendar,
   Sparkle,
   UploadSimple,
   Check,
@@ -319,27 +320,25 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
 
   return (
     <View style={styles.container}>
-      {/* Top Header Bar */}
+      {/* Top Header Bar — Symmetrical Balanced Action Pills */}
       <View style={styles.topBar}>
         <TouchableOpacity
           style={[styles.topBarBtn, isCoverView && styles.topBarBtnActive]}
           onPress={() => flipToPage(0)}
           activeOpacity={0.8}
         >
+          <BookOpen size={13} color={isCoverView ? '#DF5739' : '#6A584C'} />
           <Text style={[styles.topBarBtnText, isCoverView && styles.topBarBtnTextActive]}>
-            Cover
+            Close
           </Text>
         </TouchableOpacity>
-
-        <Text style={styles.topBarMonthTitle}>
-          {currentMonthYear}
-        </Text>
 
         <TouchableOpacity
           style={[styles.todayPillBtn, activePage === todayDayNum && styles.todayPillBtnActive]}
           onPress={() => flipToPage(todayDayNum)}
           activeOpacity={0.8}
         >
+          <Calendar size={13} color={activePage === todayDayNum ? '#FFFFFF' : '#6A584C'} />
           <Text style={[styles.todayPillBtnText, activePage === todayDayNum && styles.todayPillBtnTextActive]}>
             Today (Oct {todayDayNum})
           </Text>
@@ -987,40 +986,59 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   topBarBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    backgroundColor: '#EFEAE0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 15,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D5CBB8',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   topBarBtnActive: {
-    backgroundColor: '#2B2420',
+    backgroundColor: 'rgba(223,87,57,0.08)',
+    borderColor: '#DF5739',
+    borderWidth: 1.5,
   },
   topBarBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#4A4039',
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#3A2E28',
   },
   topBarBtnTextActive: {
-    color: '#FFFFFF',
-  },
-  topBarMonthTitle: {
-    fontSize: 15,
-    fontFamily: 'PlayfairDisplay_700Bold',
-    color: '#2B2420',
+    color: '#DF5739',
   },
   todayPillBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 16,
-    backgroundColor: 'rgba(223,87,57,0.12)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 15,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D5CBB8',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   todayPillBtnActive: {
     backgroundColor: '#DF5739',
+    borderColor: '#DF5739',
+    borderWidth: 1.5,
   },
   todayPillBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#B84328',
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#3A2E28',
   },
   todayPillBtnTextActive: {
     color: '#FFFFFF',

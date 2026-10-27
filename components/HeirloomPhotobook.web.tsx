@@ -9,6 +9,7 @@ import {
   Plus,
   X,
   BookOpen,
+  Calendar,
   Pencil,
 } from 'lucide-react';
 import { useDiary } from '@/contexts/DiaryContext';
@@ -516,68 +517,119 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
     }
   };
 
-  const onSlotFileChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const photoUrl = ev.target?.result as string;
-      if (!photoUrl) return;
-
-      const slotIdx = activeSlotIdxRef.current;
-      const targetDay = activePage;
-
-      // 3D Stylized Hand Placement Animation
-      setHandPlacement({ slotIdx, photoUrl });
-
-      setTimeout(() => {
-        playStickyGlueSound();
-      }, 440);
-
-      setTimeout(() => {
-        const y = currentYear;
-        const m = String(currentMonth + 1).padStart(2, '0');
-        const d = String(targetDay).padStart(2, '0');
-        const dateStr = `${y}-${m}-${d}`;
-
-        const existing = getDayLog(dateStr);
-        const curEntries: Entry[] = existing ? [...existing.entries] : [];
-        while (curEntries.length < slotIdx) {
-          curEntries.push({ id: uid(), text: '', photos: [] });
+  /**
+   * Resizes & compresses user-selected images to lightweight JPEG data URLs (~40-60KB).
+   * Completely prevents browser QuotaExceededError crashes when persisting to localStorage.
+   */
+  const compressImageFile = (file: File, maxDim = 800, quality = 0.78): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onerror = () => resolve('');
+      reader.onload = (e) => {
+        const raw = e.target?.result as string;
+        if (!raw) {
+          resolve('');
+          return;
         }
-        const existingEntry = curEntries[slotIdx];
-        curEntries[slotIdx] = {
-          id: existingEntry?.id || uid(),
-          text: existingEntry?.text || 'A moment to keep forever.',
-          photos: [photoUrl],
+        const img = new Image();
+        img.onerror = () => resolve(raw);
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(raw);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          try {
+            const compressed = canvas.toDataURL('image/jpeg', quality);
+            resolve(compressed);
+          } catch {
+            resolve(raw);
+          }
         };
-        upsertDayEntries(dateStr, curEntries);
-
-        const filledCount = curEntries.filter(e => e?.photos?.length).length;
-        if (filledCount === 4) {
-          setTimeout(() => triggerConfettiStars(), 160);
-        }
-      }, 620);
-
-      setTimeout(() => {
-        setHandPlacement(null);
-      }, 1120);
-    };
-    reader.readAsDataURL(file);
+        img.src = raw;
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
-  const onCoverFileChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onSlotFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const photoUrl = ev.target?.result as string;
-      if (photoUrl) {
-        setCoverPhoto(photoUrl);
-        playStickyGlueSound();
+
+    // Reset value so picking the same image repeatedly triggers change
+    e.target.value = '';
+
+    const photoUrl = await compressImageFile(file, 800, 0.78);
+    if (!photoUrl) return;
+
+    const slotIdx = activeSlotIdxRef.current;
+    const targetDay = activePage;
+
+    // 3D Stylized Hand Placement Animation
+    setHandPlacement({ slotIdx, photoUrl });
+
+    setTimeout(() => {
+      playStickyGlueSound();
+    }, 440);
+
+    setTimeout(() => {
+      const y = currentYear;
+      const m = String(currentMonth + 1).padStart(2, '0');
+      const d = String(targetDay).padStart(2, '0');
+      const dateStr = `${y}-${m}-${d}`;
+
+      const existing = getDayLog(dateStr);
+      const curEntries: Entry[] = existing ? [...existing.entries] : [];
+      while (curEntries.length < slotIdx) {
+        curEntries.push({ id: uid(), text: '', photos: [] });
       }
-    };
-    reader.readAsDataURL(file);
+      const existingEntry = curEntries[slotIdx];
+      curEntries[slotIdx] = {
+        id: existingEntry?.id || uid(),
+        text: existingEntry?.text || 'A moment to keep forever.',
+        photos: [photoUrl],
+      };
+      try {
+        upsertDayEntries(dateStr, curEntries);
+      } catch (err) {
+        console.warn('Could not save day entry:', err);
+      }
+
+      const filledCount = curEntries.filter(e => e?.photos?.length).length;
+      if (filledCount === 4) {
+        setTimeout(() => triggerConfettiStars(), 160);
+      }
+    }, 620);
+
+    setTimeout(() => {
+      setHandPlacement(null);
+    }, 1120);
+  };
+
+  const onCoverFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    const photoUrl = await compressImageFile(file, 800, 0.78);
+    if (photoUrl) {
+      setCoverPhoto(photoUrl);
+      playStickyGlueSound();
+    }
   };
 
   // --------------------------------------------------------------------------
@@ -901,7 +953,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
         }
       `}</style>
 
-      {/* Top Mobile Book Bar */}
+      {/* Top Mobile Book Bar — Symmetrical Balanced Action Pills */}
       <div
         style={{
           width: '100%',
@@ -909,68 +961,58 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '6px 16px',
-          borderBottom: '1px solid #EAE3D5',
-          marginBottom: 6
+          borderBottom: '1px solid rgba(220, 210, 195, 0.45)',
+          marginBottom: 8
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            type="button"
-            onClick={() => triggerFlipToPage(0, 'prev')}
-            style={{
-              padding: '4px 10px',
-              borderRadius: 8,
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: 'pointer',
-              border: 'none',
-              backgroundColor: isCoverView ? '#2B2420' : '#EFEAE0',
-              color: isCoverView ? '#FFFFFF' : '#4A4039'
-            }}
-          >
-            Cover
-          </button>
-          {isCoverView && (
-            <button
-              type="button"
-              onClick={() => {
-                setCoverMenuVisible(v => !v);
-                playPaperRustleSound(1.1);
-              }}
-              style={{
-                padding: '4px 8px',
-                borderRadius: 8,
-                fontSize: 10.5,
-                fontWeight: 600,
-                cursor: 'pointer',
-                border: '1px solid #D5CBB8',
-                backgroundColor: coverMenuVisible ? '#DF5739' : '#FFFFFF',
-                color: coverMenuVisible ? '#FFFFFF' : '#2B2420'
-              }}
-            >
-              Linen & Back
-            </button>
-          )}
-          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, fontWeight: 700, color: '#2B2420' }}>
-            {monthName} {currentYear}
-          </span>
-        </div>
-
+        {/* Close CTA Pill */}
         <button
           type="button"
-          onClick={() => triggerFlipToPage(todayDayNum)}
+          onClick={() => triggerFlipToPage(0, 'prev')}
           style={{
-            padding: '4px 12px',
-            borderRadius: 16,
-            fontSize: 10,
-            fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 15px',
+            borderRadius: 20,
+            fontSize: 11.5,
+            fontWeight: 600,
             cursor: 'pointer',
-            border: 'none',
-            backgroundColor: activePage === todayDayNum ? '#DF5739' : 'rgba(223,87,57,0.15)',
-            color: activePage === todayDayNum ? '#FFFFFF' : '#B84328'
+            border: isCoverView ? '1.5px solid #DF5739' : '1px solid #D5CBB8',
+            backgroundColor: isCoverView ? 'rgba(223,87,57,0.08)' : '#FFFFFF',
+            color: isCoverView ? '#DF5739' : '#3A2E28',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
           }}
+          title="Close photobook to cover"
         >
-          Today ({monthName.slice(0, 3)} {todayDayNum})
+          <BookOpen size={13} color={isCoverView ? '#DF5739' : '#6A584C'} />
+          <span>Close</span>
+        </button>
+
+        {/* Today CTA Pill */}
+        <button
+          type="button"
+          onClick={() => triggerFlipToPage(todayDayNum, todayDayNum > activePage ? 'next' : 'prev')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 15px',
+            borderRadius: 20,
+            fontSize: 11.5,
+            fontWeight: 600,
+            cursor: 'pointer',
+            border: !isCoverView && activePage === todayDayNum ? '1.5px solid #DF5739' : '1px solid #D5CBB8',
+            backgroundColor: !isCoverView && activePage === todayDayNum ? '#DF5739' : '#FFFFFF',
+            color: !isCoverView && activePage === todayDayNum ? '#FFFFFF' : '#3A2E28',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}
+          title={`Flip to today (${monthName.slice(0, 3)} ${todayDayNum})`}
+        >
+          <Calendar size={13} color={!isCoverView && activePage === todayDayNum ? '#FFFFFF' : '#6A584C'} />
+          <span>Today ({monthName.slice(0, 3)} {todayDayNum})</span>
         </button>
       </div>
 

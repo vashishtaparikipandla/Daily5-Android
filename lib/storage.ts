@@ -28,7 +28,11 @@ export async function loadBooks(): Promise<Book[]> {
 }
 
 export async function saveBooks(books: Book[]): Promise<void> {
-  await AsyncStorage.setItem(KEYS.BOOKS, JSON.stringify(books));
+  try {
+    await AsyncStorage.setItem(KEYS.BOOKS, JSON.stringify(books));
+  } catch (err) {
+    console.warn('[saveBooks] Storage write warning (e.g. quota limit):', err);
+  }
 }
 
 export async function getSeedVersion(): Promise<number> {

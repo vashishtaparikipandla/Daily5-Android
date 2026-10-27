@@ -4,12 +4,13 @@ import {
   Platform,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { Bell, BookOpen } from 'phosphor-react-native';
+import { Bell } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiary } from '@/contexts/DiaryContext';
 import { WoodenTableBackground } from '@/components/WoodenTableBackground';
+import { DappledPlantShadowOverlay } from '@/components/DappledPlantShadowOverlay';
 import { BrandLogoIcon } from '@/components/BrandLogo';
 import { HeirloomPhotobook } from '@/components/HeirloomPhotobook';
 import { todayStr } from '@/lib/data';
@@ -43,12 +44,15 @@ export default function TodayTab() {
 
   return (
     <WoodenTableBackground>
+      {/* Swaying Dappled Botanical Plant Shadow on top of table */}
+      <DappledPlantShadowOverlay />
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingTop: topPad + 4, paddingBottom: botPad }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Compact Single-Line Brand + Notification Bell */}
+        {/* Crisp White Header Card for DEAR DAY Brand & Notification Bell */}
         <View style={styles.headerRow}>
           <View style={styles.brandRow}>
             <BrandLogoIcon size={26} color={colors.primary} />
@@ -56,7 +60,7 @@ export default function TodayTab() {
           </View>
 
           <TouchableOpacity
-            style={[styles.notifBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[styles.notifBtn, { backgroundColor: '#F8F6F1', borderColor: 'rgba(0,0,0,0.08)' }]}
             onPress={() => {
               Haptics.selectionAsync();
               router.push('/notifications');
@@ -77,20 +81,6 @@ export default function TodayTab() {
 
         {/* 3D Heirloom Photobook with 4 Linen Themes, 2x2 Recessed Pockets, Hand Tuck & Stickers */}
         <HeirloomPhotobook />
-
-        {/* Full-Day Multi-Entry Link */}
-        <View style={styles.editorLinkRow}>
-          <TouchableOpacity
-            onPress={openLog}
-            activeOpacity={0.7}
-            style={styles.editorLinkBtn}
-          >
-            <BookOpen size={14} color={colors.mutedForeground} />
-            <Text style={[styles.editorLinkText, { color: colors.mutedForeground }]}>
-              Open in multi-slot inscription editor →
-            </Text>
-          </TouchableOpacity>
-        </View>
 
         {/* On This Day — Archival & Distinct Time Capsule Styling */}
         {onThisDay.length > 0 && (
@@ -142,8 +132,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 4,
-    marginBottom: 2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(215, 205, 190, 0.7)',
+    shadowColor: '#1A140E',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+    marginBottom: 4,
   },
   brandRow: {
     flexDirection: 'row',
