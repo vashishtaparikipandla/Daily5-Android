@@ -1,45 +1,25 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Platform, Dimensions,
+  Platform,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { Bell, Fire, Sparkle, ArrowRight, BookOpen, Check, CaretRight, FilmStrip } from 'phosphor-react-native';
+import { Bell, BookOpen } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
-import ConfettiCannon from 'react-native-confetti-cannon';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiary } from '@/contexts/DiaryContext';
 import { PaperBackground } from '@/components/PaperBackground';
-import { TonightCard } from '@/components/TonightCard';
-import { EntrySlot } from '@/components/EntrySlot';
-import { FtuoTour } from '@/components/FtuoTour';
-import { StreakCalendarModal } from '@/components/StreakCalendarModal';
-import { WeeklyReelModal } from '@/components/WeeklyReelModal';
-import { PhotobookPageSpread } from '@/components/PhotobookPageSpread';
-import { PolaroidTuckModal } from '@/components/PolaroidTuckModal';
 import { BrandLogoIcon } from '@/components/BrandLogo';
-import { todayStr, uid, type DayLog, type Entry } from '@/lib/data';
-import { getHonorificTitle } from '@/lib/milestones';
+import { HeirloomPhotobook } from '@/components/HeirloomPhotobook';
+import { todayStr } from '@/lib/data';
 import { getUnreadNotificationCount } from '@/lib/notifications';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// Warm terracotta and luxury bookbinding celebration palette
-const CELEBRATION_COLORS = ['#E8593A', '#C47B3A', '#2D3F2A', '#D8B4C0', '#F2E8DC', '#E83A7A'];
 
 export default function TodayTab() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { getTodayLog, getDayLog, getOnThisDay, streakCount, upsertDayEntries } = useDiary();
+  const { getOnThisDay } = useDiary();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [celebrate, setCelebrate] = useState(false);
-  const [showStreakModal, setShowStreakModal] = useState(false);
-  const [showWeeklyReel, setShowWeeklyReel] = useState(false);
-  const [viewingDate, setViewingDate] = useState<string>(todayStr());
-  const [activeTuckSlot, setActiveTuckSlot] = useState<number | null>(null);
-  const confettiRef = useRef<any>(null);
-  const hasCelebratedToday = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -48,92 +28,7 @@ export default function TodayTab() {
   );
 
   const today = todayStr();
-  const todayLog = getTodayLog();
-  const entries = todayLog?.entries ?? [];
-  const currentLog = getDayLog(viewingDate);
-  const currentEntries = currentLog?.entries ?? [];
   const onThisDay = getOnThisDay();
-  const isComplete = entries.length === 4;
-
-  useEffect(() => {
-    if (isComplete && !hasCelebratedToday.current) {
-      hasCelebratedToday.current = true;
-      setCelebrate(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      confettiRef.current?.start();
-    }
-  }, [isComplete]);
-
-  function flipPrevDay() {
-    const d = new Date(viewingDate + 'T12:00:00');
-    d.setDate(d.getDate() - 1);
-    setViewingDate(d.toISOString().slice(0, 10));
-  }
-
-  function flipNextDay() {
-    if (viewingDate >= today) return;
-    const d = new Date(viewingDate + 'T12:00:00');
-    d.setDate(d.getDate() + 1);
-    setViewingDate(d.toISOString().slice(0, 10));
-  }
-
-  async function handleSavePolaroid(newEntry: Entry, slotIdx: number) {
-    const existingLog = getDayLog(viewingDate);
-    const cur = existingLog ? [...existingLog.entries] : [];
-    while (cur.length < slotIdx) {
-      cur.push({ id: uid(), text: '', photos: [] });
-    }
-    cur[slotIdx] = newEntry;
-    const clean = cur.filter(e => e && (e.text?.trim() || e.photos?.length));
-    await upsertDayEntries(viewingDate, clean);
-  }
-
-  async function handleDeletePolaroid(slotIdx: number) {
-    const existingLog = getDayLog(viewingDate);
-    if (!existingLog) return;
-    const cur = [...existingLog.entries];
-    cur.splice(slotIdx, 1);
-    await upsertDayEntries(viewingDate, cur);
-  }
-
-  // Compute Monday–Sunday for current week with logging status
-  const weekDays = useMemo(() => {
-    const now = new Date(today + 'T12:00:00');
-    const dayIndex = now.getDay(); // 0 = Sunday, 1 = Monday, ...
-    const diffToMonday = (dayIndex + 6) % 7; // Monday = 0, Sunday = 6
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - diffToMonday);
-
-    const days = [];
-    const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      const dateStr = d.toISOString().slice(0, 10);
-      const log = getDayLog(dateStr);
-      const hasEntry = (log?.entries.length ?? 0) > 0;
-      const isToday = dateStr === today;
-      const isFuture = dateStr > today;
-      const dayNum = d.getDate();
-
-      days.push({
-        dateStr,
-        label: dayLabels[i],
-        dayNum,
-        hasEntry,
-        isToday,
-        isFuture,
-      });
-    }
-    return days;
-  }, [today, getDayLog]);
-
-  const honorific = getHonorificTitle(streakCount);
-  const weeklyDaysLogs = useMemo(() => {
-    return weekDays.map(w => getDayLog(w.dateStr)).filter(Boolean) as DayLog[];
-  }, [weekDays, getDayLog]);
-  const hasWeeklyMoments = weeklyDaysLogs.some(d => d.entries.length > 0);
 
   const dayOfWeek = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' });
   const fullDate = new Date(today + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
@@ -150,7 +45,7 @@ export default function TodayTab() {
     <PaperBackground showMarginLine={false}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.content, { paddingTop: topPad + 12, paddingBottom: botPad }]}
+        contentContainerStyle={[styles.content, { paddingTop: topPad + 8, paddingBottom: botPad }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Date header + Notification Bell */}
@@ -188,148 +83,8 @@ export default function TodayTab() {
           </TouchableOpacity>
         </View>
 
-        {/* 7-Day Habit Tracker Card */}
-        <View style={[styles.streakCard, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
-          <TouchableOpacity
-            style={styles.streakHeaderRow}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setShowStreakModal(true);
-            }}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="View Archival Journey and Habit Calendar"
-          >
-            <View style={styles.streakTitleGroup}>
-              <View style={[styles.streakFlameCircle, { backgroundColor: colors.accentLight }]}>
-                <Fire size={20} color={colors.primary} weight="fill" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.streakTitle, { color: colors.foreground }]}>
-                  {streakCount > 0 ? `${streakCount}-Day Streak · ${honorific.title}` : 'Start Your Streak'}
-                </Text>
-                <Text style={[styles.streakSubtitle, { color: colors.mutedForeground }]} numberOfLines={1}>
-                  {streakCount > 0
-                    ? `${streakCount} day${streakCount === 1 ? '' : 's'} recorded in a row`
-                    : 'Capture 4 moments today to start'}
-                </Text>
-              </View>
-            </View>
-
-            <View style={[styles.streakMilestoneBadge, { backgroundColor: colors.accentLight, borderColor: colors.border }]}>
-              <Sparkle size={11} color={colors.primary} weight="fill" />
-              <Text style={[styles.streakMilestoneText, { color: colors.primary }]}>
-                {weekDays.filter(d => d.hasEntry).length}/7 DAYS
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* 7 Day Pills Ribbon */}
-          <View style={styles.weekRibbon}>
-            {weekDays.map(item => (
-              <View key={item.dateStr} style={styles.weekDayCol}>
-                <Text
-                  style={[
-                    styles.weekDayLabel,
-                    { color: item.isToday ? colors.primary : colors.tertiary },
-                    item.isToday && { fontFamily: 'Inter_700Bold' },
-                  ]}
-                >
-                  {item.label}
-                </Text>
-                <Text
-                  style={[
-                    styles.weekDayDateNum,
-                    { color: item.isToday ? colors.primary : colors.mutedForeground },
-                    item.isToday && { fontFamily: 'Inter_700Bold' },
-                  ]}
-                >
-                  {item.dayNum}
-                </Text>
-                <TouchableOpacity
-                  style={[
-                    styles.weekDayCircle,
-                    { borderColor: colors.border, backgroundColor: colors.muted },
-                    item.hasEntry && { backgroundColor: colors.primary, borderColor: colors.primary },
-                    item.dateStr === viewingDate && {
-                      borderColor: colors.primary,
-                      borderWidth: 2,
-                      backgroundColor: colors.accentLight,
-                    },
-                    item.isFuture && { opacity: 0.35 },
-                  ]}
-                  onPress={() => {
-                    if (!item.isFuture) {
-                      Haptics.selectionAsync();
-                      setViewingDate(item.dateStr);
-                    }
-                  }}
-                  disabled={item.isFuture}
-                  activeOpacity={0.7}
-                  accessibilityLabel={`${item.label} ${item.dayNum}: ${item.hasEntry ? 'completed' : 'not recorded'}`}
-                >
-                  {item.hasEntry ? (
-                    <Check size={14} color="#FFFFFF" weight="bold" />
-                  ) : item.isToday ? (
-                    <View style={[styles.pendingTodayDot, { backgroundColor: colors.primary }]} />
-                  ) : null}
-                </TouchableOpacity>
-
-                {/* Reserved height footer so all 7 columns stay pixel-aligned */}
-                <View style={styles.indicatorContainer}>
-                  {item.isToday && (
-                    <View style={[styles.todayDot, { backgroundColor: colors.primary }]} />
-                  )}
-                </View>
-              </View>
-            ))}
-          </View>
-
-          {/* Sunday Edition / Weekly Story Reel Trigger */}
-          {hasWeeklyMoments && (
-            <TouchableOpacity
-              style={[styles.weeklyReelBanner, { borderTopColor: colors.border }]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                setShowWeeklyReel(true);
-              }}
-              activeOpacity={0.8}
-            >
-              <View style={styles.weeklyReelLeft}>
-                <View style={[styles.reelIconCircle, { backgroundColor: colors.accentLight }]}>
-                  <FilmStrip size={15} color={colors.primary} weight="bold" />
-                </View>
-                <View>
-                  <Text style={[styles.weeklyReelTitle, { color: colors.foreground }]}>
-                    The Sunday Edition · 7-Day Reel
-                  </Text>
-                  <Text style={[styles.weeklyReelSubtitle, { color: colors.mutedForeground }]}>
-                    Relive this week's moments in a visual story
-                  </Text>
-                </View>
-              </View>
-              <CaretRight size={16} color={colors.primary} weight="bold" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View style={[styles.hairline, { backgroundColor: colors.border }]} />
-
-        {/* The Central Nostalgic Photobook Album Page */}
-        <PhotobookPageSpread
-          dateStr={viewingDate}
-          dayLog={currentLog}
-          onTuckPhoto={slotIdx => {
-            setActiveTuckSlot(slotIdx);
-          }}
-          onFlipPrev={flipPrevDay}
-          onFlipNext={flipNextDay}
-          canFlipNext={viewingDate < today}
-          onOpenFullBook={() => {
-            Haptics.selectionAsync();
-            router.push({ pathname: '/book-viewer', params: { monthKey: viewingDate.slice(0, 7) } });
-          }}
-        />
+        {/* 3D Heirloom Photobook with 4 Linen Themes, 2x2 Recessed Pockets, Hand Tuck & Stickers */}
+        <HeirloomPhotobook />
 
         {/* Full-Day Multi-Entry Link */}
         <View style={styles.editorLinkRow}>
@@ -370,32 +125,13 @@ export default function TodayTab() {
                   onPress={() => router.push({ pathname: '/book-viewer', params: { monthKey: book.monthKey } })}
                   activeOpacity={0.85}
                 >
-                  {/* Vintage stamp badge */}
                   <View style={styles.otdCardTop}>
                     <View style={styles.otdBadge}>
-                      <Sparkle size={12} color="#C47B3A" weight="fill" />
                       <Text style={styles.otdBadgeText}>{year} · THIS DAY</Text>
                     </View>
-                    <ArrowRight size={14} color={colors.tertiary} weight="bold" />
                   </View>
-
-                  {/* Memories recorded on that day */}
-                  <View style={styles.otdEntries}>
-                    {day.entries.slice(0, 2).map((e) => (
-                      <View key={e.id} style={styles.otdEntryRow}>
-                        <Text style={[styles.otdBullet, { color: colors.accent }]}>•</Text>
-                        <Text
-                          style={[styles.otdText, { color: colors.foreground }]}
-                          numberOfLines={2}
-                        >
-                          {e.text}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-
-                  <Text style={[styles.otdFooter, { color: colors.tertiary }]}>
-                    Open {book.title || 'Volume'} →
+                  <Text style={[styles.otdText, { color: colors.foreground }]} numberOfLines={2}>
+                    {day.entries[0]?.text || 'A memory from this day'}
                   </Text>
                 </TouchableOpacity>
               );
@@ -403,44 +139,6 @@ export default function TodayTab() {
           </View>
         )}
       </ScrollView>
-
-      {/* Confetti Cannon celebration layer */}
-      <ConfettiCannon
-        ref={confettiRef}
-        count={80}
-        origin={{ x: SCREEN_WIDTH / 2, y: -20 }}
-        colors={CELEBRATION_COLORS}
-        autoStart={false}
-        fadeOut
-      />
-
-      {/* First-time User Onboarding Spotlight Tour */}
-      <FtuoTour />
-
-      {/* Archival Journey & Streak Calendar Modal */}
-      <StreakCalendarModal
-        visible={showStreakModal}
-        onClose={() => setShowStreakModal(false)}
-      />
-
-      <WeeklyReelModal
-        visible={showWeeklyReel}
-        onClose={() => setShowWeeklyReel(false)}
-        weeklyDays={weeklyDaysLogs}
-        streakCount={streakCount}
-      />
-
-      {/* Polaroid Tucking & Handwritten Inscription Modal */}
-      <PolaroidTuckModal
-        visible={activeTuckSlot !== null}
-        onClose={() => setActiveTuckSlot(null)}
-        slotIndex={activeTuckSlot ?? 0}
-        dateStr={viewingDate}
-        initialEntry={currentEntries[activeTuckSlot ?? 0] ?? null}
-        onSave={handleSavePolaroid}
-        onDelete={handleDeletePolaroid}
-        isImmutable={viewingDate < today && !!currentEntries[activeTuckSlot ?? 0]?.text}
-      />
     </PaperBackground>
   );
 }
