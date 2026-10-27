@@ -35,6 +35,7 @@ import { ProtectedScreen } from '@/components/ProtectedScreen';
 import { exportBookAsPdf } from '@/lib/pdfExport';
 import { bookDisplayName, formatShortDate, formatFullDate } from '@/lib/data';
 import type { Book, DayLog, Entry, PageLayoutType, BookFontType } from '@/lib/data';
+import { HeirloomPhotobook } from '@/components/HeirloomPhotobook';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PAGE_WIDTH = SCREEN_WIDTH;
@@ -592,83 +593,13 @@ export function BookViewerContent() {
         </View>
       </View>
 
-      {/* Authentic StPageFlip 3D Stacked Book Viewport */}
-      <View style={styles.bookStage} {...panResponder.panHandlers}>
-        {/* Underlying Page (already situated beneath) */}
-        {underlyingItem && (
-          <View style={styles.stackedPageUnderneath}>
-            {renderPage(underlyingItem, false)}
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.underlyingPageShadow,
-                { opacity: underlyingShadowOpacity },
-              ]}
-            />
-          </View>
-        )}
-
-        {/* Flipping Top Page with 3D Spine-Anchored RotateY */}
-        {turningItem && (
-          <Animated.View
-            style={[
-              styles.stackedPageTop,
-              {
-                opacity: turningOpacity,
-                transform: [
-                  { perspective: 1400 },
-                  { translateX: -BOOK_CARD_WIDTH / 2 },
-                  { rotateY },
-                  { translateX: BOOK_CARD_WIDTH / 2 },
-                ],
-              },
-            ]}
-          >
-            {renderPage(turningItem, true)}
-
-            {/* Dynamic Spine / Paper Peel Gradient Shadow */}
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.turningPageShadow,
-                { opacity: turningShadowOpacity },
-              ]}
-            />
-          </Animated.View>
-        )}
-      </View>
-
-      {/* Tactile Book Footer with Page Flip Controls */}
-      <View style={[styles.footer, { paddingBottom: botPad, borderTopColor: colors.border }]}>
-        <TouchableOpacity
-          style={[styles.navPageBtn, { opacity: pageIndex === 0 ? 0.3 : 1 }]}
-          onPress={flipPrev}
-          disabled={pageIndex === 0}
-          accessibilityRole="button"
-          accessibilityLabel="Previous page"
-        >
-          <CaretLeft size={20} color={colors.foreground} />
-          <Text style={[styles.navPageText, { color: colors.foreground }]}>Previous</Text>
-        </TouchableOpacity>
-
-        {/* Page progress pill */}
-        <View style={styles.pageRibbon}>
-          <Text style={[styles.ribbonText, { color: colors.tertiary }]}>
-            {pageIndex === 0 ? 'Cover' : `${pageIndex} / ${pages.length - 1}`}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.navPageBtn, { opacity: pageIndex >= pages.length - 1 ? 0.3 : 1 }]}
-          onPress={flipNext}
-          disabled={pageIndex >= pages.length - 1}
-          accessibilityRole="button"
-          accessibilityLabel="Next page"
-        >
-          <Text style={[styles.navPageText, { color: colors.foreground }]}>Next</Text>
-          <CaretRight size={20} color={colors.foreground} />
-        </TouchableOpacity>
-      </View>
+      {/* 3D Heirloom Photobook Viewport */}
+      <ScrollView
+        contentContainerStyle={{ paddingVertical: 12, alignItems: 'center' }}
+        showsVerticalScrollIndicator={false}
+      >
+        <HeirloomPhotobook monthKey={book.monthKey} />
+      </ScrollView>
 
       {/* ── Layout & Typography Customizer Modal ───────────────────────────── */}
       <Modal

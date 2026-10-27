@@ -47,33 +47,6 @@ export const LINEN_THEMES = [
   { name: 'Oatmeal', main: '#D8CFC2', spine: '#B5AA9B', border: '#C5BBAE' },
 ];
 
-const GALLERY_PHOTOS = [
-  {
-    title: 'Warm porch laughter',
-    url: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    title: 'Golden hour puppy',
-    url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    title: 'Homemade cinnamon rolls',
-    url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    title: 'Grandma telling stories',
-    url: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    title: 'Vintage film camera',
-    url: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    title: 'Evening bicycle ride',
-    url: 'https://images.unsplash.com/photo-1471506480208-91b3a4cc78be?auto=format&fit=crop&w=600&q=80',
-  },
-];
-
 const DAYS_OF_WEEK = [
   'SUNDAY',
   'MONDAY',
@@ -94,15 +67,16 @@ interface PlacedSticker {
 
 interface HeirloomPhotobookProps {
   initialDay?: number;
+  monthKey?: string;
 }
 
-export function HeirloomPhotobook({ initialDay }: HeirloomPhotobookProps) {
+export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookProps) {
   const colors = useColors();
   const { width: winWidth } = useWindowDimensions();
   const bookWidth = Math.min(winWidth - 28, 380);
   const bookHeight = Math.min(bookWidth * 1.45, 540);
 
-  const { getDayLog, upsertDayEntries, getTodayBook, updateBookConfig } = useDiary();
+  const { getDayLog, upsertDayEntries, getBook, updateBookConfig } = useDiary();
 
   const today = new Date();
   const todayDayNum = today.getDate();
@@ -112,7 +86,7 @@ export function HeirloomPhotobook({ initialDay }: HeirloomPhotobookProps) {
 
   // Page index: 0 = Front Cover (0.68x), 1..totalDays = Day, totalDays + 1 = Back Cover
   const [activePage, setActivePage] = useState<number>(initialDay ?? todayDayNum);
-  const [linenIndex, setLinenIndex] = useState(1); // Terracotta default
+  const [linenIndex, setLinenIndex] = useState(0); // Terracotta default
   const [cornerTeased, setCornerTeased] = useState(false);
   const [shakingSlotIdx, setShakingSlotIdx] = useState<number | null>(null);
   const [pulseHeaderLock, setPulseHeaderLock] = useState(false);
@@ -135,8 +109,7 @@ export function HeirloomPhotobook({ initialDay }: HeirloomPhotobookProps) {
     ],
   });
 
-  // Gallery Picker & 3D Hand Placement
-  const [galleryTarget, setGalleryTarget] = useState<{ type: 'slot'; slotIdx: number } | { type: 'cover' } | null>(null);
+  // Hand Placement State
   const [handPlacement, setHandPlacement] = useState<{ slotIdx: number; photoUrl: string } | null>(null);
 
   // 2-Line Caption Editor Modal
@@ -144,9 +117,6 @@ export function HeirloomPhotobook({ initialDay }: HeirloomPhotobookProps) {
 
   // Confetti cannon
   const confettiRef = useRef<any>(null);
-
-  // Long press timer for cover
-  const longPressTimer = useRef<any>(null);
 
   const currentLinen = LINEN_THEMES[linenIndex];
   const isCoverView = activePage === 0 || activePage === totalDaysInMonth + 1;
@@ -188,71 +158,71 @@ export function HeirloomPhotobook({ initialDay }: HeirloomPhotobookProps) {
     setActivePage(clamped);
   }, [activePage, totalDaysInMonth]);
 
-  // Handle Photo Selection + Hand Placement
-  async function handleSelectPhoto(photoUrl: string) {
-    const target = galleryTarget;
-    setGalleryTarget(null);
-    if (!target) return;
-
-    if (target.type === 'cover') {
-      setCoverPhoto(photoUrl);
-      playStickyGlueSound();
-      return;
-    }
-
-    const slotIdx = target.slotIdx;
-    const targetDay = activePage;
-    const targetDateStr = getActiveDateStr(targetDay);
-
-    // Trigger Stylized Hand Placement
-    setHandPlacement({ slotIdx, photoUrl });
-
-    setTimeout(() => {
-      playStickyGlueSound();
-    }, 450);
-
-    setTimeout(async () => {
-      // Save permanently in DiaryContext
-      const existing = getDayLog(targetDateStr);
-      const curEntries: Entry[] = existing ? [...existing.entries] : [];
-      while (curEntries.length < slotIdx) {
-        curEntries.push({ id: uid(), text: '', photos: [] });
-      }
-      const existingEntry = curEntries[slotIdx];
-      curEntries[slotIdx] = {
-        id: existingEntry?.id || uid(),
-        text: existingEntry?.text || 'A moment to keep forever.',
-        photos: [photoUrl],
-      };
-
-      await upsertDayEntries(targetDateStr, curEntries);
-
-      // Check if 4 photos are filled -> celebrate with stars confetti!
-      const filledPhotos = curEntries.filter(e => e?.photos?.length).length;
-      if (filledPhotos === 4) {
-        setTimeout(() => {
-          confettiRef.current?.start();
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }, 160);
-      }
-    }, 600);
-
-    setTimeout(() => {
-      setHandPlacement(null);
-    }, 1150);
-  }
-
-  // Device file picker
-  async function handlePickDeviceImage() {
+  // Direct Device Gallery Picker for Slots
+  async function handleSlotPicker(slotIdx: number) {
     try {
       const res = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.85,
+        quality: 0.9,
       });
+
       if (!res.canceled && res.assets[0]?.uri) {
-        handleSelectPhoto(res.assets[0].uri);
+        const photoUrl = res.assets[0].uri;
+        const targetDay = activePage;
+        const targetDateStr = getActiveDateStr(targetDay);
+
+        setHandPlacement({ slotIdx, photoUrl });
+
+        setTimeout(() => {
+          playStickyGlueSound();
+        }, 450);
+
+        setTimeout(async () => {
+          const existing = getDayLog(targetDateStr);
+          const curEntries: Entry[] = existing ? [...existing.entries] : [];
+          while (curEntries.length < slotIdx) {
+            curEntries.push({ id: uid(), text: '', photos: [] });
+          }
+          const existingEntry = curEntries[slotIdx];
+          curEntries[slotIdx] = {
+            id: existingEntry?.id || uid(),
+            text: existingEntry?.text || 'A moment to keep forever.',
+            photos: [photoUrl],
+          };
+
+          await upsertDayEntries(targetDateStr, curEntries);
+
+          const filledPhotos = curEntries.filter(e => e?.photos?.length).length;
+          if (filledPhotos === 4) {
+            setTimeout(() => {
+              confettiRef.current?.start();
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }, 160);
+          }
+        }, 600);
+
+        setTimeout(() => {
+          setHandPlacement(null);
+        }, 1150);
+      }
+    } catch {}
+  }
+
+  // Direct Device Gallery Picker for Cover Photo
+  async function handleCoverPhotoPicker() {
+    try {
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.9,
+      });
+
+      if (!res.canceled && res.assets[0]?.uri) {
+        setCoverPhoto(res.assets[0].uri);
+        playStickyGlueSound();
       }
     } catch {}
   }
@@ -448,7 +418,7 @@ export function HeirloomPhotobook({ initialDay }: HeirloomPhotobookProps) {
                   <Image source={{ uri: coverPhoto }} style={styles.coverPhotoImg} resizeMode="cover" />
                   <TouchableOpacity
                     style={styles.coverCameraBtn}
-                    onPress={() => setGalleryTarget({ type: 'cover' })}
+                    onPress={handleCoverPhotoPicker}
                     activeOpacity={0.8}
                   >
                     <Camera size={16} color="#FFFFFF" weight="bold" />
@@ -752,61 +722,6 @@ export function HeirloomPhotobook({ initialDay }: HeirloomPhotobookProps) {
       </View>
 
       {/* ==============================================================
-          GALLERY PHOTO PICKER BOTTOM SHEET
-          ============================================================== */}
-      <Modal
-        visible={!!galleryTarget}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setGalleryTarget(null)}
-      >
-        <TouchableOpacity
-          style={styles.modalBackdrop}
-          activeOpacity={1}
-          onPress={() => setGalleryTarget(null)}
-        >
-          <View style={styles.sheetContent} onStartShouldSetResponder={() => true}>
-            <View style={styles.sheetHandle} />
-
-            <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>
-                {galleryTarget?.type === 'cover'
-                  ? 'Choose Front Cover Photo'
-                  : `Choose Photo for Pocket #${(galleryTarget?.slotIdx ?? 0) + 1}`}
-              </Text>
-              <TouchableOpacity onPress={() => setGalleryTarget(null)}>
-                <X size={20} color="#4A413A" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Presets Grid */}
-            <View style={styles.sheetPresetsGrid}>
-              {GALLERY_PHOTOS.map((item, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={styles.sheetPresetThumb}
-                  onPress={() => handleSelectPhoto(item.url)}
-                  activeOpacity={0.85}
-                >
-                  <Image source={{ uri: item.url }} style={styles.sheetPresetImg} />
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Upload from Device */}
-            <TouchableOpacity
-              style={styles.sheetUploadBtn}
-              onPress={handlePickDeviceImage}
-              activeOpacity={0.85}
-            >
-              <UploadSimple size={16} color="#FFFFFF" weight="bold" />
-              <Text style={styles.sheetUploadBtnText}>Pick Photo from Device</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* ==============================================================
           2-LINE CAPTION EDITOR MODAL (60-80 CHARS)
           ============================================================== */}
       <Modal
@@ -898,7 +813,7 @@ export function HeirloomPhotobook({ initialDay }: HeirloomPhotobookProps) {
           style={styles.photoPocketBox}
           onPress={() => {
             Haptics.selectionAsync();
-            setGalleryTarget({ type: 'slot', slotIdx: idx });
+            handleSlotPicker(idx);
           }}
           activeOpacity={0.85}
         >
