@@ -26,54 +26,345 @@ const LINEN_THEMES = [
 ];
 
 const STICKER_ASSETS: Record<string, any> = {
-  'stk-ghost': require('@/assets/images/stickers/ghost-3d.png'),
-  'stk-lollipop': require('@/assets/images/stickers/lollipop-3d.png'),
-  'stk-thumbsup': require('@/assets/images/stickers/thumbsup-3d.png'),
-  'stk-shield': require('@/assets/images/stickers/shield-3d.png'),
-  'stk-star': require('@/assets/images/stickers/star-3d.png'),
-  'stk-heart': require('@/assets/images/stickers/heart.png'),
-  'stk-hearteyes': require('@/assets/images/stickers/heartEyes.png'),
-  'stk-party': require('@/assets/images/stickers/party.png'),
-  'stk-sunglasses': require('@/assets/images/stickers/sunglasses.png'),
-  'stk-kiss': require('@/assets/images/stickers/kiss.png'),
-  'stk-robot': require('@/assets/images/stickers/robot.png'),
-  'stk-smile': require('@/assets/images/stickers/smile.png'),
+  'stk-3d-ghost': require('@/assets/images/stickers/ghost-3d.png'),
+  'stk-3d-lollipop': require('@/assets/images/stickers/lollipop-3d.png'),
+  'stk-3d-thumbsup': require('@/assets/images/stickers/thumbsup-3d.png'),
+  'stk-3d-shield': require('@/assets/images/stickers/shield-3d.png'),
+  'stk-3d-star': require('@/assets/images/stickers/star-3d.png'),
+  'stk-3d-heart': require('@/assets/images/stickers/heart.png'),
+  'stk-3d-hearteyes': require('@/assets/images/stickers/heartEyes.png'),
+  'stk-3d-party': require('@/assets/images/stickers/party.png'),
+  'stk-3d-sunglasses': require('@/assets/images/stickers/sunglasses.png'),
+  'stk-3d-kiss': require('@/assets/images/stickers/kiss.png'),
+  'stk-3d-robot': require('@/assets/images/stickers/robot.png'),
+  'stk-3d-smile': require('@/assets/images/stickers/smile.png'),
 };
 
 const resolveStickerUri = (asset: any) =>
   typeof asset === 'string' ? asset : asset?.uri || asset?.default || asset;
 
 const STICKER_CATALOG = [
-  { id: 'stk-ghost', name: 'Spooky Ghost', asset: STICKER_ASSETS['stk-ghost'] },
-  { id: 'stk-lollipop', name: 'Swirl Lollipop', asset: STICKER_ASSETS['stk-lollipop'] },
-  { id: 'stk-thumbsup', name: 'Thumbs Up', asset: STICKER_ASSETS['stk-thumbsup'] },
-  { id: 'stk-shield', name: 'Verified Shield', asset: STICKER_ASSETS['stk-shield'] },
-  { id: 'stk-star', name: '3D Star', asset: STICKER_ASSETS['stk-star'] },
-  { id: 'stk-heart', name: 'Glossy Heart', asset: STICKER_ASSETS['stk-heart'] },
-  { id: 'stk-hearteyes', name: 'Heart Eyes', asset: STICKER_ASSETS['stk-hearteyes'] },
-  { id: 'stk-party', name: 'Party Popper', asset: STICKER_ASSETS['stk-party'] },
-  { id: 'stk-sunglasses', name: 'Cool Shades', asset: STICKER_ASSETS['stk-sunglasses'] },
-  { id: 'stk-kiss', name: 'Blowing Kiss', asset: STICKER_ASSETS['stk-kiss'] },
-  { id: 'stk-robot', name: 'Retro Robot', asset: STICKER_ASSETS['stk-robot'] },
-  { id: 'stk-smile', name: 'Big Grin', asset: STICKER_ASSETS['stk-smile'] },
-].map((item) => ({
-  ...item,
-  render: (size = 46) => (
-    <img
-      src={resolveStickerUri(item.asset)}
-      alt={item.name}
-      style={{
-        width: size,
-        height: size,
-        objectFit: 'contain',
-        filter: 'drop-shadow(0 6px 12px rgba(22, 14, 8, 0.28))',
-        pointerEvents: 'none',
-        userSelect: 'none',
-        display: 'block',
-      }}
-    />
-  ),
-}));
+  // ─── 1. RESTORED NOSTALGIC HEIRLOOM STICKERS (ORIGINAL 12) ───────────────────
+  {
+    id: 'stk-love',
+    name: 'Best Day Label',
+    render: (size = 46) => (
+      <svg viewBox="0 0 84 44" style={{ width: size * 1.5, height: size * 0.8, pointerEvents: 'none', userSelect: 'none' }}>
+        <rect x="3" y="6" width="78" height="32" rx="16" fill="#FFF8F0" stroke="#DF5739" strokeWidth="2" />
+        <text x="42" y="27" textAnchor="middle" fontFamily="Caveat, cursive" fontSize="19" fontWeight="bold" fill="#C8462A">
+          best day ♡
+        </text>
+      </svg>
+    )
+  },
+  {
+    id: 'stk-camera',
+    name: 'Vintage Camera',
+    render: (size = 46) => (
+      <svg viewBox="0 0 64 56" style={{ width: size, height: size * 0.88, pointerEvents: 'none', userSelect: 'none' }}>
+        <rect x="6" y="12" width="52" height="36" rx="8" fill="#3B3532" stroke="#F4EFE6" strokeWidth="2.5" />
+        <rect x="18" y="6" width="16" height="6" rx="2" fill="#DF5739" />
+        <circle cx="34" cy="30" r="11" fill="#F2C97D" stroke="#FAF6F0" strokeWidth="2.5" />
+        <circle cx="34" cy="30" r="5" fill="#231F1D" />
+        <circle cx="16" cy="21" r="3.5" fill="#FFBD00" />
+      </svg>
+    )
+  },
+  {
+    id: 'stk-heart',
+    name: 'Blush Heart',
+    render: (size = 46) => (
+      <svg viewBox="0 0 60 60" style={{ width: size, height: size, pointerEvents: 'none', userSelect: 'none' }}>
+        <circle cx="30" cy="30" r="25" fill="#FFD6E0" stroke="#E06377" strokeWidth="2.5" />
+        <path d="M30 43 C30 43 16 33 16 23 C16 18 21 15 25 18 C28 19 30 22 30 22 C30 22 32 19 35 18 C39 15 44 18 44 23 C44 33 30 43 30 43 Z" fill="#E03E52" />
+      </svg>
+    )
+  },
+  {
+    id: 'stk-flower',
+    name: 'Daisy Flower',
+    render: (size = 46) => (
+      <svg viewBox="0 0 60 60" style={{ width: size, height: size, pointerEvents: 'none', userSelect: 'none' }}>
+        <g fill="#FFFDF9" stroke="#E2D9C8" strokeWidth="1.5">
+          <ellipse cx="30" cy="14" rx="6.5" ry="11" />
+          <ellipse cx="30" cy="46" rx="6.5" ry="11" />
+          <ellipse cx="14" cy="30" rx="11" ry="6.5" />
+          <ellipse cx="46" cy="30" rx="11" ry="6.5" />
+          <ellipse cx="19" cy="19" rx="6.5" ry="11" transform="rotate(-45 19 19)" />
+          <ellipse cx="41" cy="41" rx="6.5" ry="11" transform="rotate(-45 41 41)" />
+          <ellipse cx="41" cy="19" rx="11" ry="6.5" transform="rotate(-45 41 19)" />
+          <ellipse cx="19" cy="41" rx="11" ry="6.5" transform="rotate(-45 19 41)" />
+        </g>
+        <circle cx="30" cy="30" r="8.5" fill="#FFBD00" stroke="#D99B00" strokeWidth="1.5" />
+      </svg>
+    )
+  },
+  {
+    id: 'stk-music',
+    name: 'Music Note',
+    render: (size = 46) => (
+      <svg viewBox="0 0 60 60" style={{ width: size, height: size, pointerEvents: 'none', userSelect: 'none' }}>
+        <rect x="5" y="5" width="50" height="50" rx="15" fill="#FFF7EB" stroke="#F2C97D" strokeWidth="2.5" />
+        <path d="M23 40 V20 L41 16 V36" fill="none" stroke="#DF5739" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="19" cy="40" r="5.5" fill="#DF5739" />
+        <circle cx="37" cy="36" r="5.5" fill="#DF5739" />
+      </svg>
+    )
+  },
+  {
+    id: 'stk-tape',
+    name: 'Washi Tape',
+    render: (size = 46) => (
+      <svg viewBox="0 0 90 40" style={{ width: size * 1.6, height: size * 0.7, pointerEvents: 'none', userSelect: 'none' }}>
+        <path d="M4 8 L86 5 L83 33 L6 35 Z" fill="#84C7AE" fillOpacity="0.9" stroke="#569E85" strokeWidth="1.5" />
+        <path d="M18 7 L18 34 M36 7 L36 34 M54 6 L54 33 M72 6 L72 33" stroke="#FFFFFF" strokeWidth="2" strokeOpacity="0.65" />
+      </svg>
+    )
+  },
+  {
+    id: 'stk-sun',
+    name: 'Radiant Sun',
+    render: (size = 46) => (
+      <svg viewBox="0 0 60 60" style={{ width: size, height: size, pointerEvents: 'none', userSelect: 'none' }}>
+        <circle cx="30" cy="30" r="14" fill="#FFA834" stroke="#E07A12" strokeWidth="2" />
+        <g stroke="#FFA834" strokeWidth="3" strokeLinecap="round">
+          <line x1="30" y1="6" x2="30" y2="11" />
+          <line x1="30" y1="49" x2="30" y2="54" />
+          <line x1="6" y1="30" x2="11" y2="30" />
+          <line x1="49" y1="30" x2="54" y2="30" />
+          <line x1="13" y1="13" x2="17" y2="17" />
+          <line x1="43" y1="43" x2="47" y2="47" />
+          <line x1="47" y1="13" x2="43" y2="17" />
+          <line x1="17" y1="43" x2="13" y2="47" />
+        </g>
+      </svg>
+    )
+  },
+  {
+    id: 'stk-coffee',
+    name: 'Warm Coffee',
+    render: (size = 46) => (
+      <svg viewBox="0 0 60 60" style={{ width: size, height: size, pointerEvents: 'none', userSelect: 'none' }}>
+        <path d="M14 22 H42 V36 C42 44 35 49 28 49 C21 49 14 44 14 36 Z" fill="#D9825B" stroke="#8C4A2E" strokeWidth="2.5" />
+        <path d="M42 25 H47 C50 25 52 27 52 30 C52 33 50 35 47 35 H42" fill="none" stroke="#8C4A2E" strokeWidth="2.5" />
+        <path d="M22 15 Q24 10 22 7 M30 15 Q32 10 30 7 M36 15 Q38 10 36 7" fill="none" stroke="#B89F8D" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    )
+  },
+  {
+    id: 'stk-clock',
+    name: 'Pocket Clock',
+    render: (size = 46) => (
+      <svg viewBox="0 0 60 60" style={{ width: size, height: size, pointerEvents: 'none', userSelect: 'none' }}>
+        <circle cx="30" cy="30" r="25" fill="#FFE484" stroke="#E09F1F" strokeWidth="2.5" />
+        <circle cx="30" cy="30" r="19" fill="#FFFDF7" />
+        <path d="M30 17 V30 L38 34" fill="none" stroke="#2B2420" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  },
+  {
+    id: 'stk-rainbow',
+    name: 'Retro Rainbow',
+    render: (size = 46) => (
+      <svg viewBox="0 0 64 52" style={{ width: size, height: size * 0.82, pointerEvents: 'none', userSelect: 'none' }}>
+        <path d="M8 42 A24 24 0 0 1 56 42" fill="none" stroke="#E05A47" strokeWidth="5" strokeLinecap="round" />
+        <path d="M13 42 A19 19 0 0 1 51 42" fill="none" stroke="#F2A93B" strokeWidth="5" strokeLinecap="round" />
+        <path d="M18 42 A14 14 0 0 1 46 42" fill="none" stroke="#62B6CB" strokeWidth="5" strokeLinecap="round" />
+      </svg>
+    )
+  },
+  {
+    id: 'stk-star',
+    name: 'Golden Star',
+    render: (size = 46) => (
+      <svg viewBox="0 0 60 60" style={{ width: size, height: size, pointerEvents: 'none', userSelect: 'none' }}>
+        <polygon points="30,5 37,21 55,23 41,35 45,53 30,43 15,53 19,35 5,23 23,21" fill="#FFBD00" stroke="#D99B00" strokeWidth="2.2" />
+      </svg>
+    )
+  },
+  {
+    id: 'stk-stamp',
+    name: 'Airmail Stamp',
+    render: (size = 46) => (
+      <svg viewBox="0 0 64 72" style={{ width: size, height: size * 1.1, pointerEvents: 'none', userSelect: 'none' }}>
+        <rect x="6" y="6" width="52" height="60" rx="4" fill="#F7F1E3" stroke="#5B7B9C" strokeWidth="2.5" strokeDasharray="4 3" />
+        <rect x="12" y="12" width="40" height="48" fill="#D5E5F2" />
+        <circle cx="32" cy="32" r="10" fill="#E06D53" />
+        <path d="M18 50 Q32 42 46 50" fill="none" stroke="#3B5978" strokeWidth="2.5" />
+      </svg>
+    )
+  },
+
+  // ─── 2. 3D VINYL STICKERS (EXPANDED 12) ──────────────────────────────────────
+  {
+    id: 'stk-3d-ghost',
+    name: 'Spooky Ghost',
+    asset: STICKER_ASSETS['stk-3d-ghost'],
+    render: (size = 46) => (
+      <img
+        src={resolveStickerUri(STICKER_ASSETS['stk-3d-ghost'])}
+        alt="Spooky Ghost"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+  {
+    id: 'stk-3d-lollipop',
+    name: 'Swirl Lollipop',
+    asset: STICKER_ASSETS['stk-3d-lollipop'],
+    render: (size = 46) => (
+      <img
+        src={resolveStickerUri(STICKER_ASSETS['stk-3d-lollipop'])}
+        alt="Swirl Lollipop"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+  {
+    id: 'stk-3d-thumbsup',
+    name: 'Thumbs Up',
+    asset: STICKER_ASSETS['stk-3d-thumbsup'],
+    render: (size = 46) => (
+      <img
+        src={resolveStickerUri(STICKER_ASSETS['stk-3d-thumbsup'])}
+        alt="Thumbs Up"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+  {
+    id: 'stk-3d-shield',
+    name: 'Verified Shield',
+    asset: STICKER_ASSETS['stk-3d-shield'],
+    render: (size = 46) => (
+      <img
+        src={resolveStickerUri(STICKER_ASSETS['stk-3d-shield'])}
+        alt="Verified Shield"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+  {
+    id: 'stk-3d-star',
+    name: '3D Star',
+    asset: STICKER_ASSETS['stk-3d-star'],
+    render: (size = 46) => (
+      <img
+        src={resolveStickerUri(STICKER_ASSETS['stk-3d-star'])}
+        alt="3D Star"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+  {
+    id: 'stk-3d-heart',
+    name: 'Glossy Heart',
+    asset: STICKER_ASSETS['stk-3d-heart'],
+    render: (size = 46) => (
+      <img
+        src={resolveStickerUri(STICKER_ASSETS['stk-3d-heart'])}
+        alt="Glossy Heart"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+  {
+    id: 'stk-3d-hearteyes',
+    name: 'Heart Eyes',
+    asset: STICKER_ASSETS['stk-3d-hearteyes'],
+    render: (size = 46) => (
+      <img
+        src={resolveStickerUri(STICKER_ASSETS['stk-3d-hearteyes'])}
+        alt="Heart Eyes"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+  {
+    id: 'stk-3d-party',
+    name: 'Party Popper',
+    asset: STICKER_ASSETS['stk-3d-party'],
+    render: (size = 46) => (
+      <img
+        src={resolveStickerUri(STICKER_ASSETS['stk-3d-party'])}
+        alt="Party Popper"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+  {
+    id: 'stk-3d-sunglasses',
+    name: 'Cool Sunglasses',
+    asset: STICKER_ASSETS['stk-3d-sunglasses'],
+    render: (size = 46) => (
+      <img
+        src={resolveStickerUri(STICKER_ASSETS['stk-3d-sunglasses'])}
+        alt="Cool Sunglasses"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+  {
+    id: 'stk-3d-kiss',
+    name: 'Blowing Kiss',
+    asset: STICKER_ASSETS['stk-3d-kiss'],
+    render: (size = 46) => (
+      <img
+        src={resolveStickerUri(STICKER_ASSETS['stk-3d-kiss'])}
+        alt="Blowing Kiss"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+  {
+    id: 'stk-3d-robot',
+    name: 'Retro Robot',
+    asset: STICKER_ASSETS['stk-3d-robot'],
+    render: (size = 46) => (
+      <img
+        src={resolveStickerUri(STICKER_ASSETS['stk-3d-robot'])}
+        alt="Retro Robot"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+  {
+    id: 'stk-3d-smile',
+    name: 'Big Smile',
+    asset: STICKER_ASSETS['stk-3d-smile'],
+    render: (size = 46) => (
+      <img
+        src={resolveStickerUri(STICKER_ASSETS['stk-3d-smile'])}
+        alt="Big Smile"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+];
 
 // ============================================================================
 // 2. SOUND SYNTHESIS ENGINE (EXACT FROM ARGON)
@@ -1812,6 +2103,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                       key={stk.uid}
                       className="placed-sticker"
                       onPointerDown={(e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         setDraggingSticker({
                           uid: stk.uid,
@@ -1830,10 +2122,15 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                         left: `${stk.x}px`,
                         top: `${stk.y}px`,
                         transform: `rotate(${stk.rot}deg)`,
-                        zIndex: 910,
+                        zIndex: draggingSticker?.uid === stk.uid ? 999 : 910,
                         pointerEvents: 'auto',
-                        cursor: 'grab',
-                        filter: 'drop-shadow(0 4px 8px rgba(28,20,14,0.28))'
+                        cursor: draggingSticker?.uid === stk.uid ? 'grabbing' : 'grab',
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                        filter: draggingSticker?.uid === stk.uid 
+                          ? 'drop-shadow(0 10px 18px rgba(28,20,14,0.36)) scale(1.05)'
+                          : 'drop-shadow(0 4px 8px rgba(28,20,14,0.24))',
+                        transition: draggingSticker?.uid === stk.uid ? 'none' : 'filter 0.2s ease, transform 0.2s ease'
                       }}
                       title="Drag to move • Double-click to remove"
                     >
