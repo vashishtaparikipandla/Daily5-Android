@@ -387,14 +387,9 @@ export default function ProfileTab() {
         {/* Passport & Milestone Stamps Album */}
         <View style={styles.section}>
           <View style={styles.passportHeaderRow}>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold', fontSize: 16 }]}>
-                Passport
-              </Text>
-              <Text style={[styles.passportSubtitle, { color: colors.mutedForeground }]}>
-                {unlockedStampsCount} of {ARCHIVAL_STAMPS.length} collected · Tap stamp to inspect
-              </Text>
-            </View>
+            <Text style={[styles.sectionTitle, { color: colors.tertiary }]}>
+              PASSPORT
+            </Text>
             <View style={[styles.passportRankChip, { backgroundColor: colors.accentLight }]}>
               <Text style={[styles.passportRankChipText, { color: colors.primary }]}>
                 {honorific.title}

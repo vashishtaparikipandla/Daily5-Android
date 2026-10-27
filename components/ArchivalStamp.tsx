@@ -1,8 +1,8 @@
 /**
  * ArchivalStamp.tsx
- * Visual philatelic postage stamp component for Dear Day.
- * Features realistic 3D rendered stamps, philatelic serrated borders,
- * interactive 3D gyroscope/cursor tilting, and terracotta cancel postmarks.
+ * Pure 3D Philatelic Stamp Object for Dear Day.
+ * Renders ONLY the 3D rendered milestone badge objects directly,
+ * with dynamic 3D cursor/touch tilting and spatial depth.
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -18,12 +18,6 @@ import {
   Animated,
   PanResponder,
 } from 'react-native';
-import Svg, {
-  Circle,
-  Rect,
-  Line,
-  G,
-} from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { X, Lock, CheckCircle, ShareNetwork, Sparkle } from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
@@ -58,9 +52,6 @@ export function ArchivalStamp({
   const colors = useColors();
   const [showDetail, setShowDetail] = useState(false);
 
-  const width = size === 'compact' ? 88 : size === 'large' ? 140 : 106;
-  const height = width * 1.32; // Philatelic aspect ratio
-
   const stampAsset = STAMP_3D_ASSETS[stamp.id] || STAMP_3D_ASSETS['first-ink'];
 
   function handlePress() {
@@ -83,88 +74,44 @@ export function ArchivalStamp({
   return (
     <>
       <TouchableOpacity
-        activeOpacity={0.88}
+        activeOpacity={0.82}
         onPress={handlePress}
         style={[
           styles.stampWrapper,
-          { width, height },
           !isUnlocked && styles.stampLockedWrap,
         ]}
       >
-        {/* Philatelic Stamp Canvas */}
-        <View
-          style={[
-            styles.stampBody,
-            {
-              backgroundColor: isUnlocked ? '#FFFDF9' : '#EDE8E0',
-              borderColor: isUnlocked ? '#D9D1C5' : '#D0C8BC',
-            },
-          ]}
-        >
-          {/* Inner Guilloche Border */}
-          <View
+        {/* Floating 3D Stamp Badge */}
+        <View style={styles.stampBadgeContainer}>
+          <Image
+            source={stampAsset}
             style={[
-              styles.innerBorder,
-              { borderColor: isUnlocked ? stamp.accentColor + '55' : 'rgba(0,0,0,0.1)' },
+              styles.thumbnail3DImage,
+              !isUnlocked && styles.thumbnail3DImageLocked,
             ]}
-          >
-            {/* Top Postage Header */}
-            <View style={styles.headerRow}>
-              <Text style={[styles.postageHeader, { color: isUnlocked ? stamp.accentColor : '#9C958C' }]}>
-                DEAR DAY
-              </Text>
-              <Text style={[styles.serialText, { color: isUnlocked ? stamp.accentColor : '#9C958C' }]}>
-                {stamp.serialNumber.replace('№ ', '')}
-              </Text>
-            </View>
+            resizeMode="contain"
+          />
 
-            {/* Central 3D Rendered Stamp Motif */}
-            <View style={styles.motifContainer}>
-              <Image
-                source={stampAsset}
-                style={[
-                  styles.thumbnail3DImage,
-                  { width: width * 0.58, height: width * 0.58 },
-                  !isUnlocked && styles.thumbnail3DImageLocked,
-                ]}
-                resizeMode="contain"
-              />
-            </View>
-
-            {/* Bottom Title */}
-            <View style={styles.footerRow}>
-              <Text
-                style={[
-                  styles.stampTitle,
-                  { color: isUnlocked ? '#1C1916' : '#7A746E' },
-                ]}
-                numberOfLines={1}
-              >
-                {stamp.title}
-              </Text>
-            </View>
-
-            {/* Terracotta Postmark Cancellation Stamp */}
-            {isUnlocked && (
-              <View style={styles.postmarkOverlay} pointerEvents="none">
-                <PostmarkRing text={stamp.postmarkText} color="#E8593A" />
+          {/* Locked Badge Overlay */}
+          {!isUnlocked && (
+            <View style={styles.lockBadgeOverlay} pointerEvents="none">
+              <View style={styles.lockBadgePill}>
+                <Lock size={12} color="#FFFFFF" weight="fill" />
               </View>
-            )}
-
-            {/* Locked Shroud */}
-            {!isUnlocked && (
-              <View style={styles.lockedShroud} pointerEvents="none">
-                <View style={styles.lockBadgePill}>
-                  <Lock size={13} color="#FFFFFF" weight="fill" />
-                </View>
-              </View>
-            )}
-          </View>
+            </View>
+          )}
         </View>
 
-        {/* Decorative Perforation Teeth (Philatelic Scalloped Edges) */}
-        <View style={styles.perforationsTop} />
-        <View style={styles.perforationsBottom} />
+        {/* Minimal Stamp Title */}
+        <Text
+          style={[
+            styles.stampTitle,
+            { color: isUnlocked ? colors.foreground : colors.mutedForeground },
+          ]}
+          numberOfLines={1}
+        >
+          {stamp.title}
+        </Text>
       </TouchableOpacity>
 
       {/* Inspect Detail Modal with Interactive 3D Tilting */}
@@ -185,7 +132,7 @@ export function ArchivalStamp({
               <X size={18} color={colors.foreground} />
             </TouchableOpacity>
 
-            {/* Interactive 3D Tilting Stamp Showcase */}
+            {/* Interactive Pure 3D Tilting Stamp Showcase */}
             <Tilting3DStampShowcase
               stamp={stamp}
               isUnlocked={isUnlocked}
@@ -198,7 +145,7 @@ export function ArchivalStamp({
                 {isUnlocked ? (
                   <>
                     <CheckCircle size={14} color="#E8593A" weight="fill" />
-                    <Text style={[styles.statusText, { color: '#E8593A' }]}>OFFICIALLY EARNED & CANCELLED</Text>
+                    <Text style={[styles.statusText, { color: '#E8593A' }]}>OFFICIALLY COLLECTED</Text>
                   </>
                 ) : (
                   <>
@@ -215,7 +162,7 @@ export function ArchivalStamp({
               <View style={styles.tiltCueRow}>
                 <Sparkle size={12} color="#A3876B" weight="bold" />
                 <Text style={styles.tiltCueText}>
-                  {Platform.OS === 'web' ? 'Hover or move cursor to tilt in 3D' : 'Drag to tilt and inspect in 3D'}
+                  {Platform.OS === 'web' ? 'Hover cursor to tilt in 3D' : 'Drag to tilt and inspect in 3D'}
                 </Text>
               </View>
             </View>
@@ -235,7 +182,7 @@ export function ArchivalStamp({
             ) : (
               <View style={[styles.lockedNote, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.lockedNoteText, { color: colors.mutedForeground }]}>
-                  Keep logging memories to stamp this in your archival album.
+                  Keep logging memories to collect this 3D stamp in your passport.
                 </Text>
               </View>
             )}
@@ -247,7 +194,7 @@ export function ArchivalStamp({
 }
 
 // ============================================================================
-// 2. 3D TILTING STAMP SHOWCASE (INTERACTIVE POINTER & GYRO PHYSICS)
+// 2. 3D TILTING STAMP SHOWCASE (PURE 3D OBJECT WITH MOUSE & TOUCH PHYSICS)
 // ============================================================================
 
 interface Tilting3DProps {
@@ -279,8 +226,8 @@ function Tilting3DStampShowcase({ stamp, isUnlocked, stampAsset }: Tilting3DProp
         const rect = el.getBoundingClientRect();
         const px = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
         const py = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-        const rx = (py - 0.5) * -32; // -16 to +16 deg
-        const ry = (px - 0.5) * 36;  // -18 to +18 deg
+        const rx = (py - 0.5) * -34; // -17 to +17 deg
+        const ry = (px - 0.5) * 38;  // -19 to +19 deg
         setTilt({ rx, ry, isInteracting: true });
       };
 
@@ -323,8 +270,8 @@ function Tilting3DStampShowcase({ stamp, isUnlocked, stampAsset }: Tilting3DProp
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderMove: (_, gesture) => {
-        const clampedX = Math.max(-24, Math.min(24, gesture.dx * 0.16));
-        const clampedY = Math.max(-20, Math.min(20, -gesture.dy * 0.16));
+        const clampedX = Math.max(-26, Math.min(26, gesture.dx * 0.18));
+        const clampedY = Math.max(-22, Math.min(22, -gesture.dy * 0.18));
         pan.setValue({ x: clampedX, y: clampedY });
       },
       onPanResponderRelease: () => {
@@ -350,7 +297,7 @@ function Tilting3DStampShowcase({ stamp, isUnlocked, stampAsset }: Tilting3DProp
         className="tilt-viewport-stage"
         style={{
           width: 220,
-          height: 270,
+          height: 220,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -362,17 +309,17 @@ function Tilting3DStampShowcase({ stamp, isUnlocked, stampAsset }: Tilting3DProp
         <style>{`
           @keyframes stamp3dAmbientWobble {
             0% {
-              transform: perspective(1000px) rotateX(6deg) rotateY(-8deg) rotateZ(-0.8deg) scale(1.02);
+              transform: perspective(1000px) rotateX(6deg) rotateY(-8deg) rotateZ(-0.8deg) scale(1.04);
             }
             50% {
-              transform: perspective(1000px) rotateX(-5deg) rotateY(9deg) rotateZ(1deg) scale(1.04);
+              transform: perspective(1000px) rotateX(-5deg) rotateY(9deg) rotateZ(1deg) scale(1.06);
             }
             100% {
-              transform: perspective(1000px) rotateX(6deg) rotateY(-8deg) rotateZ(-0.8deg) scale(1.02);
+              transform: perspective(1000px) rotateX(6deg) rotateY(-8deg) rotateZ(-0.8deg) scale(1.04);
             }
           }
           .stamp-card-tiltable {
-            transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.14s ease;
+            transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
             transform-style: preserve-3d;
             will-change: transform;
           }
@@ -381,132 +328,32 @@ function Tilting3DStampShowcase({ stamp, isUnlocked, stampAsset }: Tilting3DProp
         <div
           className="stamp-card-tiltable"
           style={{
-            width: 172,
-            height: 228,
-            backgroundColor: isUnlocked ? '#FFFDF9' : '#EDE8E0',
-            borderRadius: 8,
-            border: `1.5px solid ${isUnlocked ? '#D9D1C5' : '#D0C8BC'}`,
-            padding: 6,
+            width: 170,
+            height: 170,
             position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             transform: tilt.isInteracting
-              ? `perspective(1000px) rotateX(${tilt.rx.toFixed(2)}deg) rotateY(${tilt.ry.toFixed(2)}deg) scale(1.05)`
+              ? `perspective(1000px) rotateX(${tilt.rx.toFixed(2)}deg) rotateY(${tilt.ry.toFixed(2)}deg) scale(1.08)`
               : undefined,
             animation: !tilt.isInteracting ? 'stamp3dAmbientWobble 5.6s ease-in-out infinite' : undefined,
-            boxShadow: tilt.isInteracting
-              ? `${(-tilt.ry * 0.9).toFixed(1)}px ${(16 + tilt.rx * 0.7).toFixed(1)}px 30px rgba(25, 18, 12, 0.32), inset 0 1px 2px rgba(255,255,255,0.8)`
-              : '0 16px 32px rgba(25, 18, 12, 0.24), inset 0 1px 2px rgba(255,255,255,0.8)',
           }}
         >
-          {/* Inner Guilloche Border */}
-          <div
+          {/* Pure 3D Rendered Stamp Badge */}
+          <img
+            src={assetUri}
+            alt={stamp.title}
             style={{
-              width: '100%',
-              height: '100%',
-              border: `1px solid ${isUnlocked ? stamp.accentColor + '66' : 'rgba(0,0,0,0.1)'}`,
-              borderRadius: 4,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              padding: '6px 8px',
-              position: 'relative',
-              overflow: 'hidden',
+              width: 155,
+              height: 155,
+              objectFit: 'contain',
+              filter: isUnlocked
+                ? `drop-shadow(${(-tilt.ry * 0.9).toFixed(1)}px ${(14 + tilt.rx * 0.7).toFixed(1)}px 24px rgba(22, 14, 8, 0.35))`
+                : 'grayscale(100%) opacity(0.32)',
+              transition: 'filter 0.14s ease-out',
             }}
-          >
-            {/* Holographic Specular Light Sheen */}
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                pointerEvents: 'none',
-                background: `linear-gradient(${(125 + tilt.ry * 2.5).toFixed(0)}deg, rgba(255,255,255,0.48) 0%, rgba(255,255,255,0.08) 45%, transparent 70%)`,
-                opacity: isUnlocked ? 0.9 : 0.4,
-                mixBlendMode: 'overlay',
-                zIndex: 4,
-              }}
-            />
-
-            {/* Top Postage Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span
-                style={{
-                  fontSize: 7.5,
-                  fontFamily: "'Inter', sans-serif",
-                  fontWeight: 800,
-                  letterSpacing: 0.8,
-                  color: isUnlocked ? stamp.accentColor : '#9C958C',
-                }}
-              >
-                DEAR DAY ARCHIVAL
-              </span>
-              <span
-                style={{
-                  fontSize: 7.5,
-                  fontFamily: "'Inter', sans-serif",
-                  fontWeight: 700,
-                  color: isUnlocked ? stamp.accentColor : '#9C958C',
-                }}
-              >
-                {stamp.serialNumber}
-              </span>
-            </div>
-
-            {/* Central 3D Rendered Artwork */}
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                transform: 'translateZ(26px)',
-              }}
-            >
-              <img
-                src={assetUri}
-                alt={stamp.title}
-                style={{
-                  width: 110,
-                  height: 110,
-                  objectFit: 'contain',
-                  filter: isUnlocked
-                    ? 'drop-shadow(0 12px 20px rgba(22, 14, 8, 0.32))'
-                    : 'grayscale(100%) opacity(0.35)',
-                  transition: 'transform 0.14s ease-out',
-                }}
-              />
-            </div>
-
-            {/* Bottom Title */}
-            <div style={{ width: '100%', textAlign: 'center', paddingBottom: 2 }}>
-              <span
-                style={{
-                  fontSize: 9.5,
-                  fontFamily: "'Playfair Display', serif",
-                  fontWeight: 700,
-                  letterSpacing: 0.4,
-                  color: isUnlocked ? '#1C1916' : '#7A746E',
-                }}
-              >
-                {stamp.title}
-              </span>
-            </div>
-
-            {/* Terracotta Postmark Cancellation Ring */}
-            {isUnlocked && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: -10,
-                  right: -14,
-                  transform: 'rotate(-18deg)',
-                  pointerEvents: 'none',
-                  zIndex: 3,
-                }}
-              >
-                <PostmarkRing text={stamp.postmarkText} color="#E8593A" size={118} />
-              </div>
-            )}
-          </div>
+          />
         </div>
       </div>
     );
@@ -515,8 +362,8 @@ function Tilting3DStampShowcase({ stamp, isUnlocked, stampAsset }: Tilting3DProp
   // Native 3D Animation & PanResponder
   const rotateX = Animated.add(
     pan.y.interpolate({
-      inputRange: [-20, 20],
-      outputRange: ['-16deg', '16deg'],
+      inputRange: [-22, 22],
+      outputRange: ['-18deg', '18deg'],
     }),
     ambientWobble.interpolate({
       inputRange: [-1, 1],
@@ -526,8 +373,8 @@ function Tilting3DStampShowcase({ stamp, isUnlocked, stampAsset }: Tilting3DProp
 
   const rotateY = Animated.add(
     pan.x.interpolate({
-      inputRange: [-24, 24],
-      outputRange: ['-18deg', '18deg'],
+      inputRange: [-26, 26],
+      outputRange: ['-20deg', '20deg'],
     }),
     ambientWobble.interpolate({
       inputRange: [-1, 1],
@@ -541,77 +388,25 @@ function Tilting3DStampShowcase({ stamp, isUnlocked, stampAsset }: Tilting3DProp
         style={[
           styles.bigStampBody,
           {
-            backgroundColor: isUnlocked ? '#FFFDF9' : '#EDE8E0',
-            borderColor: isUnlocked ? '#D9D1C5' : '#D0C8BC',
             transform: [
               { perspective: 950 },
               { rotateX },
               { rotateY },
-              { scale: 1.04 },
+              { scale: 1.06 },
             ],
           },
         ]}
       >
-        <View
+        <Image
+          source={stampAsset}
           style={[
-            styles.bigInnerBorder,
-            { borderColor: isUnlocked ? stamp.accentColor + '66' : 'rgba(0,0,0,0.1)' },
+            styles.big3DImage,
+            !isUnlocked && styles.thumbnail3DImageLocked,
           ]}
-        >
-          <View style={styles.headerRow}>
-            <Text style={[styles.bigPostageHeader, { color: isUnlocked ? stamp.accentColor : '#9C958C' }]}>
-              DEAR DAY ARCHIVAL PRESS
-            </Text>
-            <Text style={[styles.bigSerialText, { color: isUnlocked ? stamp.accentColor : '#9C958C' }]}>
-              {stamp.serialNumber}
-            </Text>
-          </View>
-
-          <View style={styles.bigMotifContainer}>
-            <Image
-              source={stampAsset}
-              style={[
-                styles.big3DImage,
-                !isUnlocked && styles.thumbnail3DImageLocked,
-              ]}
-              resizeMode="contain"
-            />
-          </View>
-
-          <View style={styles.footerRow}>
-            <Text
-              style={[
-                styles.bigStampTitle,
-                { color: isUnlocked ? '#1C1916' : '#7A746E' },
-              ]}
-            >
-              {stamp.title}
-            </Text>
-          </View>
-
-          {isUnlocked && (
-            <View style={styles.bigPostmarkOverlay} pointerEvents="none">
-              <PostmarkRing text={stamp.postmarkText} color="#E8593A" size={120} />
-            </View>
-          )}
-        </View>
+          resizeMode="contain"
+        />
       </Animated.View>
     </View>
-  );
-}
-
-// ─── Postmark Ring (Postal Cancellation Stamp) ───────────────────────────────
-
-function PostmarkRing({ text, color = '#E8593A', size = 76 }: { text: string; color?: string; size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 100 100">
-      <Circle cx="50" cy="50" r="44" stroke={color} strokeWidth="1.8" fill="none" opacity={0.85} strokeDasharray="3 1.5" />
-      <Circle cx="50" cy="50" r="38" stroke={color} strokeWidth="1" fill="none" opacity={0.7} />
-      <G opacity={0.85}>
-        <Line x1="16" y1="46" x2="84" y2="46" stroke={color} strokeWidth="1.2" />
-        <Line x1="16" y1="54" x2="84" y2="54" stroke={color} strokeWidth="1.2" />
-      </G>
-    </Svg>
   );
 }
 
@@ -621,114 +416,58 @@ function PostmarkRing({ text, color = '#E8593A', size = 76 }: { text: string; co
 
 const styles = StyleSheet.create({
   stampWrapper: {
-    position: 'relative',
-    marginHorizontal: 3,
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
   },
   stampLockedWrap: {
-    opacity: 0.72,
+    opacity: 0.85,
   },
-  stampBody: {
-    flex: 1,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    padding: 3.5,
-    shadowColor: '#1A140E',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.14,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  innerBorder: {
-    flex: 1,
-    borderRadius: 3,
-    borderWidth: 1,
-    padding: 3,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  headerRow: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 1,
-  },
-  postageHeader: {
-    fontSize: 6.5,
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: 0.5,
-  },
-  serialText: {
-    fontSize: 6.5,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  motifContainer: {
-    flex: 1,
+  stampBadgeContainer: {
+    width: 68,
+    height: 68,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   thumbnail3DImage: {
-    shadowColor: '#160E08',
-    shadowOffset: { width: 0, height: 4 },
+    width: 64,
+    height: 64,
+    shadowColor: '#1A140E',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.22,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 4,
   },
   thumbnail3DImageLocked: {
     opacity: 0.32,
     tintColor: '#8C8276',
   },
-  footerRow: {
-    width: '100%',
-    alignItems: 'center',
-    paddingBottom: 1,
-  },
-  stampTitle: {
-    fontSize: 7.5,
-    fontFamily: 'PlayfairDisplay_700Bold',
-    letterSpacing: 0.2,
-    textAlign: 'center',
-  },
-  postmarkOverlay: {
-    position: 'absolute',
-    top: -12,
-    right: -16,
-    transform: [{ rotate: '-18deg' }],
-  },
-  lockedShroud: {
+  lockBadgeOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(235, 230, 222, 0.45)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   lockBadgePill: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(40, 32, 26, 0.75)',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(32, 24, 18, 0.75)',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
-  perforationsTop: {
-    position: 'absolute',
-    top: -2,
-    left: 4,
-    right: 4,
-    height: 3,
-  },
-  perforationsBottom: {
-    position: 'absolute',
-    bottom: -2,
-    left: 4,
-    right: 4,
-    height: 3,
+  stampTitle: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.2,
+    textAlign: 'center',
+    maxWidth: 72,
   },
 
   /* Modal Showcase */
@@ -741,7 +480,7 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '100%',
-    maxWidth: 360,
+    maxWidth: 350,
     borderRadius: 22,
     borderWidth: 1,
     padding: 24,
@@ -768,66 +507,24 @@ const styles = StyleSheet.create({
   },
   nativeShowcaseWrap: {
     width: 200,
-    height: 260,
+    height: 200,
     alignItems: 'center',
     justifyContent: 'center',
   },
   bigStampBody: {
-    width: 172,
-    height: 228,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    padding: 6,
-    shadowColor: '#19120C',
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.28,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  bigInnerBorder: {
-    flex: 1,
-    borderRadius: 4,
-    borderWidth: 1,
-    padding: 8,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  bigPostageHeader: {
-    fontSize: 7.5,
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: 0.8,
-  },
-  bigSerialText: {
-    fontSize: 7.5,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  bigMotifContainer: {
-    flex: 1,
+    width: 160,
+    height: 160,
     alignItems: 'center',
     justifyContent: 'center',
   },
   big3DImage: {
-    width: 110,
-    height: 110,
+    width: 150,
+    height: 150,
     shadowColor: '#160E08',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  bigStampTitle: {
-    fontSize: 10,
-    fontFamily: 'PlayfairDisplay_700Bold',
-    letterSpacing: 0.4,
-    textAlign: 'center',
-  },
-  bigPostmarkOverlay: {
-    position: 'absolute',
-    top: -12,
-    right: -16,
-    transform: [{ rotate: '-18deg' }],
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.34,
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalMeta: {
     width: '100%',

@@ -108,7 +108,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
   const [stickerTrayOpen, setStickerTrayOpen] = useState(false);
   const [pageStickers, setPageStickers] = useState<Record<number, PlacedSticker[]>>({
     [todayDayNum]: [
-      { uid: 'init-stk-1', id: 'stk-love', x: 130, y: 195, rot: -6 },
+      { uid: 'init-stk-1', id: 'stk-star', x: 130, y: 195, rot: -6 },
     ],
   });
 
