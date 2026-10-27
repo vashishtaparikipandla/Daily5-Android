@@ -221,12 +221,12 @@ export default function ProfileTab() {
           })}
         </View>
 
-        {/* Archival Passport & Milestone Stamps Album */}
+        {/* Passport & Milestone Stamps Album */}
         <View style={styles.section}>
           <View style={styles.passportHeaderRow}>
             <View>
               <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold', fontSize: 16 }]}>
-                Archival Passport & Stamps
+                Passport
               </Text>
               <Text style={[styles.passportSubtitle, { color: colors.mutedForeground }]}>
                 {unlockedStampsCount} of {ARCHIVAL_STAMPS.length} collected · Tap stamp to inspect
