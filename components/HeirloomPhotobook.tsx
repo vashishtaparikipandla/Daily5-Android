@@ -73,8 +73,10 @@ interface HeirloomPhotobookProps {
 export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookProps) {
   const colors = useColors();
   const { width: winWidth } = useWindowDimensions();
-  const bookWidth = Math.min(winWidth - 28, 380);
-  const bookHeight = Math.min(bookWidth * 1.45, 540);
+  // Scaled dimensions (reduced by 2-3% so right edge pages never clip)
+  const bookWidth = Math.min(winWidth - 34, 368);
+  const bookHeight = Math.min(bookWidth * 1.42, 510);
+  const [headlineEditor, setHeadlineEditor] = useState<{ text: string } | null>(null);
 
   const { getDayLog, upsertDayEntries, getBook, updateBookConfig } = useDiary();
 
@@ -245,6 +247,16 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
     await upsertDayEntries(targetDateStr, curEntries);
     setCaptionEditor(null);
     Haptics.selectionAsync();
+  }
+
+  // Save Day Headline
+  async function handleSaveHeadline(text: string) {
+    const targetDateStr = getActiveDateStr(activePage);
+    const existing = getDayLog(targetDateStr);
+    const curEntries: Entry[] = existing ? [...existing.entries] : [];
+    await upsertDayEntries(targetDateStr, curEntries, [], undefined, undefined, undefined, text.trim());
+    setHeadlineEditor(null);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }
 
   // Add Sticker to active page
@@ -525,9 +537,19 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                 </View>
               ) : (
                 /* Editable Day Title */
-                <Text style={styles.dayTitleText} numberOfLines={1}>
-                  {activeDayLog?.entries?.[0]?.text ? `${activeDayLog.entries[0].text.slice(0, 30)}...` : `Memories of ${currentMonthName} ${activePage}`}
-                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    const initial = activeDayLog?.title || (activeDayLog?.entries?.[0]?.text ? activeDayLog.entries[0].text.slice(0, 36) : '');
+                    setHeadlineEditor({ text: initial });
+                  }}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit day headline memory title"
+                >
+                  <Text style={styles.dayTitleText} numberOfLines={1}>
+                    {activeDayLog?.title || (activeDayLog?.entries?.[0]?.text ? `${activeDayLog.entries[0].text.slice(0, 30)}...` : `Memories of ${currentMonthName} ${activePage}`)}
+                  </Text>
+                </TouchableOpacity>
               )}
             </View>
 
@@ -782,6 +804,53 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                 onPress={() => handleSaveCaption(captionEditor?.text || '')}
               >
                 <Text style={styles.captionSaveText}>Save Note</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ==============================================================
+          DAY HEADLINE / THEME MEMORY MODAL
+          ============================================================== */}
+      <Modal
+        visible={!!headlineEditor}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setHeadlineEditor(null)}
+      >
+        <View style={styles.modalBackdropCenter}>
+          <View style={styles.captionModalCard}>
+            <View style={styles.captionModalHeader}>
+              <Text style={styles.captionModalLabel}>Day Memory Headline</Text>
+              <Text style={styles.captionCharCount}>
+                {headlineEditor?.text.length ?? 0} / 45 chars
+              </Text>
+            </View>
+
+            <TextInput
+              style={[styles.captionTextInput, { fontFamily: 'PlayfairDisplay_700Bold', fontSize: 17 }]}
+              value={headlineEditor?.text || ''}
+              onChangeText={t => setHeadlineEditor(prev => prev ? { ...prev, text: t.slice(0, 45) } : null)}
+              placeholder={`Memories of ${currentMonthName} ${activePage}`}
+              placeholderTextColor="#9A8E80"
+              maxLength={45}
+              autoFocus
+            />
+
+            <View style={styles.captionModalActions}>
+              <TouchableOpacity
+                style={styles.captionCancelBtn}
+                onPress={() => setHeadlineEditor(null)}
+              >
+                <Text style={styles.captionCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.captionSaveBtn}
+                onPress={() => handleSaveHeadline(headlineEditor?.text || '')}
+              >
+                <Text style={styles.captionSaveText}>Save Headline</Text>
               </TouchableOpacity>
             </View>
           </View>

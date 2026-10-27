@@ -9,7 +9,7 @@ import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiary } from '@/contexts/DiaryContext';
-import { PaperBackground } from '@/components/PaperBackground';
+import { WoodenTableBackground } from '@/components/WoodenTableBackground';
 import { BrandLogoIcon } from '@/components/BrandLogo';
 import { HeirloomPhotobook } from '@/components/HeirloomPhotobook';
 import { todayStr } from '@/lib/data';
@@ -42,16 +42,16 @@ export default function TodayTab() {
   }
 
   return (
-    <PaperBackground showMarginLine={false}>
+    <WoodenTableBackground>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingTop: topPad + 4, paddingBottom: botPad }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Compact Single-Line Brand + Notification Bell (Removes duplicate date/day) */}
+        {/* Compact Single-Line Brand + Notification Bell */}
         <View style={styles.headerRow}>
           <View style={styles.brandRow}>
-            <BrandLogoIcon size={18} color={colors.primary} />
+            <BrandLogoIcon size={26} color={colors.primary} />
             <Text style={[styles.brandText, { color: colors.primary }]}>DEAR DAY</Text>
           </View>
 
@@ -66,7 +66,7 @@ export default function TodayTab() {
             accessibilityRole="button"
             accessibilityLabel={`Notifications, ${unreadCount > 0 ? unreadCount : 'no'} unread`}
           >
-            <Bell size={18} color={colors.foreground} weight="regular" />
+            <Bell size={20} color={colors.foreground} weight="regular" />
             {unreadCount > 0 && (
               <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
                 <Text style={styles.unreadBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -131,7 +131,7 @@ export default function TodayTab() {
           </View>
         )}
       </ScrollView>
-    </PaperBackground>
+    </WoodenTableBackground>
   );
 }
 
@@ -151,9 +151,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   brandText: {
-    fontSize: 12,
+    fontSize: 15,
     fontFamily: 'Inter_700Bold',
-    letterSpacing: 1.5,
+    letterSpacing: 2,
   },
 
   /* 7-Day Habit Tracker Card */

@@ -42,6 +42,7 @@ export interface Entry {
 
 export interface DayLog {
   date: string;    // YYYY-MM-DD
+  title?: string;  // Custom day headline memory title
   entries: Entry[];
   extras: Entry[];
   bookIds?: string[]; // IDs of custom books this day is assigned to

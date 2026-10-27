@@ -52,6 +52,7 @@ interface DiaryContextValue {
     customBookKeys?: string[],
     dayLayout?: PageLayoutType,
     isFavorite?: boolean,
+    dayTitle?: string,
   ) => Promise<boolean>;
   lockCurrentMonth: () => Promise<void>;
   getOnThisDay: () => { book: Book; day: DayLog }[];
@@ -341,6 +342,7 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
     customBookKeys?: string[],
     dayLayout?: PageLayoutType,
     isFavorite?: boolean,
+    dayTitle?: string,
   ): Promise<boolean> {
     const mk = date.slice(0, 7);
     const today = todayStr();
@@ -383,6 +385,7 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
               d.date === date
                 ? {
                     ...d,
+                    title: dayTitle !== undefined ? dayTitle : d.title,
                     entries: finalEntries,
                     extras,
                     layout: dayLayout || d.layout || layoutToUse,
@@ -398,6 +401,7 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
             ...b.days,
             {
               date,
+              title: dayTitle,
               entries: finalEntries,
               extras,
               layout: layoutToUse,
@@ -417,6 +421,7 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
               d.date === date
                 ? {
                     ...d,
+                    title: dayTitle !== undefined ? dayTitle : d.title,
                     entries: finalEntries,
                     extras,
                     layout: dayLayout || d.layout || layoutToUse,
@@ -432,6 +437,7 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
             ...b.days,
             {
               date,
+              title: dayTitle,
               entries: finalEntries,
               extras,
               layout: layoutToUse,

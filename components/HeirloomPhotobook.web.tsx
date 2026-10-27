@@ -9,6 +9,7 @@ import {
   Plus,
   X,
   BookOpen,
+  Pencil,
 } from 'lucide-react';
 import { useDiary } from '@/contexts/DiaryContext';
 import { uid, todayStr, type Entry } from '@/lib/data';
@@ -751,6 +752,8 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
     });
   };
 
+  const [headlineEditor, setHeadlineEditor] = useState<{ text: string } | null>(null);
+
   // Get current active day's log & entries
   const y = currentYear;
   const m = String(currentMonth + 1).padStart(2, '0');
@@ -758,12 +761,19 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
   const activeDateStr = `${y}-${m}-${d}`;
   const currentDayLog = getDayLog(activeDateStr);
   const currentEntries = currentDayLog?.entries ?? [];
+
+  const handleSaveHeadline = async (text: string) => {
+    const curEntries = currentDayLog ? [...currentDayLog.entries] : [];
+    await upsertDayEntries(activeDateStr, curEntries, [], undefined, undefined, undefined, text.trim());
+    setHeadlineEditor(null);
+    playPaperRustleSound(1.2);
+  };
   const dowName = activePage >= 1 && activePage <= totalDays
     ? daysOfWeek[new Date(currentYear, currentMonth, activePage).getDay()]
     : '';
 
   const activeTilt = userDragTilt || (isCoverView ? gyroTilt : { x: 2, y: -2.5 });
-  const activeScale = isCoverView ? (isHoldingCover ? 0.65 : 0.68) : 1.0;
+  const activeScale = isCoverView ? (isHoldingCover ? 0.65 : 0.68) : 0.97;
   const activeTranslateX = isCoverView ? -4 : 0;
   const stickersOnThisPage = pageStickers[activePage] || [];
 
@@ -990,77 +1000,47 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
       )}
 
       {/* ==================================================================
-          AUTHENTIC STUDIO TABLETOP DESK WITH MULTI-LAYER DEPTH SHADOWS
+          3D BOOK VIEWPORT (ON REALISTIC WOODEN TABLE WITH DEPTH SHADOWS)
           ================================================================== */}
       <div
-        className="tabletop-desk-stage"
+        ref={bookViewportRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
         style={{
           width: '100%',
-          maxWidth: 400,
+          maxWidth: 368,
+          height: 498,
           margin: '0 auto',
           position: 'relative',
-          borderRadius: 24,
-          padding: '10px 8px 6px 8px',
-          background: 'radial-gradient(ellipse 95% 85% at 50% 32%, #F8F2E8 0%, #EFE8DA 52%, #DFD3BD 100%)',
-          boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.95), inset 0 -2px 8px rgba(45, 30, 18, 0.08), 0 16px 36px -6px rgba(36, 22, 12, 0.22)',
-          border: '1px solid #DFD4C0',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
-          overflow: 'hidden'
+          justifyContent: 'center',
+          perspective: '1900px',
+          perspectiveOrigin: '50% 48%',
+          padding: isCoverView ? '6px 14px 34px 14px' : '4px 14px 4px 28px',
+          touchAction: 'pan-y',
+          zIndex: 2
         }}
       >
-        {/* Tabletop fine wood grain sheen / ambient lighting overlay */}
+        {/* Dynamic Tabletop Desk Contact Shadow Beneath Book */}
         <div
           style={{
             position: 'absolute',
-            inset: 0,
+            bottom: isCoverView ? 16 : 8,
+            left: isCoverView ? '16%' : '8%',
+            right: isCoverView ? '16%' : '6%',
+            height: isCoverView ? 34 : 26,
+            borderRadius: '50%',
+            background: isCoverView
+              ? 'radial-gradient(ellipse at center, rgba(28, 16, 8, 0.58) 0%, rgba(38, 22, 12, 0.30) 45%, transparent 75%)'
+              : 'radial-gradient(ellipse at center, rgba(28, 16, 8, 0.48) 0%, rgba(38, 22, 12, 0.22) 50%, transparent 78%)',
+            filter: 'blur(9px)',
+            transform: `translateY(${isCoverView ? 22 : 16}px) scaleX(${1 + Math.abs(activeTilt.y) * 0.012})`,
             pointerEvents: 'none',
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 38%, rgba(40,25,12,0.05) 100%)',
-            borderRadius: 24,
-            zIndex: 0
+            zIndex: 1,
           }}
         />
-
-        {/* 3D BOOK VIEWPORT (WITH 1900PX PERSPECTIVE & AMBIENT GYROSCOPE) */}
-        <div
-          ref={bookViewportRef}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          style={{
-            width: '100%',
-            maxWidth: 384,
-            height: 512,
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            perspective: '1900px',
-            perspectiveOrigin: '50% 48%',
-            padding: isCoverView ? '6px 16px 36px 16px' : '4px 10px 4px 28px',
-            touchAction: 'pan-y',
-            zIndex: 2
-          }}
-        >
-          {/* Dynamic Tabletop Desk Contact Shadow Beneath Book */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: isCoverView ? 16 : 8,
-              left: isCoverView ? '16%' : '8%',
-              right: isCoverView ? '16%' : '6%',
-              height: isCoverView ? 34 : 26,
-              borderRadius: '50%',
-              background: isCoverView
-                ? 'radial-gradient(ellipse at center, rgba(28, 16, 8, 0.55) 0%, rgba(38, 22, 12, 0.28) 45%, transparent 75%)'
-                : 'radial-gradient(ellipse at center, rgba(28, 16, 8, 0.45) 0%, rgba(38, 22, 12, 0.20) 50%, transparent 78%)',
-              filter: 'blur(9px)',
-              transform: `translateY(${isCoverView ? 22 : 16}px) scaleX(${1 + Math.abs(activeTilt.y) * 0.012})`,
-              pointerEvents: 'none',
-              zIndex: 1,
-            }}
-          />
 
           {/* HORIZONTAL ACTION PILL BAR (REVEALED ON TAP & HOLD ON COVER) */}
         {isCoverView && (
@@ -1607,10 +1587,34 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                     </div>
                   </div>
                 ) : (
-                  <div style={{ marginTop: 2 }}>
-                    <span style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 18, color: '#2B2420' }}>
-                      {currentEntries[0]?.text ? currentEntries[0].text.slice(0, 32) : `${monthName} ${activePage} memories`}
+                  <div
+                    onClick={() => {
+                      const initialText = currentDayLog?.title || (currentEntries[0]?.text ? currentEntries[0].text.slice(0, 40) : '');
+                      setHeadlineEditor({ text: initialText });
+                    }}
+                    title="Click to personalize this day's memory headline"
+                    style={{
+                      marginTop: 2,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "'Cormorant Garamond', serif",
+                        fontWeight: 700,
+                        fontSize: 17,
+                        color: '#2B2420',
+                        lineHeight: 1.2,
+                        borderBottom: '1px dashed #C8BDB0',
+                        paddingBottom: 1
+                      }}
+                    >
+                      {currentDayLog?.title || (currentEntries[0]?.text ? currentEntries[0].text.slice(0, 36) : `${monthName} ${activePage} memories`)}
                     </span>
+                    <Pencil style={{ width: 11, height: 11, color: '#A89B8C' }} />
                   </div>
                 )}
               </div>
@@ -2023,7 +2027,112 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
           </div>
         )}
       </div>
-      </div> {/* tabletop-desk-stage */}
+
+      {/* DAY HEADLINE / THEME MEMORY EDITOR MODAL */}
+      {headlineEditor && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#FAF7F0',
+              border: '1px solid #DFD6C5',
+              borderRadius: 16,
+              width: '100%',
+              maxWidth: 340,
+              padding: 18,
+              boxShadow: '0 18px 40px rgba(0,0,0,0.3)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: '#5C5147', textTransform: 'uppercase' }}>
+                Day Memory Headline
+              </span>
+              <button
+                type="button"
+                onClick={() => setHeadlineEditor(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8C7E72' }}
+              >
+                <X style={{ width: 16, height: 16 }} />
+              </button>
+            </div>
+
+            <p style={{ margin: 0, fontSize: 12, color: '#7D7165' }}>
+              Name this day's memory theme (e.g., "Grandma's Birthday", "Walk by the river"):
+            </p>
+
+            <input
+              type="text"
+              autoFocus
+              maxLength={45}
+              value={headlineEditor.text}
+              onChange={(e) => setHeadlineEditor({ text: e.target.value })}
+              placeholder={`${monthName} ${activePage} memories`}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: 8,
+                border: '1px solid #D5CBB8',
+                backgroundColor: '#FFFFFF',
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 18,
+                fontWeight: 700,
+                color: '#2B2420',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={() => setHeadlineEditor(null)}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: 8,
+                  border: '1px solid #D5CBB8',
+                  backgroundColor: '#FFFFFF',
+                  color: '#5C5147',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveHeadline(headlineEditor.text)}
+                style={{
+                  padding: '7px 16px',
+                  borderRadius: 8,
+                  border: 'none',
+                  backgroundColor: '#DF5739',
+                  color: '#FFFFFF',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Save Headline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2-LINE CAPTION EDITOR MODAL */}
       {captionEditor && (

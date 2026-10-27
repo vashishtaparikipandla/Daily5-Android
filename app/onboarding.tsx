@@ -253,49 +253,44 @@ function LifeGrid({ livedWeeks }: { livedWeeks: number }) {
   return <Svg width={COLS * STEP} height={ROWS * STEP}>{rects}</Svg>;
 }
 
-// ─── Smart DOB Masking & Calculation Helpers ─────────────────────────────────
+// ─── Indian Setup Smart DOB Masking (DD/MM/YYYY) & Calculation Helpers ─────
 
 function formatDobInput(raw: string): string {
-  // Normalize slashes and dots to dashes
-  const clean = raw.replace(/[./]/g, '-');
-  const digits = clean.replace(/\D/g, '');
-
-  if (digits.length <= 4) {
+  const digits = raw.replace(/\D/g, '');
+  if (digits.length <= 2) {
     return digits;
-  } else if (digits.length <= 6) {
-    return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+  } else if (digits.length <= 4) {
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
   } else {
-    return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
   }
 }
 
 function parseDobDate(s: string): Date | null {
   if (!s || s.length < 8) return null;
-  const clean = s.replace(/\//g, '-');
-  const parts = clean.split('-');
+  const clean = s.replace(/[.-]/g, '/');
+  const parts = clean.split('/');
 
-  let year = 0;
-  let month = 0;
   let day = 0;
+  let month = 0;
+  let year = 0;
 
   if (parts.length === 3) {
-    // If entered as YYYY-MM-DD
+    // Primary Indian format: DD/MM/YYYY
+    day = parseInt(parts[0], 10);
+    month = parseInt(parts[1], 10);
+    year = parseInt(parts[2], 10);
+
+    // Fallback if user typed YYYY/MM/DD
     if (parts[0].length === 4) {
       year = parseInt(parts[0], 10);
       month = parseInt(parts[1], 10);
       day = parseInt(parts[2], 10);
-    } else if (parts[2].length === 4) {
-      // If entered as DD-MM-YYYY
-      year = parseInt(parts[2], 10);
-      month = parseInt(parts[1], 10);
-      day = parseInt(parts[0], 10);
     }
   }
 
   if (!year || isNaN(year) || isNaN(month) || isNaN(day)) {
-    const d = new Date(clean + 'T12:00:00');
-    if (isNaN(d.getTime())) return null;
-    return d;
+    return null;
   }
 
   if (year < 1910 || year > new Date().getFullYear()) return null;
@@ -324,8 +319,8 @@ export default function OnboardingScreen() {
   const SW = Math.min(rawWidth, 420);
 
   const [phase, setPhase] = useState(0);
-  // Default predefined birth date: 2000-01-01 (Gen Z / Young Millennial)
-  const [dob, setDob] = useState('2000-01-01');
+  // Default predefined birth date: 01/01/2000 (Indian DD/MM/YYYY format)
+  const [dob, setDob] = useState('01/01/2000');
   const [dobError, setDobError] = useState('');
   const [recalledDays, setRecalledDays] = useState<number | null>(null);
   const [livedWeeks, setLivedWeeks] = useState(1350);
@@ -349,7 +344,7 @@ export default function OnboardingScreen() {
   function handleDobContinue() {
     const date = parseDobDate(dob);
     if (!date) {
-      setDobError('Please enter a valid birth date (YYYY-MM-DD)');
+      setDobError('Please enter a valid birth date (DD/MM/YYYY)');
       return;
     }
     const weeks = calculateWeeksLived(date);
@@ -403,7 +398,7 @@ export default function OnboardingScreen() {
                     borderColor: dobError ? colors.destructive : colors.borderStrong,
                   },
                 ]}
-                placeholder="YYYY-MM-DD"
+                placeholder="DD / MM / YYYY"
                 placeholderTextColor={colors.tertiary}
                 value={dob}
                 onChangeText={(t) => {
@@ -507,62 +502,115 @@ export default function OnboardingScreen() {
           </View>
         )}
 
-        {/* Phase 2 — Life in Weeks: Full-screen, balanced, composed layout */}
+        {/* Phase 2 — Full-Screen Immersive Life in Weeks Experience */}
         {phase === 2 && (
           <View style={styles.lifeFullContainer}>
             {/* Header section */}
             <View style={styles.lifeHeader}>
               <TouchableOpacity onPress={() => transition(1)} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <ArrowLeft size={20} color={colors.foreground} />
+                <ArrowLeft size={22} color={colors.foreground} />
               </TouchableOpacity>
               <Text style={[styles.headingLife, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-                An 80-year life has 4,160 weeks.
+                4,160 Weeks in an 80-Year Life.
               </Text>
               <Text style={[styles.subLife, { color: colors.mutedForeground }]}>
-                You've already lived {livedWeeks.toLocaleString()}. How many of them do you remember?
+                You have already lived {livedWeeks.toLocaleString()} weeks. How many can you actually remember?
               </Text>
             </View>
 
-            {/* Framed Archival Grid Tapestry with Age Milestones */}
-            <View style={[styles.tapestryFrame, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
-              {/* Top Axis: Weeks 1 to 52 */}
-              <View style={styles.tapestryTopAxis}>
-                <Text style={[styles.axisText, { color: colors.tertiary }]}>WK 1</Text>
-                <Text style={[styles.axisText, { color: colors.tertiary }]}>52 WEEKS / YR</Text>
-                <Text style={[styles.axisText, { color: colors.tertiary }]}>WK 52</Text>
-              </View>
-
-              <View style={styles.tapestryBodyRow}>
-                {/* Left Milestone Markers: Age 0 to 80 */}
-                <View style={styles.ageMilestonesCol}>
-                  <Text style={[styles.axisText, { color: colors.tertiary }]}>0</Text>
-                  <Text style={[styles.axisText, { color: colors.tertiary }]}>20</Text>
-                  <Text style={[styles.axisText, { color: colors.tertiary }]}>40</Text>
-                  <Text style={[styles.axisText, { color: colors.tertiary }]}>60</Text>
-                  <Text style={[styles.axisText, { color: colors.tertiary }]}>80</Text>
+            {/* Immersive Life Meter & Epochs Tapestry */}
+            <View style={styles.lifeHeroStage}>
+              {/* Dual Stat Pillars */}
+              <View style={styles.statPillarsRow}>
+                <View style={[styles.statPillarCard, { backgroundColor: colors.card, borderColor: colors.primary }]}>
+                  <Text style={[styles.statPillarNumber, { color: colors.primary, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+                    {livedWeeks.toLocaleString()}
+                  </Text>
+                  <Text style={[styles.statPillarLabel, { color: colors.foreground }]}>WEEKS LIVED</Text>
+                  <Text style={[styles.statPillarSub, { color: colors.primary }]}>
+                    {Math.round((livedWeeks / 4160) * 100)}% of your journey
+                  </Text>
                 </View>
 
-                {/* SVG Dot Matrix */}
-                <View style={styles.gridCanvasWrap}>
-                  <LifeGrid livedWeeks={livedWeeks} />
+                <View style={[styles.statPillarCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Text style={[styles.statPillarNumber, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+                    {Math.max(0, 4160 - livedWeeks).toLocaleString()}
+                  </Text>
+                  <Text style={[styles.statPillarLabel, { color: colors.mutedForeground }]}>WEEKS REMAINING</Text>
+                  <Text style={[styles.statPillarSub, { color: colors.mutedForeground }]}>
+                    {Math.round((Math.max(0, 4160 - livedWeeks) / 4160) * 100)}% ahead of you
+                  </Text>
                 </View>
               </View>
-            </View>
 
-            {/* Stat Banner Callout */}
-            <View style={[styles.statBanner, { backgroundColor: colors.accentLight, borderColor: colors.border }]}>
-              <View style={styles.statBannerTop}>
-                <Sparkle size={16} color={colors.primary} weight="fill" />
-                <Text style={[styles.statBannerTitle, { color: colors.foreground }]}>
-                  You've lived <Text style={{ color: colors.primary, fontFamily: 'Inter_700Bold' }}>{livedWeeks.toLocaleString()}</Text> weeks ({Math.round((livedWeeks / 4160) * 100)}%)
+              {/* Full-Bleed Life Arc Timeline Bar */}
+              <View style={styles.lifeProgressBarWrap}>
+                <View style={[styles.lifeProgressBarTrack, { backgroundColor: colors.muted }]}>
+                  <View
+                    style={[
+                      styles.lifeProgressBarFill,
+                      {
+                        width: `${Math.min(100, Math.max(3, (livedWeeks / 4160) * 100))}%`,
+                        backgroundColor: colors.primary,
+                      },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.lifeProgressBeacon,
+                      {
+                        left: `${Math.min(96, Math.max(2, (livedWeeks / 4160) * 100))}%`,
+                        backgroundColor: '#FFFFFF',
+                        borderColor: colors.primary,
+                      },
+                    ]}
+                  />
+                </View>
+
+                {/* 4 Life Epochs Labels */}
+                <View style={styles.lifeEpochsRow}>
+                  <View style={styles.epochCol}>
+                    <Text style={[styles.epochAge, { color: colors.tertiary }]}>0</Text>
+                    <Text style={[styles.epochName, { color: colors.tertiary }]}>Youth</Text>
+                  </View>
+                  <View style={styles.epochCol}>
+                    <Text style={[styles.epochAge, { color: colors.tertiary }]}>20</Text>
+                    <Text style={[styles.epochName, { color: colors.tertiary }]}>Discovery</Text>
+                  </View>
+                  <View style={styles.epochCol}>
+                    <Text style={[styles.epochAge, { color: colors.tertiary }]}>40</Text>
+                    <Text style={[styles.epochName, { color: colors.tertiary }]}>Mastery</Text>
+                  </View>
+                  <View style={styles.epochCol}>
+                    <Text style={[styles.epochAge, { color: colors.tertiary }]}>60</Text>
+                    <Text style={[styles.epochName, { color: colors.tertiary }]}>Wisdom</Text>
+                  </View>
+                  <View style={[styles.epochCol, { alignItems: 'flex-end' }]}>
+                    <Text style={[styles.epochAge, { color: colors.tertiary }]}>80</Text>
+                    <Text style={[styles.epochName, { color: colors.tertiary }]}>Legacy</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* The Nostalgia Revelation Card */}
+              <View style={[styles.revelationCard, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
+                <View style={styles.revelationTop}>
+                  <Sparkle size={18} color={colors.primary} weight="fill" />
+                  <Text style={[styles.revelationTitle, { color: colors.foreground }]}>
+                    The Everyday Memory Leak
+                  </Text>
+                </View>
+                <Text style={[styles.revelationText, { color: colors.foreground }]}>
+                  Last week alone, you recalled only <Text style={{ fontFamily: 'Inter_700Bold', color: colors.primary }}>{recalledDays ?? 2} days</Text>.
+                  Without mindful keeping, thousands of precious routine days vanish like smoke.
+                </Text>
+                <Text style={[styles.revelationSub, { color: colors.mutedForeground }]}>
+                  Dear Day turns your finite days into physical heirlooms. Just 4 photos every night, bound in linen forever.
                 </Text>
               </View>
-              <Text style={[styles.statBannerSub, { color: colors.mutedForeground }]}>
-                {Math.max(0, 4160 - livedWeeks).toLocaleString()} weeks remain to be written. Make every memory count.
-              </Text>
             </View>
 
-            {/* Sticky Safe Bottom Action */}
+            {/* Bottom Action */}
             <View style={styles.lifeBottomAction}>
               <TouchableOpacity
                 style={[styles.btn, { backgroundColor: colors.primary }]}
@@ -1069,63 +1117,121 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 8,
   },
-  tapestryFrame: {
-    alignSelf: 'center',
-    borderRadius: 14,
+  lifeHeroStage: {
+    gap: 16,
+    marginVertical: 12,
+  },
+  statPillarsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  statPillarCard: {
+    flex: 1,
+    borderRadius: 16,
     borderWidth: 1.5,
-    padding: 12,
+    padding: 14,
+    alignItems: 'center',
+    gap: 3,
     shadowColor: '#000',
     shadowOpacity: 0.04,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  tapestryTopAxis: {
+  statPillarNumber: {
+    fontSize: 26,
+    lineHeight: 30,
+  },
+  statPillarLabel: {
+    fontSize: 9.5,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 1,
+  },
+  statPillarSub: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+  },
+  lifeProgressBarWrap: {
+    paddingHorizontal: 4,
+    gap: 8,
+    marginVertical: 4,
+  },
+  lifeProgressBarTrack: {
+    height: 12,
+    borderRadius: 6,
+    overflow: 'visible',
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  lifeProgressBarFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 6,
+  },
+  lifeProgressBeacon: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 3,
+    top: -4,
+    marginLeft: -10,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  lifeEpochsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 22,
-    marginBottom: 6,
+    paddingHorizontal: 2,
   },
-  axisText: {
+  epochCol: {
+    gap: 1,
+  },
+  epochAge: {
+    fontSize: 10,
+    fontFamily: 'Inter_700Bold',
+  },
+  epochName: {
     fontSize: 9,
-    fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 0.4,
+    fontFamily: 'Inter_500Medium',
   },
-  tapestryBodyRow: {
+  revelationCard: {
+    borderRadius: 16,
+    borderWidth: 1.5,
+    padding: 16,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  revelationTop: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  ageMilestonesCol: {
-    height: 320,
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    paddingVertical: 2,
+  revelationTitle: {
+    fontSize: 12.5,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
-  gridCanvasWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  revelationText: {
+    fontSize: 13,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 19,
   },
-  statBanner: {
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 4,
-    alignItems: 'center',
-  },
-  statBannerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  statBannerTitle: {
-    fontSize: 14,
-    fontFamily: 'Inter_500Medium',
-  },
-  statBannerSub: {
+  revelationSub: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
-    textAlign: 'center',
+    lineHeight: 18,
+    fontStyle: 'italic',
   },
   lifeBottomAction: {
     width: '100%',
