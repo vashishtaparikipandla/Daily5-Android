@@ -115,14 +115,105 @@ export function PhotobookPageSpread({
     }),
   ).current;
 
+  function renderSlot(idx: number) {
+    const entry = entries[idx];
+    const hasEntry = !!entry;
+    const photo = entry?.photos?.[0];
+    const cat = entry?.category ? getCategoryById(entry.category) : undefined;
+    const prompt = PROMPTS[idx];
+
+    return (
+      <TouchableOpacity
+        key={idx}
+        style={[
+          styles.polaroidSlot,
+          {
+            borderColor: hasEntry ? '#DDD8CE' : '#D5CFC2',
+            backgroundColor: hasEntry ? '#FFFFFF' : '#F5F1E8',
+          },
+        ]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          onTuckPhoto(idx);
+        }}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel={`Sleeve ${idx + 1}: ${hasEntry ? entry?.text : prompt.label}`}
+      >
+        {/* Physical Archival Corner Mount Slits (all 4 corners) */}
+        <View style={[styles.cornerMount, styles.cornerMountTL, { borderColor: '#B85D3B88' }]} />
+        <View style={[styles.cornerMount, styles.cornerMountTR, { borderColor: '#B85D3B88' }]} />
+        <View style={[styles.cornerMount, styles.cornerMountBL, { borderColor: '#B85D3B88' }]} />
+        <View style={[styles.cornerMount, styles.cornerMountBR, { borderColor: '#B85D3B88' }]} />
+
+        {hasEntry ? (
+          // Filled Polaroid Print
+          <View style={styles.filledPolaroidWrap}>
+            <View style={styles.polaroidPhotoArea}>
+              {photo ? (
+                <Image source={{ uri: photo }} style={styles.polaroidImage} resizeMode="cover" />
+              ) : (
+                <View style={[styles.textOnlyPhoto, { backgroundColor: 'rgba(232,89,58,0.1)' }]}>
+                  <Text style={[styles.textOnlyQuote, { color: '#E8593A' }]}>“</Text>
+                  <Text style={[styles.textOnlyBody, { color: '#1C1916' }]} numberOfLines={3}>
+                    {entry.text}
+                  </Text>
+                </View>
+              )}
+
+              {/* Plastic Sheen Reflection Line */}
+              <View style={styles.photoSheen} pointerEvents="none" />
+
+              {/* Category Tag */}
+              {cat && (
+                <View style={[styles.catBadge, { backgroundColor: cat.color + 'EE' }]}>
+                  <Text style={styles.catBadgeText}>{cat.label.toUpperCase()}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Polaroid White Bottom Chin */}
+            <View style={styles.polaroidChin}>
+              <Text
+                style={[
+                  styles.chinCaption,
+                  { color: '#1C1916', fontFamily: Platform.OS === 'ios' ? 'Georgia-Italic' : 'serif' },
+                ]}
+                numberOfLines={2}
+              >
+                {entry.text || prompt.label}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          // Empty Paper Sleeve with Pocket Mount
+          <View style={styles.emptySleeveWrap}>
+            <View style={[styles.emptyCameraCircle, { backgroundColor: 'rgba(232,89,58,0.12)' }]}>
+              <Camera size={20} color="#E8593A" weight="duotone" />
+            </View>
+            <Text style={[styles.emptySlotTitle, { color: '#1C1916' }]}>
+              {prompt.label}
+            </Text>
+            <Text style={[styles.emptySlotSub, { color: '#7A746E' }]}>
+              {prompt.sub}
+            </Text>
+
+            <View style={[styles.tuckPillBadge, { backgroundColor: '#EDE7DC', borderColor: '#DDD4C4' }]}>
+              <Plus size={10} color="#E8593A" weight="bold" />
+              <Text style={[styles.tuckPillText, { color: '#E8593A' }]}>Tuck Photo</Text>
+            </View>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  }
+
   return (
     <Animated.View
       style={[
         styles.albumContainer,
         {
           width: ALBUM_WIDTH,
-          backgroundColor: colors.card,
-          borderColor: colors.borderStrong,
           transform: [{ translateX: panX }],
         },
       ]}
@@ -135,38 +226,38 @@ export function PhotobookPageSpread({
       </View>
 
       {/* Notebook Red Margin Line */}
-      <View style={[styles.marginRule, { backgroundColor: colors.marginLine || '#E8593A33' }]} />
+      <View style={[styles.marginRule, { backgroundColor: 'rgba(232,89,58,0.25)' }]} />
 
       {/* Paper Page Inner Content */}
       <View style={styles.pageInner}>
         {/* Album Header */}
         <View style={styles.albumHeader}>
           <View style={styles.headerTitleGroup}>
-            <Text style={[styles.volumeMeta, { color: colors.tertiary }]}>
+            <Text style={[styles.volumeMeta, { color: '#8C857B' }]}>
               VOL. {year} · {monthName.toUpperCase()}
             </Text>
             <Text
               style={[
                 styles.dateHeading,
-                { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' },
+                { color: '#1C1916', fontFamily: 'PlayfairDisplay_700Bold' },
               ]}
             >
               {dayOfWeek}, {monthName} {dayNum}
             </Text>
-            <Text style={[styles.pageMeta, { color: colors.mutedForeground }]}>
+            <Text style={[styles.pageMeta, { color: '#7A746E' }]}>
               Page {dayNum} of {monthName} Album · {filledCount}/4 Sleeves Tucked
             </Text>
           </View>
 
           {/* Archival Status Stamp */}
           {isComplete ? (
-            <View style={[styles.sealedStampPill, { borderColor: colors.primary, backgroundColor: colors.accentLight }]}>
-              <Sparkle size={13} color={colors.primary} weight="fill" />
-              <Text style={[styles.sealedStampText, { color: colors.primary }]}>SEALED</Text>
+            <View style={[styles.sealedStampPill, { borderColor: '#E8593A', backgroundColor: 'rgba(232,89,58,0.12)' }]}>
+              <Sparkle size={13} color="#E8593A" weight="fill" />
+              <Text style={[styles.sealedStampText, { color: '#E8593A' }]}>SEALED</Text>
             </View>
           ) : (
-            <View style={[styles.activePill, { borderColor: colors.border, backgroundColor: colors.muted }]}>
-              <Text style={[styles.activePillText, { color: colors.tertiary }]}>
+            <View style={[styles.activePill, { borderColor: '#D9D3C7', backgroundColor: '#EDE7DC' }]}>
+              <Text style={[styles.activePillText, { color: '#7A746E' }]}>
                 {4 - filledCount} LEFT
               </Text>
             </View>
@@ -175,121 +266,36 @@ export function PhotobookPageSpread({
 
         {/* 2x2 Polaroid Grid (Archival Corner Mount Sleeves) */}
         <View style={styles.polaroidGrid}>
-          {entries.map((entry, idx) => {
-            const hasEntry = !!entry;
-            const photo = entry?.photos?.[0];
-            const cat = entry?.category ? getCategoryById(entry.category) : undefined;
-            const prompt = PROMPTS[idx];
-
-            return (
-              <TouchableOpacity
-                key={idx}
-                style={[
-                  styles.polaroidSlot,
-                  {
-                    width: POLAROID_SLOT_WIDTH,
-                    height: POLAROID_SLOT_HEIGHT,
-                    borderColor: hasEntry ? '#DDD8CE' : colors.border,
-                    backgroundColor: hasEntry ? '#FFFFFF' : colors.card,
-                  },
-                ]}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  onTuckPhoto(idx);
-                }}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityLabel={`Sleeve ${idx + 1}: ${hasEntry ? entry?.text : prompt.label}`}
-              >
-                {/* Physical Archival Corner Mount Slits (all 4 corners) */}
-                <View style={[styles.cornerMount, styles.cornerMountTL, { borderColor: '#B85D3B88' }]} />
-                <View style={[styles.cornerMount, styles.cornerMountTR, { borderColor: '#B85D3B88' }]} />
-                <View style={[styles.cornerMount, styles.cornerMountBL, { borderColor: '#B85D3B88' }]} />
-                <View style={[styles.cornerMount, styles.cornerMountBR, { borderColor: '#B85D3B88' }]} />
-
-                {hasEntry ? (
-                  // Filled Polaroid Print
-                  <View style={styles.filledPolaroidWrap}>
-                    <View style={styles.polaroidPhotoArea}>
-                      {photo ? (
-                        <Image source={{ uri: photo }} style={styles.polaroidImage} resizeMode="cover" />
-                      ) : (
-                        <View style={[styles.textOnlyPhoto, { backgroundColor: colors.accentLight }]}>
-                          <Text style={[styles.textOnlyQuote, { color: colors.primary }]}>“</Text>
-                          <Text style={[styles.textOnlyBody, { color: colors.foreground }]} numberOfLines={3}>
-                            {entry.text}
-                          </Text>
-                        </View>
-                      )}
-
-                      {/* Plastic Sheen Reflection Line */}
-                      <View style={styles.photoSheen} pointerEvents="none" />
-
-                      {/* Category Tag */}
-                      {cat && (
-                        <View style={[styles.catBadge, { backgroundColor: cat.color + 'EE' }]}>
-                          <Text style={styles.catBadgeText}>{cat.label.toUpperCase()}</Text>
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Polaroid White Bottom Chin */}
-                    <View style={styles.polaroidChin}>
-                      <Text
-                        style={[
-                          styles.chinCaption,
-                          { color: '#1E1C19', fontFamily: Platform.OS === 'ios' ? 'Georgia-Italic' : 'serif' },
-                        ]}
-                        numberOfLines={2}
-                      >
-                        {entry.text || prompt.label}
-                      </Text>
-                    </View>
-                  </View>
-                ) : (
-                  // Empty Paper Sleeve with Pocket Mount
-                  <View style={styles.emptySleeveWrap}>
-                    <View style={[styles.emptyCameraCircle, { backgroundColor: colors.accentLight }]}>
-                      <Camera size={20} color={colors.primary} weight="duotone" />
-                    </View>
-                    <Text style={[styles.emptySlotTitle, { color: colors.foreground }]}>
-                      {prompt.label}
-                    </Text>
-                    <Text style={[styles.emptySlotSub, { color: colors.mutedForeground }]}>
-                      {prompt.sub}
-                    </Text>
-
-                    <View style={[styles.tuckPillBadge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                      <Plus size={10} color={colors.primary} weight="bold" />
-                      <Text style={[styles.tuckPillText, { color: colors.primary }]}>Tuck Photo</Text>
-                    </View>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
+          <View style={styles.gridRow}>
+            {renderSlot(0)}
+            {renderSlot(1)}
+          </View>
+          <View style={styles.gridRow}>
+            {renderSlot(2)}
+            {renderSlot(3)}
+          </View>
         </View>
 
         {/* Page Footer Navigation Bar */}
-        <View style={[styles.pageFooter, { borderTopColor: colors.border }]}>
+        <View style={[styles.pageFooter, { borderTopColor: '#E8E3D8' }]}>
           <TouchableOpacity
             style={[styles.footerNavBtn, { opacity: onFlipPrev ? 1 : 0.3 }]}
             onPress={onFlipPrev}
             disabled={!onFlipPrev}
             activeOpacity={0.7}
           >
-            <CaretLeft size={16} color={colors.foreground} />
-            <Text style={[styles.footerNavText, { color: colors.foreground }]}>Yesterday</Text>
+            <CaretLeft size={16} color="#1C1916" />
+            <Text style={[styles.footerNavText, { color: '#1C1916' }]}>Yesterday</Text>
           </TouchableOpacity>
 
           {onOpenFullBook && (
             <TouchableOpacity
-              style={[styles.openFullBookBtn, { backgroundColor: colors.accentLight, borderColor: colors.border }]}
+              style={[styles.openFullBookBtn, { backgroundColor: 'rgba(232,89,58,0.12)', borderColor: '#E8E3D8' }]}
               onPress={onOpenFullBook}
               activeOpacity={0.8}
             >
-              <BookOpen size={14} color={colors.primary} weight="bold" />
-              <Text style={[styles.openFullBookText, { color: colors.primary }]}>
+              <BookOpen size={14} color="#E8593A" weight="bold" />
+              <Text style={[styles.openFullBookText, { color: '#E8593A' }]}>
                 Browse Album
               </Text>
             </TouchableOpacity>
@@ -301,8 +307,8 @@ export function PhotobookPageSpread({
             disabled={!canFlipNext || !onFlipNext}
             activeOpacity={0.7}
           >
-            <Text style={[styles.footerNavText, { color: colors.foreground }]}>Tomorrow</Text>
-            <CaretRight size={16} color={colors.foreground} />
+            <Text style={[styles.footerNavText, { color: '#1C1916' }]}>Tomorrow</Text>
+            <CaretRight size={16} color="#1C1916" />
           </TouchableOpacity>
         </View>
       </View>
@@ -316,6 +322,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: '#FAF7F2',
+    borderColor: '#E8E3D8',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
@@ -414,13 +422,17 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   polaroidGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: POLAROID_GRID_GAP,
-    justifyContent: 'space-between',
+    gap: 10,
     marginBottom: 16,
   },
+  gridRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
   polaroidSlot: {
+    flex: 1,
+    aspectRatio: 0.82,
     borderRadius: 6,
     borderWidth: 1,
     position: 'relative',

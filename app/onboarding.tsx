@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  TextInput, FlatList, Dimensions, Platform,
+  TextInput, FlatList, Dimensions, Platform, useWindowDimensions,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -30,8 +30,6 @@ import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { BrandLogoIcon } from '@/components/BrandLogo';
-
-const { width: SW } = Dimensions.get('window');
 
 const SLIDES = [
   {
@@ -322,6 +320,8 @@ export default function OnboardingScreen() {
   const { completeOnboarding } = useApp();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width: rawWidth } = useWindowDimensions();
+  const SW = Math.min(rawWidth, 420);
 
   const [phase, setPhase] = useState(0);
   // Default predefined birth date: 2000-01-01 (Gen Z / Young Millennial)
@@ -626,7 +626,7 @@ export default function OnboardingScreen() {
             </View>
 
             {/* Synchronized Typography Carousel */}
-            <View style={styles.typographyStage}>
+            <View style={[styles.typographyStage, { width: SW - 48, overflow: 'hidden' }]}>
               <FlatList
                 ref={slideRef}
                 data={SLIDES}
@@ -634,7 +634,13 @@ export default function OnboardingScreen() {
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
                 scrollEnabled={false}
+                style={{ width: SW - 48 }}
                 keyExtractor={(_, i) => String(i)}
+                getItemLayout={(_, index) => ({
+                  length: SW - 48,
+                  offset: (SW - 48) * index,
+                  index,
+                })}
                 renderItem={({ item }) => (
                   <View style={[styles.slideCard, { width: SW - 48 }]}>
                     <Text style={[styles.slideTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>

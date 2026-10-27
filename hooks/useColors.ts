@@ -1,13 +1,28 @@
 import { useColorScheme } from 'react-native';
 import colors from '@/constants/colors';
+import { useApp } from '@/contexts/AppContext';
 
 /**
- * Returns the design tokens for the current color scheme, plus the
- * shared `radius` value. Picks light or dark palette directly —
- * no unsafe cast needed since both palettes are declared on `colors`.
+ * Returns the design tokens for the active theme, plus the shared `radius`.
+ * Defaults to the authentic warm paper palette ('light') unless the user
+ * explicitly chooses 'dark' or selects 'system' on a dark system.
  */
 export function useColors() {
-  const scheme = useColorScheme();
-  const palette = scheme === 'dark' ? colors.dark : colors.light;
-  return { ...palette, radius: colors.radius };
+  const systemScheme = useColorScheme();
+  let themePreference: 'light' | 'dark' | 'system' = 'light';
+  try {
+    const app = useApp();
+    if (app && app.theme) {
+      themePreference = app.theme;
+    }
+  } catch {
+    // Outside AppContext provider fallback
+  }
+
+  const isDark =
+    themePreference === 'dark' ||
+    (themePreference === 'system' && systemScheme === 'dark');
+  const palette = isDark ? colors.dark : colors.light;
+  return { ...palette, radius: colors.radius, isDark };
 }
+

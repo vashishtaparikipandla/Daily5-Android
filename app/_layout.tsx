@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { View, StyleSheet, Platform } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -77,7 +78,9 @@ export default function RootLayout() {
                 <DiaryProvider>
                   <DriveBackupProvider>
                     <OrdersProvider>
-                      <RootLayoutNav />
+                      <View style={Platform.OS === 'web' ? webStyles.webFrame : { flex: 1 }}>
+                        <RootLayoutNav />
+                      </View>
                     </OrdersProvider>
                   </DriveBackupProvider>
                 </DiaryProvider>
@@ -89,3 +92,19 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+const webStyles = StyleSheet.create({
+  webFrame: {
+    flex: 1,
+    maxWidth: 440,
+    width: '100%',
+    marginHorizontal: 'auto',
+    backgroundColor: '#F7F4EF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.18,
+    shadowRadius: 30,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+});
