@@ -11,7 +11,7 @@ import Animated, {
   withSequence,
   Easing,
 } from 'react-native-reanimated';
-import Svg, { Rect } from 'react-native-svg';
+import Svg, { Rect, Line, Circle, Text as SvgText } from 'react-native-svg';
 import {
   Lightbulb,
   Coffee,
@@ -33,23 +33,23 @@ import { BrandLogoIcon } from '@/components/BrandLogo';
 
 const SLIDES = [
   {
-    title: 'Remember the\nfamily albums?',
-    body: 'The heavy leather covers, sleeve pockets, and glossy prints. Sitting on the rug with loved ones, turning pages and reliving the moments that mattered most.',
+    title: 'Remember turning\nreal pages?',
+    body: 'Heavy paper. Sleeve pockets. Sitting on the rug, holding memories that actually felt tangible.',
     visual: 'album',
   },
   {
-    title: 'Thousands of photos.\nZero memories.',
-    body: 'Today, our memories get buried in camera rolls and lost to digital noise. When every snapshot is saved, nothing is remembered.',
+    title: '10,000 photos.\nZero memories.',
+    body: 'Buried in endless camera rolls and screenshots. When everything is captured, nothing is felt.',
     visual: 'dots',
   },
   {
     title: 'Every night,\ntuck 4 into paper.',
-    body: 'Select 4 small moments of your day. Slide them into your tactile album sleeve with a handwritten note. The real, human fragments of life.',
+    body: 'Four moments before bed. A warm cup, a laugh, a quiet walk. The real fragments of today.',
     visual: 'icons',
   },
   {
     title: 'A living album,\nbound for life.',
-    body: 'Each day turns into a physical-style book page. Month by month, your days become a bound keepsake volume to flip through and cherish forever.',
+    body: 'Each month seals into a clothbound volume. A physical legacy you can flip through forever.',
     visual: 'book',
   },
 ];
@@ -225,32 +225,137 @@ function BookVisual() {
   );
 }
 
-// ─── Life Grid (80 Years = 4,160 Weeks) ──────────────────────────────────────
+// ─── Life Grid (80 Years = 4,160 Weeks) Expansive Tapestry ───────────────────
 
-function LifeGrid({ livedWeeks }: { livedWeeks: number }) {
+function LifeGridExpansive({ livedWeeks, currentAge }: { livedWeeks: number; currentAge: number | null }) {
   const colors = useColors();
-  const DOT = 3;
-  const GAP = 1;
-  const STEP = DOT + GAP;
-  const COLS = 52;
-  const ROWS = 80;
+  const isDark = colors.foreground === '#FFFFFF' || colors.background === '#181412';
+  const { width: rawWidth } = useWindowDimensions();
+  const containerW = Math.min(rawWidth - 48, 372);
+  const leftLabelW = 22;
+  const gridW = containerW - leftLabelW - 12;
+  const cols = 52;
+  const rows = 80;
+  const colStep = gridW / cols;
+  const dotSize = Math.max(2.5, colStep - 1.8);
+  const rowStep = dotSize + 2.0;
+  const totalSvgH = rows * rowStep + 16;
+
+  const currentWkIdx = Math.max(0, Math.min(4159, livedWeeks - 1));
+  const currentRow = Math.floor(currentWkIdx / cols);
+
   const rects = [];
-  for (let i = 0; i < ROWS * COLS; i++) {
-    const col = i % COLS;
-    const row = Math.floor(i / COLS);
+  for (let i = 0; i < rows * cols; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const isLived = i < livedWeeks;
+    const isCurrent = i === currentWkIdx;
+    const x = leftLabelW + col * colStep;
+    const y = 8 + row * rowStep;
+
     rects.push(
       <Rect
-        key={i}
-        x={col * STEP}
-        y={row * STEP}
-        width={DOT}
-        height={DOT}
+        key={`d-${i}`}
+        x={x}
+        y={y}
+        width={dotSize}
+        height={dotSize}
         rx={0.8}
-        fill={i < livedWeeks ? colors.primary : colors.border}
-      />,
+        fill={
+          isCurrent
+            ? '#DF5739'
+            : isLived
+            ? '#E06548'
+            : isDark
+            ? '#332A24'
+            : '#E8E2D8'
+        }
+      />
     );
   }
-  return <Svg width={COLS * STEP} height={ROWS * STEP}>{rects}</Svg>;
+
+  // Milestone Age Labels down the left
+  const ageLabels = [];
+  for (let r = 0; r <= 80; r += 10) {
+    const y = 8 + r * rowStep + dotSize - 0.5;
+    ageLabels.push(
+      <SvgText
+        key={`lbl-${r}`}
+        x={0}
+        y={y}
+        fontSize="8"
+        fontFamily="Inter_600SemiBold"
+        fill={colors.tertiary}
+      >
+        {r}y
+      </SvgText>
+    );
+  }
+
+  return (
+    <View style={[visualStyles.gridStageWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      {/* Top Legend Bar */}
+      <View style={visualStyles.gridHeaderPill}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#DF5739' }} />
+          <Text style={[visualStyles.gridLegendText, { color: colors.foreground }]}>
+            {livedWeeks.toLocaleString()} lived
+          </Text>
+        </View>
+        <Text style={{ color: colors.tertiary, fontSize: 11 }}>•</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: isDark ? '#332A24' : '#E8E2D8' }} />
+          <Text style={[visualStyles.gridLegendText, { color: colors.mutedForeground }]}>
+            {Math.max(0, 4160 - livedWeeks).toLocaleString()} unwritten
+          </Text>
+        </View>
+      </View>
+
+      {/* Scrollable Dots Canvas */}
+      <ScrollView
+        style={{ maxHeight: 270 }}
+        showsVerticalScrollIndicator={true}
+        nestedScrollEnabled={true}
+      >
+        <Svg width={containerW - 12} height={totalSvgH}>
+          {currentAge !== null && (
+            <Line
+              x1={leftLabelW}
+              y1={8 + currentRow * rowStep + dotSize / 2}
+              x2={leftLabelW + gridW}
+              y2={8 + currentRow * rowStep + dotSize / 2}
+              stroke="#DF5739"
+              strokeWidth="1"
+              strokeDasharray="2,2"
+              opacity={0.65}
+            />
+          )}
+
+          {ageLabels}
+          {rects}
+
+          {/* Current Week Beacon Indicator */}
+          <Circle
+            cx={leftLabelW + (currentWkIdx % cols) * colStep + dotSize / 2}
+            cy={8 + currentRow * rowStep + dotSize / 2}
+            r={dotSize + 2.5}
+            fill="none"
+            stroke="#DF5739"
+            strokeWidth="1.5"
+            opacity={0.9}
+          />
+        </Svg>
+      </ScrollView>
+
+      {/* Landmark Badge at bottom of canvas */}
+      <View style={[visualStyles.gridFootnote, { borderTopColor: colors.border }]}>
+        <Sparkle size={13} color="#DF5739" weight="fill" />
+        <Text style={[visualStyles.gridFootnoteText, { color: colors.foreground }]}>
+          You are at <Text style={{ fontFamily: 'Inter_700Bold', color: '#DF5739' }}>Age {currentAge ?? Math.floor(livedWeeks / 52)}</Text> • Week {livedWeeks.toLocaleString()}
+        </Text>
+      </View>
+    </View>
+  );
 }
 
 // ─── Indian Setup Smart DOB Masking (DD/MM/YYYY) & Calculation Helpers ─────
@@ -368,63 +473,81 @@ export default function OnboardingScreen() {
   const topPad = insets.top + (Platform.OS === 'web' ? 40 : 12);
   const botPad = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16);
 
+  const renderTopNav = (canGoBack: boolean, onBack: () => void, stepText: string) => (
+    <View style={styles.topNavRow}>
+      {canGoBack ? (
+        <TouchableOpacity
+          onPress={onBack}
+          style={[styles.circleBackBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          activeOpacity={0.75}
+        >
+          <ArrowLeft size={16} color={colors.foreground} />
+        </TouchableOpacity>
+      ) : (
+        <View style={{ width: 34 }} />
+      )}
+
+      <View style={[styles.stepPill, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+        <Text style={[styles.stepPillText, { color: colors.foreground }]}>{stepText}</Text>
+      </View>
+
+      <TouchableOpacity
+        onPress={handleStart}
+        style={[styles.skipPill, { backgroundColor: colors.muted, borderColor: colors.border }]}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.skipPillText, { color: colors.mutedForeground }]}>Skip</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: topPad, paddingBottom: botPad }]}>
       <Animated.View style={[styles.content, fadeStyle]}>
 
-        {/* Phase 0 — Predefined & Smart DOB Input */}
+        {/* Phase 0 — Predefined & Smart DOB Input (Preview stats removed for anticipation) */}
         {phase === 0 && (
-          <View style={styles.phaseCenter}>
-            <View style={styles.phaseHeader}>
-              <View style={[styles.phaseIconCircle, { backgroundColor: colors.accentLight }]}>
-                <CalendarBlank size={32} color={colors.primary} weight="duotone" />
-              </View>
-              <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-                When were you born?
-              </Text>
-              <Text style={[styles.sub, { color: colors.mutedForeground }]}>
-                We'll use this to show you something.
-              </Text>
-            </View>
+          <View style={styles.phaseScreenWrap}>
+            {renderTopNav(false, () => {}, 'Step 1 of 4')}
 
-            {/* Input field with smart auto-formatting */}
-            <View style={styles.inputWrap}>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.card,
-                    color: colors.foreground,
-                    borderColor: dobError ? colors.destructive : colors.borderStrong,
-                  },
-                ]}
-                placeholder="DD / MM / YYYY"
-                placeholderTextColor={colors.tertiary}
-                value={dob}
-                onChangeText={(t) => {
-                  const formatted = formatDobInput(t);
-                  setDob(formatted);
-                  setDobError('');
-                }}
-                keyboardType="numeric"
-                maxLength={10}
-              />
-
-              {/* Dynamic Live Calculation Card */}
-              {parsedDate && currentAge !== null && (
-                <View style={[styles.dynamicStatBadge, { backgroundColor: colors.accentLight, borderColor: colors.border }]}>
-                  <Sparkle size={15} color={colors.primary} weight="fill" />
-                  <Text style={[styles.dynamicStatText, { color: colors.foreground }]}>
-                    <Text style={{ fontFamily: 'Inter_700Bold', color: colors.primary }}>{currentAge} years old</Text>
-                    {' · '}
-                    {currentCalculatedWeeks.toLocaleString()} weeks lived
-                    {' · '}
-                    {Math.max(0, 4160 - currentCalculatedWeeks).toLocaleString()} ahead
-                  </Text>
+            <View style={styles.phaseCenterBody}>
+              <View style={styles.phaseHeader}>
+                <View style={[styles.phaseIconCircle, { backgroundColor: colors.accentLight }]}>
+                  <CalendarBlank size={32} color={colors.primary} weight="duotone" />
                 </View>
-              )}
+                <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+                  When were you born?
+                </Text>
+                <Text style={[styles.sub, { color: colors.mutedForeground }]}>
+                  We'll use this to show you something.
+                </Text>
+              </View>
 
-              {!!dobError && <Text style={[styles.error, { color: colors.destructive }]}>{dobError}</Text>}
+              <View style={styles.inputWrap}>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: colors.card,
+                      color: colors.foreground,
+                      borderColor: dobError ? colors.destructive : colors.borderStrong,
+                    },
+                  ]}
+                  placeholder="DD / MM / YYYY"
+                  placeholderTextColor={colors.tertiary}
+                  value={dob}
+                  onChangeText={(t) => {
+                    const formatted = formatDobInput(t);
+                    setDob(formatted);
+                    setDobError('');
+                  }}
+                  keyboardType="numeric"
+                  maxLength={10}
+                />
+                {!!dobError && <Text style={[styles.error, { color: colors.destructive }]}>{dobError}</Text>}
+              </View>
             </View>
 
             <TouchableOpacity
@@ -441,229 +564,133 @@ export default function OnboardingScreen() {
           </View>
         )}
 
-        {/* Phase 1 — Recalled days */}
+        {/* Phase 1 — Clarified Recall Question with Consistent Top Nav & Layout */}
         {phase === 1 && (
-          <View style={styles.phaseCenter}>
-            <TouchableOpacity onPress={() => transition(0)} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <ArrowLeft size={22} color={colors.foreground} />
-            </TouchableOpacity>
-            <View style={styles.phaseHeader}>
-              <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-                How many days do you remember from last week?
-              </Text>
-              <Text style={[styles.sub, { color: colors.mutedForeground }]}>
-                Be completely honest with yourself.
-              </Text>
-            </View>
+          <View style={styles.phaseScreenWrap}>
+            {renderTopNav(true, () => transition(0), 'Step 2 of 4')}
 
-            <View style={styles.chips}>
-              {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
-                <TouchableOpacity
-                  key={n}
-                  onPress={() => handleRecall(n)}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: recalledDays === n ? colors.primary : colors.card,
-                      borderColor: recalledDays === n ? colors.primary : colors.border,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.chipText, { color: recalledDays === n ? '#FFFFFF' : colors.foreground }]}>
-                    {n}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {recalledDays !== null && (
-              <View style={[styles.recallFeedbackCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.recallFeedbackText, { color: colors.foreground }]}>
-                  {recalledDays <= 2
-                    ? "That's completely normal. The human brain discards routine days automatically."
-                    : recalledDays <= 4
-                    ? "Better than average, but nearly half the week's memories already dissolved."
-                    : "Impressive recall! Dear Day turns those memories into an everlasting photobook."}
+            <View style={styles.phaseCenterBody}>
+              <View style={styles.phaseHeader}>
+                <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+                  How many days from last week can you actually picture?
+                </Text>
+                <Text style={[styles.sub, { color: colors.mutedForeground }]}>
+                  Not just "I went to work" — but a distinct, vivid moment you'll still remember years from now.
                 </Text>
               </View>
-            )}
+
+              <View style={styles.chips}>
+                {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
+                  <TouchableOpacity
+                    key={n}
+                    onPress={() => handleRecall(n)}
+                    style={[
+                      styles.chip,
+                      {
+                        backgroundColor: recalledDays === n ? colors.primary : colors.card,
+                        borderColor: recalledDays === n ? colors.primary : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.chipText, { color: recalledDays === n ? '#FFFFFF' : colors.foreground }]}>
+                      {n}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {recalledDays !== null && (
+                <View style={[styles.recallFeedbackCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Text style={[styles.recallFeedbackText, { color: colors.foreground }]}>
+                    {recalledDays <= 2
+                      ? "That's completely normal. Without an anchor, the brain erases routine days within 48 hours."
+                      : recalledDays <= 4
+                      ? "Better than average, but more than half of your week's memories have already dissolved."
+                      : "Impressive recall! But without keeping, even your most vivid weeks fade over time."}
+                  </Text>
+                </View>
+              )}
+            </View>
 
             <TouchableOpacity
               style={[
                 styles.btn,
-                { backgroundColor: colors.primary, opacity: recalledDays === null ? 0.4 : 1, marginTop: 20 },
+                { backgroundColor: colors.primary, opacity: recalledDays === null ? 0.4 : 1, marginTop: 12 },
               ]}
               onPress={() => transition(2)}
               disabled={recalledDays === null}
               activeOpacity={0.85}
             >
-              <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Reveal My Life Grid →</Text>
+              <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Reveal My Life in Weeks →</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Phase 2 — Full-Screen Immersive Life in Weeks Experience */}
+        {/* Phase 2 — Expansive, Revived Life Grid (4,160 Weeks) */}
         {phase === 2 && (
-          <View style={styles.lifeFullContainer}>
-            {/* Header section */}
-            <View style={styles.lifeHeader}>
-              <TouchableOpacity onPress={() => transition(1)} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <ArrowLeft size={22} color={colors.foreground} />
-              </TouchableOpacity>
-              <Text style={[styles.headingLife, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-                4,160 Weeks in an 80-Year Life.
-              </Text>
-              <Text style={[styles.subLife, { color: colors.mutedForeground }]}>
-                You have already lived {livedWeeks.toLocaleString()} weeks. How many can you actually remember?
-              </Text>
-            </View>
+          <View style={styles.phaseScreenWrap}>
+            {renderTopNav(true, () => transition(1), 'Step 3 of 4')}
 
-            {/* Immersive Life Meter & Epochs Tapestry */}
-            <View style={styles.lifeHeroStage}>
-              {/* Dual Stat Pillars */}
-              <View style={styles.statPillarsRow}>
-                <View style={[styles.statPillarCard, { backgroundColor: colors.card, borderColor: colors.primary }]}>
-                  <Text style={[styles.statPillarNumber, { color: colors.primary, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-                    {livedWeeks.toLocaleString()}
-                  </Text>
-                  <Text style={[styles.statPillarLabel, { color: colors.foreground }]}>WEEKS LIVED</Text>
-                  <Text style={[styles.statPillarSub, { color: colors.primary }]}>
-                    {Math.round((livedWeeks / 4160) * 100)}% of your journey
-                  </Text>
-                </View>
-
-                <View style={[styles.statPillarCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <Text style={[styles.statPillarNumber, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-                    {Math.max(0, 4160 - livedWeeks).toLocaleString()}
-                  </Text>
-                  <Text style={[styles.statPillarLabel, { color: colors.mutedForeground }]}>WEEKS REMAINING</Text>
-                  <Text style={[styles.statPillarSub, { color: colors.mutedForeground }]}>
-                    {Math.round((Math.max(0, 4160 - livedWeeks) / 4160) * 100)}% ahead of you
-                  </Text>
-                </View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingVertical: 4 }}>
+              <View style={styles.phaseHeader}>
+                <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+                  Your Life in Weeks
+                </Text>
+                <Text style={[styles.sub, { color: colors.mutedForeground }]}>
+                  4,160 weeks in an 80-year life. Every single dot represents one week.
+                </Text>
               </View>
 
-              {/* Full-Bleed Life Arc Timeline Bar */}
-              <View style={styles.lifeProgressBarWrap}>
-                <View style={[styles.lifeProgressBarTrack, { backgroundColor: colors.muted }]}>
-                  <View
-                    style={[
-                      styles.lifeProgressBarFill,
-                      {
-                        width: `${Math.min(100, Math.max(3, (livedWeeks / 4160) * 100))}%`,
-                        backgroundColor: colors.primary,
-                      },
-                    ]}
-                  />
-                  <View
-                    style={[
-                      styles.lifeProgressBeacon,
-                      {
-                        left: `${Math.min(96, Math.max(2, (livedWeeks / 4160) * 100))}%`,
-                        backgroundColor: '#FFFFFF',
-                        borderColor: colors.primary,
-                      },
-                    ]}
-                  />
-                </View>
+              {/* Expansive Tapestry Life Grid with Landmark Age Labels */}
+              <LifeGridExpansive livedWeeks={livedWeeks} currentAge={currentAge} />
 
-                {/* 4 Life Epochs Labels */}
-                <View style={styles.lifeEpochsRow}>
-                  <View style={styles.epochCol}>
-                    <Text style={[styles.epochAge, { color: colors.tertiary }]}>0</Text>
-                    <Text style={[styles.epochName, { color: colors.tertiary }]}>Youth</Text>
-                  </View>
-                  <View style={styles.epochCol}>
-                    <Text style={[styles.epochAge, { color: colors.tertiary }]}>20</Text>
-                    <Text style={[styles.epochName, { color: colors.tertiary }]}>Discovery</Text>
-                  </View>
-                  <View style={styles.epochCol}>
-                    <Text style={[styles.epochAge, { color: colors.tertiary }]}>40</Text>
-                    <Text style={[styles.epochName, { color: colors.tertiary }]}>Mastery</Text>
-                  </View>
-                  <View style={styles.epochCol}>
-                    <Text style={[styles.epochAge, { color: colors.tertiary }]}>60</Text>
-                    <Text style={[styles.epochName, { color: colors.tertiary }]}>Wisdom</Text>
-                  </View>
-                  <View style={[styles.epochCol, { alignItems: 'flex-end' }]}>
-                    <Text style={[styles.epochAge, { color: colors.tertiary }]}>80</Text>
-                    <Text style={[styles.epochName, { color: colors.tertiary }]}>Legacy</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* The Nostalgia Revelation Card */}
+              {/* Poignant Reflection Card */}
               <View style={[styles.revelationCard, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
                 <View style={styles.revelationTop}>
-                  <Sparkle size={18} color={colors.primary} weight="fill" />
+                  <Sparkle size={18} color="#DF5739" weight="fill" />
                   <Text style={[styles.revelationTitle, { color: colors.foreground }]}>
                     The Everyday Memory Leak
                   </Text>
                 </View>
                 <Text style={[styles.revelationText, { color: colors.foreground }]}>
-                  Last week alone, you recalled only <Text style={{ fontFamily: 'Inter_700Bold', color: colors.primary }}>{recalledDays ?? 2} days</Text>.
-                  Without mindful keeping, thousands of precious routine days vanish like smoke.
+                  Last week alone, you remembered only <Text style={{ fontFamily: 'Inter_700Bold', color: '#DF5739' }}>{recalledDays ?? 2} days</Text>.
+                  Without mindful keeping, the years blur together like smoke.
                 </Text>
                 <Text style={[styles.revelationSub, { color: colors.mutedForeground }]}>
-                  Dear Day turns your finite days into physical heirlooms. Just 4 photos every night, bound in linen forever.
+                  Dear Day turns the weeks ahead into tangible keepsakes. Four photos every night, bound in linen forever.
                 </Text>
               </View>
-            </View>
+            </ScrollView>
 
-            {/* Bottom Action */}
-            <View style={styles.lifeBottomAction}>
-              <TouchableOpacity
-                style={[styles.btn, { backgroundColor: colors.primary }]}
-                onPress={() => transition(3)}
-                activeOpacity={0.85}
-              >
-                <Text style={[styles.btnText, { color: colors.primaryForeground }]}>
-                  Enter Dear Day →
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[styles.btn, { backgroundColor: colors.primary, marginTop: 8 }]}
+              onPress={() => transition(3)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.btnText, { color: colors.primaryForeground }]}>
+                See How Dear Day Works →
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
 
-        {/* Phase 3 — Balanced Golden-Ratio Visual Carousel */}
+        {/* Phase 3 — Balanced Golden-Ratio Visual Carousel with Concise Emotional Copy */}
         {phase === 3 && (
           <View style={styles.carouselContainer}>
-            {/* Top Navigation Bar with Back & Skip Pill */}
-            <View style={styles.topNavRow}>
-              {slide > 0 ? (
-                <TouchableOpacity
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    const prev = slide - 1;
-                    setSlide(prev);
-                    slideRef.current?.scrollToIndex({ index: prev, animated: true });
-                  }}
-                  style={[styles.circleBackBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                >
-                  <ArrowLeft size={16} color={colors.foreground} />
-                </TouchableOpacity>
-              ) : (
-                <View style={{ width: 36 }} />
-              )}
-
-              {/* Step indicator */}
-              <View style={[styles.stepPill, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                <Text style={[styles.stepPillText, { color: colors.foreground }]}>
-                  {slide + 1} of {SLIDES.length}
-                </Text>
-              </View>
-
-              {/* Polished Skip Pill */}
-              <TouchableOpacity
-                onPress={handleStart}
-                style={[styles.skipPill, { backgroundColor: colors.muted, borderColor: colors.border }]}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.skipPillText, { color: colors.mutedForeground }]}>Skip</Text>
-              </TouchableOpacity>
-            </View>
+            {renderTopNav(
+              true,
+              () => {
+                if (slide > 0) {
+                  Haptics.selectionAsync();
+                  const prev = slide - 1;
+                  setSlide(prev);
+                  slideRef.current?.scrollToIndex({ index: prev, animated: true });
+                } else {
+                  transition(2);
+                }
+              },
+              `Step 4 of 4`
+            )}
 
             {/* Centered Graphic Zone */}
             <View style={styles.visualStage}>
@@ -999,6 +1026,43 @@ const visualStyles = StyleSheet.create({
     borderLeftWidth: 1,
     borderLeftColor: '#E0D8CC',
   },
+  gridStageWrap: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  gridHeaderPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+  },
+  gridLegendText: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.2,
+  },
+  gridFootnote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  gridFootnoteText: {
+    fontSize: 11.5,
+    fontFamily: 'Inter_500Medium',
+  },
 });
 
 // ─── Main Screen Styles ───────────────────────────────────────────────────────
@@ -1006,6 +1070,17 @@ const visualStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { flex: 1, paddingHorizontal: 24 },
+  phaseScreenWrap: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingBottom: 4,
+  },
+  phaseCenterBody: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: 20,
+    paddingVertical: 12,
+  },
   phaseCenter: { flex: 1, justifyContent: 'center', gap: 18 },
   phaseHeader: { gap: 8, alignItems: 'center' },
   phaseIconCircle: {

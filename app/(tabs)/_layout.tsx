@@ -3,19 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native
 import { BrandLogoLoader } from '@/components/BrandLogo';
 import { useColorScheme } from 'react-native';
 import { Tabs, Redirect } from 'expo-router';
-import {
-  BookOpen,
-  Books,
-  Compass,
-  MagnifyingGlass,
-  User,
-  Lock,
-  Fingerprint,
-} from 'phosphor-react-native';
-import { BlurView } from 'expo-blur';
+import { Lock, Fingerprint } from 'phosphor-react-native';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/contexts/AppContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FloatingTabBar } from '@/components/FloatingTabBar';
 
 /**
  * Full-screen biometric lock overlay. Shown when the user navigates
@@ -100,79 +92,39 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
-        tabBarStyle: {
-          backgroundColor: isIOS ? 'transparent' : colors.card,
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: colors.border,
-          elevation: 10,
-          height: 54 + bottomPad,
-          paddingBottom: bottomPad,
-          paddingTop: 6,
-        },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView
-              intensity={100}
-              tint={isDark ? 'dark' : 'light'}
-              style={StyleSheet.absoluteFill}
-            />
-          ) : isWeb ? (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
-          ) : undefined,
-        tabBarLabelStyle: {
-          fontFamily: 'Inter_500Medium',
-          fontSize: 10.5,
-          letterSpacing: 0.2,
-        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Today',
-          tabBarIcon: ({ color, focused }) => (
-            <BookOpen size={22} color={color} weight={focused ? 'fill' : 'regular'} />
-          ),
         }}
       />
       <Tabs.Screen
         name="library"
         options={{
           title: 'Library',
-          tabBarIcon: ({ color, focused }) => (
-            <Books size={22} color={color} weight={focused ? 'fill' : 'regular'} />
-          ),
         }}
       />
       <Tabs.Screen
         name="discover"
         options={{
           title: 'Discover',
-          tabBarIcon: ({ color, focused }) => (
-            <Compass size={22} color={color} weight={focused ? 'fill' : 'regular'} />
-          ),
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
           title: 'Search',
-          tabBarIcon: ({ color, focused }) => (
-            <MagnifyingGlass size={22} color={color} weight={focused ? 'bold' : 'regular'} />
-          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, focused }) => (
-            <User size={22} color={color} weight={focused ? 'fill' : 'regular'} />
-          ),
         }}
       />
     </Tabs>
