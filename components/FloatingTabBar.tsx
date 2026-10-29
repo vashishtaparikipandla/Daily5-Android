@@ -34,6 +34,10 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
   const { width } = useWindowDimensions();
   const isWeb = Platform.OS === 'web';
 
+  const isDark = colors.foreground === '#FFFFFF' || colors.background === '#181412';
+  const activePillBg = isDark ? '#38302A' : '#EAE6E1';
+  const activePillBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)';
+
   const bottomOffset = Math.max(insets.bottom, isWeb ? 18 : 12);
 
   return (
@@ -96,7 +100,8 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
                 isFocused && [
                   styles.tabItemActive,
                   {
-                    backgroundColor: colors.primary,
+                    backgroundColor: activePillBg,
+                    borderColor: activePillBorder,
                   },
                 ],
               ]}
@@ -158,6 +163,7 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   tabItemActive: {
+    borderWidth: 1,
     shadowColor: '#000000',
     ...Platform.select({
       ios: {
