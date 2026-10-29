@@ -76,6 +76,45 @@ interface DiaryContextValue {
 
 const DiaryContext = createContext<DiaryContextValue | null>(null);
 
+/**
+ * Ensures monthly continuum books automatically exist up to the current month.
+ * Books exist as automated empty/active volumes ready to be filled.
+ */
+function ensureAutomatedMonthlyBooks(existingBooks: Book[]): Book[] {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-based: 0 = Jan, 9 = Oct
+  const updated = [...existingBooks];
+
+  for (let m = 0; m <= currentMonth; m++) {
+    const mk = `${currentYear}-${String(m + 1).padStart(2, '0')}`;
+    if (!updated.some(b => b.monthKey === mk)) {
+      const monthDate = new Date(currentYear, m, 1);
+      const monthName = monthDate.toLocaleDateString('en-US', { month: 'long' });
+      updated.push({
+        monthKey: mk,
+        title: `${monthName} ${currentYear}`,
+        description: `Automated Monthly Volume`,
+        coverColor: '#2F3E34',
+        coverConfig: {
+          type: 'solid',
+          value: '#2F3E34',
+          fontFamily: 'playfair',
+          title: `${monthName} ${currentYear}`,
+          spineTag: `VOL. ${String(m + 1).padStart(2, '0')}`,
+        },
+        pageLayout: 'quad',
+        fontFamily: 'playfair',
+        locked: false,
+        days: [],
+        hiddenDays: [],
+        createdAt: monthDate.toISOString(),
+      });
+    }
+  }
+  return updated;
+}
+
 export function DiaryProvider({ children }: { children: React.ReactNode }) {
   const [books, setBooks] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,8 +148,9 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
                   const restored = await loadBackupFromFile();
                   if (restored && Array.isArray(restored) && restored.length > 0) {
                     const booksData = restored as Book[];
-                    await saveBooks(booksData);
-                    setBooks(booksData);
+                    const withAuto = ensureAutomatedMonthlyBooks(booksData);
+                    await saveBooks(withAuto);
+                    setBooks(withAuto);
                     Alert.alert('Restored', 'Your diary has been restored from backup.');
                   } else {
                     Alert.alert(
@@ -126,7 +166,11 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      setBooks(loaded);
+      const finalBooks = ensureAutomatedMonthlyBooks(loaded);
+      if (finalBooks.length !== loaded.length) {
+        await saveBooks(finalBooks);
+      }
+      setBooks(finalBooks);
     } catch (e) { console.warn('DiaryContext init error', e); }
     setIsLoading(false);
 

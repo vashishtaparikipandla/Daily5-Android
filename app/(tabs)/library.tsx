@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, Platform, Modal, Dimensions, Alert, ScrollView, Image,
+  TextInput, Platform, Dimensions, Alert, Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import {
-  Plus, MagnifyingGlass, X, Sparkle, BookOpen, ShareNetwork, Printer,
-  Camera, Check, Image as ImageIcon,
+  MagnifyingGlass, X, BookOpen, ShareNetwork, Printer,
 } from 'phosphor-react-native';
-import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,12 +16,7 @@ import { BookCover } from '@/components/BookCover';
 import { EmptyState } from '@/components/EmptyState';
 import {
   bookDisplayName,
-  SOLID_COVER_PRESETS,
-  GRADIENT_COVER_PRESETS,
   type Book,
-  type BookCoverConfig,
-  type BookFontType,
-  type PageLayoutType,
 } from '@/lib/data';
 import { exportBookAsPdf } from '@/lib/pdfExport';
 import { BrandLogoLoader } from '@/components/BrandLogo';
@@ -36,44 +29,20 @@ const BOOK_WIDTH = Math.floor((SCREEN_WIDTH - HORIZONTAL_PAD * 2 - CARD_GAP) / 2
 export default function LibraryTab() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { books, createCustomBook } = useDiary();
+  const { books } = useDiary();
 
   const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'monthly' | 'custom' | 'favorites'>('all');
-
-  // New Book Studio States
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newDesc, setNewDesc] = useState('');
-  const [coverType, setCoverType] = useState<'solid' | 'gradient' | 'photo'>('solid');
-  const [solidColor, setSolidColor] = useState(SOLID_COVER_PRESETS[0].hex);
-  const [gradientIndex, setGradientIndex] = useState(0);
-  const [customPhotoUri, setCustomPhotoUri] = useState<string | null>(null);
-  const [selectedFont, setSelectedFont] = useState<BookFontType>('playfair');
-  const [selectedLayout, setSelectedLayout] = useState<PageLayoutType>('quad');
-  const [creating, setCreating] = useState(false);
 
   const topPad = insets.top + (Platform.OS === 'web' ? 67 : 0);
   const botPad = insets.bottom + 90;
 
   const sortedBooks = [...books].sort((a, b) => {
-    // Keep sample book visible, custom books near top, then by monthKey descending
-    if (a.isSample && !b.isSample) return -1;
-    if (!a.isSample && b.isSample) return 1;
-    if (a.isCustom && !b.isCustom) return -1;
-    if (!a.isCustom && b.isCustom) return 1;
     return b.monthKey.localeCompare(a.monthKey);
   });
 
   const filtered = sortedBooks
     .filter(b => !b.isSample)
-    .filter(b => {
-      if (filter === 'monthly') return !b.isCustom;
-      if (filter === 'custom') return b.isCustom;
-      if (filter === 'favorites') return b.days.some(d => d.isFavorite);
-      return true;
-    })
     .filter(b => {
       if (!search.trim()) return true;
       const q = search.toLowerCase();
@@ -122,73 +91,6 @@ export default function LibraryTab() {
     router.push({ pathname: '/order-flow', params: { monthKey: book.monthKey } });
   }
 
-  async function pickCoverPhoto() {
-    if (Platform.OS !== 'web') {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please allow photo access to select a book cover photo.');
-        return;
-      }
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.85,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setCustomPhotoUri(result.assets[0].uri);
-      setCoverType('photo');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
-  }
-
-  async function handleCreateBook() {
-    if (!newTitle.trim()) {
-      Alert.alert('Title required', 'Please enter a name for your custom book.');
-      return;
-    }
-    setCreating(true);
-    try {
-      const coverVal =
-        coverType === 'solid'
-          ? solidColor
-          : coverType === 'gradient'
-          ? GRADIENT_COVER_PRESETS[gradientIndex].colors[0]
-          : customPhotoUri || SOLID_COVER_PRESETS[0].hex;
-
-      const coverConfig: BookCoverConfig = {
-        type: coverType,
-        value: coverVal,
-        fontFamily: selectedFont,
-        title: newTitle.trim(),
-        subtitle: newDesc.trim() || undefined,
-        spineTag: 'VOL. 01',
-      };
-
-      const created = await createCustomBook(
-        newTitle.trim(),
-        newDesc.trim(),
-        coverType === 'solid' ? solidColor : undefined,
-        {
-          coverConfig,
-          pageLayout: selectedLayout,
-          fontFamily: selectedFont,
-        },
-      );
-      setNewTitle('');
-      setNewDesc('');
-      setCustomPhotoUri(null);
-      setShowCreateModal(false);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      openBook(created);
-    } catch {
-      Alert.alert('Error', 'Could not create book.');
-    } finally {
-      setCreating(false);
-    }
-  }
-
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       {/* Header */}
@@ -198,18 +100,11 @@ export default function LibraryTab() {
         </Text>
         <View style={styles.headerRight}>
           <TouchableOpacity
-            style={[styles.newBookBtn, { backgroundColor: colors.primary }]}
-            onPress={() => setShowCreateModal(true)}
-            activeOpacity={0.85}
-          >
-            <Plus size={16} color={colors.primaryForeground} weight="bold" />
-            <Text style={[styles.newBookBtnText, { color: colors.primaryForeground }]}>New Book</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
             onPress={() => setShowSearch(s => !s)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={styles.iconBtn}
+            accessibilityRole="button"
+            accessibilityLabel={showSearch ? 'Close search' : 'Search library'}
           >
             {showSearch ? (
               <X size={20} color={colors.mutedForeground} weight="bold" />
@@ -235,65 +130,19 @@ export default function LibraryTab() {
         </View>
       )}
 
-      {/* Filter Chips */}
-      <View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow}
-        >
-          {(['all', 'monthly', 'custom', 'favorites'] as const).map(tab => {
-            const active = filter === tab;
-            const label =
-              tab === 'all'
-                ? 'All Books'
-                : tab === 'monthly'
-                ? 'Monthly Volumes'
-                : tab === 'custom'
-                ? 'Custom Collections'
-                : 'Favorites';
-            return (
-              <TouchableOpacity
-                key={tab}
-                style={[
-                  styles.filterChip,
-                  {
-                    backgroundColor: active ? colors.primary : colors.muted,
-                    borderColor: active ? colors.primary : colors.border,
-                  },
-                ]}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setFilter(tab);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`Filter: ${label}`}
-              >
-                <Text style={[styles.filterChipText, { color: active ? colors.primaryForeground : colors.foreground }]}>
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
       {/* Book Grid */}
       {filtered.length === 0 ? (
         <EmptyState
           icon={BookOpen}
-          title="Your Archival Library is Waiting"
+          title={search ? 'No Volumes Found' : 'Your Archival Library is Ready'}
           description={
             search
               ? `No photobooks found matching "${search}". Try searching another keyword.`
-              : 'As you curate moments each month, bound archival linen volumes appear here. You can also craft a custom keepsake volume anytime.'
+              : 'As you tuck moments into your daily spreads, bound archival monthly volumes appear here automatically.'
           }
-          actionLabel={search ? 'Clear Search' : '+ Create Custom Book'}
-          actionIcon={search ? X : Plus}
-          onAction={() => {
-            if (search) setSearch('');
-            else setShowCreateModal(true);
-          }}
+          actionLabel={search ? 'Clear Search' : undefined}
+          actionIcon={search ? X : undefined}
+          onAction={search ? () => setSearch('') : undefined}
         />
       ) : (
         <FlatList
@@ -341,312 +190,6 @@ export default function LibraryTab() {
           }}
         />
       )}
-
-      {/* Create Custom Book Modal (Cover Studio) */}
-      <Modal
-        visible={showCreateModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowCreateModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.borderStrong, maxHeight: '90%' }]}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-                  Book Cover Studio
-                </Text>
-                <Text style={[styles.modalSub, { color: colors.mutedForeground }]}>
-                  Design an archival custom keepsake volume
-                </Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-                <X size={22} color={colors.mutedForeground} weight="bold" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 20 }}>
-              {/* Live Interactive Cover Preview */}
-              <View style={[styles.previewContainer, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                <BookCover
-                  book={{
-                    monthKey: 'preview',
-                    title: newTitle.trim() || 'Volume Title',
-                    description: newDesc.trim() || 'Subtitle or date',
-                    days: [],
-                    locked: false,
-                    isCustom: true,
-                    pageLayout: selectedLayout,
-                    fontFamily: selectedFont,
-                    coverConfig: {
-                      type: coverType,
-                      value:
-                        coverType === 'solid'
-                          ? solidColor
-                          : coverType === 'gradient'
-                          ? GRADIENT_COVER_PRESETS[gradientIndex].colors[0]
-                          : customPhotoUri || SOLID_COVER_PRESETS[0].hex,
-                      fontFamily: selectedFont,
-                      title: newTitle.trim() || 'Volume Title',
-                      subtitle: newDesc.trim() || undefined,
-                      spineTag: 'VOL. 01',
-                    },
-                  }}
-                  size="medium"
-                />
-                <Text style={[styles.previewLabel, { color: colors.tertiary }]}>
-                  REAL-TIME PRINT PREVIEW
-                </Text>
-              </View>
-
-              {/* Title Input */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.tertiary }]}>BOOK TITLE</Text>
-                <TextInput
-                  style={[styles.modalInput, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
-                  placeholder="e.g. Japan Trip 2026, Best of 2025"
-                  placeholderTextColor={colors.tertiary}
-                  value={newTitle}
-                  onChangeText={setNewTitle}
-                />
-              </View>
-
-              {/* Subtitle */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.tertiary }]}>SUBTITLE (OPTIONAL)</Text>
-                <TextInput
-                  style={[styles.modalInput, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
-                  placeholder="e.g. One week in Tokyo & Kyoto"
-                  placeholderTextColor={colors.tertiary}
-                  value={newDesc}
-                  onChangeText={setNewDesc}
-                />
-              </View>
-
-              {/* Cover Style Mode Tabs */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.tertiary }]}>COVER FINISH</Text>
-                <View style={styles.tabRow}>
-                  {[
-                    { id: 'solid' as const, label: 'Solid Cloth' },
-                    { id: 'gradient' as const, label: 'Atmospheric' },
-                    { id: 'photo' as const, label: 'Custom Photo' },
-                  ].map(tab => {
-                    const active = coverType === tab.id;
-                    return (
-                      <TouchableOpacity
-                        key={tab.id}
-                        style={[
-                          styles.tabBtn,
-                          {
-                            backgroundColor: active ? colors.primary : colors.muted,
-                            borderColor: active ? colors.primary : colors.border,
-                          },
-                        ]}
-                        onPress={() => {
-                          Haptics.selectionAsync();
-                          setCoverType(tab.id);
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.tabBtnText,
-                            { color: active ? colors.primaryForeground : colors.foreground },
-                          ]}
-                        >
-                          {tab.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* 1. Solid Cloth Swatches */}
-              {coverType === 'solid' && (
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: colors.tertiary }]}>PREMIUM BOOKCLOTH PALETTE</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 4 }}>
-                    {SOLID_COVER_PRESETS.map(preset => {
-                      const selected = solidColor === preset.hex;
-                      return (
-                        <TouchableOpacity
-                          key={preset.hex}
-                          style={[
-                            styles.swatchCard,
-                            { backgroundColor: colors.muted, borderColor: selected ? colors.primary : colors.border },
-                          ]}
-                          onPress={() => {
-                            Haptics.selectionAsync();
-                            setSolidColor(preset.hex);
-                          }}
-                        >
-                          <View style={[styles.swatchCircle, { backgroundColor: preset.hex }]}>
-                            {selected && <Check size={14} color={preset.textDark ? '#000' : '#FFF'} weight="bold" />}
-                          </View>
-                          <Text style={[styles.swatchName, { color: colors.foreground }]} numberOfLines={1}>
-                            {preset.name}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              )}
-
-              {/* 2. Gradient Swatches */}
-              {coverType === 'gradient' && (
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: colors.tertiary }]}>ATMOSPHERIC GRADIENT PALETTES</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 4 }}>
-                    {GRADIENT_COVER_PRESETS.map((preset, idx) => {
-                      const selected = gradientIndex === idx;
-                      return (
-                        <TouchableOpacity
-                          key={preset.name}
-                          style={[
-                            styles.gradientCard,
-                            {
-                              backgroundColor: preset.colors[0],
-                              borderColor: selected ? colors.primary : 'transparent',
-                              borderWidth: selected ? 3 : 1,
-                            },
-                          ]}
-                          onPress={() => {
-                            Haptics.selectionAsync();
-                            setGradientIndex(idx);
-                          }}
-                        >
-                          <Text style={styles.gradientCardName}>{preset.name}</Text>
-                          {selected && (
-                            <View style={styles.gradientCheck}>
-                              <Check size={12} color="#FFF" weight="bold" />
-                            </View>
-                          )}
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              )}
-
-              {/* 3. Custom Photo from Phone */}
-              {coverType === 'photo' && (
-                <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: colors.tertiary }]}>INSET COVER PHOTO</Text>
-                  {customPhotoUri ? (
-                    <View style={styles.photoPickedRow}>
-                      <Image source={{ uri: customPhotoUri }} style={styles.pickedPhotoThumb} resizeMode="cover" />
-                      <View style={{ flex: 1, gap: 4 }}>
-                        <Text style={[styles.pickedPhotoTitle, { color: colors.foreground }]}>Cover Photo Selected</Text>
-                        <TouchableOpacity
-                          style={[styles.changePhotoBtn, { borderColor: colors.primary }]}
-                          onPress={pickCoverPhoto}
-                        >
-                          <Text style={[styles.changePhotoBtnText, { color: colors.primary }]}>Change Photo</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={[styles.pickPhotoBox, { backgroundColor: colors.muted, borderColor: colors.borderStrong }]}
-                      onPress={pickCoverPhoto}
-                    >
-                      <Camera size={24} color={colors.primary} />
-                      <Text style={[styles.pickPhotoBoxText, { color: colors.foreground }]}>
-                        Choose Photo from Library
-                      </Text>
-                      <Text style={[styles.pickPhotoBoxSub, { color: colors.tertiary }]}>
-                        Square crop debossed into cloth cover
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-
-              {/* Typography Selector */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.tertiary }]}>BOOK-WIDE TYPOGRAPHY</Text>
-                <View style={styles.typographyGrid}>
-                  {[
-                    { id: 'playfair' as const, name: 'Playfair', sub: 'Classic Serif' },
-                    { id: 'garamond' as const, name: 'Garamond', sub: 'Literary Elegance' },
-                    { id: 'sans' as const, name: 'Inter Sans', sub: 'Clean & Modern' },
-                    { id: 'typewriter' as const, name: 'Typewriter', sub: 'Vintage Archival' },
-                  ].map(font => {
-                    const active = selectedFont === font.id;
-                    return (
-                      <TouchableOpacity
-                        key={font.id}
-                        style={[
-                          styles.fontCard,
-                          {
-                            backgroundColor: active ? colors.accentLight : colors.muted,
-                            borderColor: active ? colors.primary : colors.border,
-                          },
-                        ]}
-                        onPress={() => {
-                          Haptics.selectionAsync();
-                          setSelectedFont(font.id);
-                        }}
-                      >
-                        <Text style={[styles.fontCardTitle, { color: colors.foreground }]}>{font.name}</Text>
-                        <Text style={[styles.fontCardSub, { color: colors.tertiary }]}>{font.sub}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Default Page Layout */}
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.tertiary }]}>DEFAULT PAGE LAYOUT</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
-                  {[
-                    { id: 'quad' as const, name: '2×2 Quad' },
-                    { id: 'strips' as const, name: 'Filmstrips' },
-                    { id: 'polaroid' as const, name: 'Polaroid' },
-                  ].map(lo => {
-                    const active = selectedLayout === lo.id;
-                    return (
-                      <TouchableOpacity
-                        key={lo.id}
-                        style={[
-                          styles.layoutPill,
-                          {
-                            backgroundColor: active ? colors.accentLight : colors.muted,
-                            borderColor: active ? colors.primary : colors.border,
-                          },
-                        ]}
-                        onPress={() => {
-                          Haptics.selectionAsync();
-                          setSelectedLayout(lo.id);
-                        }}
-                      >
-                        {active && <Check size={12} color={colors.primary} weight="bold" />}
-                        <Text style={[styles.layoutPillText, { color: active ? colors.primary : colors.foreground }]}>
-                          {lo.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-
-              {/* Create CTA */}
-              <TouchableOpacity
-                style={[styles.createBtn, { backgroundColor: colors.primary, opacity: creating ? 0.6 : 1 }]}
-                onPress={handleCreateBook}
-                disabled={creating}
-              >
-                <Text style={[styles.createBtnText, { color: colors.primaryForeground }]}>
-                  Create & Open Book Collection ✓
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

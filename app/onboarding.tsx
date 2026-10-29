@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  TextInput, FlatList, Dimensions, Platform, useWindowDimensions,
+  TextInput, FlatList, Dimensions, Platform, useWindowDimensions, Image,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -62,87 +62,126 @@ const CATEGORY_CHIPS = [
   { icon: BookOpen, color: '#C43A6F', label: 'Learn' },
 ];
 
-// ─── Slide 0: Mini Photobook Opening & Page Turning Animation ────────────────
+// ─── Slide 0: Authentic Live Photobook Spread with 3D Page Turning ──────────
+
+const SAMPLE_PAGE_PHOTOS_A = [
+  'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=400&q=80',
+  'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400&q=80',
+  'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=400&q=80',
+  'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&q=80',
+];
+
+const SAMPLE_PAGE_PHOTOS_B = [
+  'https://images.unsplash.com/photo-1478436127897-769e00d0c715?w=400&q=80',
+  'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&q=80',
+  'https://images.unsplash.com/photo-1528164344705-475426879c0d?w=400&q=80',
+  'https://images.unsplash.com/photo-1493780474015-ba834fd0ce2f?w=400&q=80',
+];
 
 function MiniPhotobookOpeningVisual() {
-  const openProgress = useSharedValue(0);
+  const flipProgress = useSharedValue(0);
 
   useEffect(() => {
-    openProgress.value = withRepeat(
+    flipProgress.value = withRepeat(
       withSequence(
-        withTiming(0, { duration: 600 }),
-        withTiming(1, { duration: 1500, easing: Easing.out(Easing.cubic) }),
-        withTiming(1, { duration: 2200 }),
-        withTiming(0, { duration: 1100, easing: Easing.inOut(Easing.cubic) }),
+        withTiming(0, { duration: 1800 }),
+        withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.cubic) }),
+        withTiming(1, { duration: 1800 }),
+        withTiming(0, { duration: 1200, easing: Easing.inOut(Easing.cubic) }),
       ),
       -1,
       false
     );
   }, []);
 
-  const coverStyle = useAnimatedStyle(() => {
-    const rotateY = -165 * openProgress.value;
+  const flippingPageStyle = useAnimatedStyle(() => {
+    const rotateY = -180 * flipProgress.value;
     return {
       transform: [
-        { perspective: 800 },
+        { perspective: 1200 },
         { rotateY: `${rotateY}deg` },
       ],
-      zIndex: openProgress.value > 0.48 ? 5 : 25,
-    };
-  });
-
-  const pageSpreadStyle = useAnimatedStyle(() => {
-    return {
-      opacity: openProgress.value > 0.12 ? withTiming(1, { duration: 240 }) : withTiming(0, { duration: 180 }),
+      zIndex: flipProgress.value > 0.5 ? 5 : 25,
+      opacity: flipProgress.value > 0.95 ? withTiming(0, { duration: 100 }) : 1,
     };
   });
 
   return (
-    <View style={visualStyles.bookOpeningCenter}>
-      <View style={visualStyles.miniBookShadow} />
+    <View style={visualStyles.liveBookCenter}>
+      {/* Tabletop Ambient Shadow */}
+      <View style={visualStyles.liveBookDropShadow} />
 
-      <View style={visualStyles.miniBookSpread}>
-        {/* Left Open Page Spread */}
-        <Animated.View style={[visualStyles.miniLeftPage, pageSpreadStyle]}>
-          <View style={visualStyles.miniPageHeader}>
-            <View style={{ width: 34, height: 4, borderRadius: 2, backgroundColor: '#D5CBB8' }} />
-          </View>
-          <View style={visualStyles.miniPolaroidFrame}>
-            <View style={visualStyles.miniPolaroidPhotoArea}>
-              <Images size={18} color="#C47B3A" weight="duotone" />
-            </View>
-            <View style={{ height: 3, width: 28, backgroundColor: '#DFD8CB', borderRadius: 1.5, marginTop: 4 }} />
-          </View>
-        </Animated.View>
+      {/* Main Archival Book Spread */}
+      <View style={visualStyles.liveBookStage}>
+        {/* Left Hardcover Terracotta Linen Spine Hinge */}
+        <View style={visualStyles.liveBookSpine}>
+          <View style={visualStyles.liveBookSpineStitch} />
+        </View>
 
-        {/* Right Open Page Spread */}
-        <Animated.View style={[visualStyles.miniRightPage, pageSpreadStyle]}>
-          <View style={visualStyles.miniPageHeader}>
-            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#D5CBB8' }} />
-            <Text style={{ fontSize: 7.5, fontFamily: 'PlayfairDisplay_700Bold', color: '#8C7A6B' }}>OCT 24</Text>
-          </View>
-          <View style={visualStyles.miniPolaroidFrame}>
-            <View style={[visualStyles.miniPolaroidPhotoArea, { backgroundColor: '#F0EBE1' }]}>
-              <Heart size={18} color="#E8593A" weight="duotone" />
-            </View>
-            <View style={{ height: 3, width: 30, backgroundColor: '#DFD8CB', borderRadius: 1.5, marginTop: 4 }} />
-            <View style={{ height: 3, width: 18, backgroundColor: '#E8E3DA', borderRadius: 1.5, marginTop: 2 }} />
-          </View>
-        </Animated.View>
+        {/* Stacked Paper Page Edge on Right & Bottom */}
+        <View style={visualStyles.liveBookRightEdge} />
+        <View style={visualStyles.liveBookBottomEdge} />
 
-        {/* Spine Stitch Line */}
-        <View style={visualStyles.miniBookSpineLine} />
-
-        {/* 3D Flipping Hardcover */}
-        <Animated.View style={[visualStyles.miniCoverLeaf, coverStyle]}>
-          <View style={visualStyles.miniCoverFront}>
-            <View style={visualStyles.miniCoverSpineRib} />
-            <View style={visualStyles.miniCoverEmbossBadge}>
-              <BrandLogoIcon size={20} color="rgba(255,255,255,0.92)" />
-              <Text style={visualStyles.miniCoverTitle}>DEAR DAY</Text>
-              <Text style={visualStyles.miniCoverSub}>ARCHIVAL LINEN</Text>
-            </View>
+        {/* UNDERLYING SPREAD (DAY 25) */}
+        <View style={visualStyles.livePageSpread}>
+          <View style={visualStyles.livePageHeaderRow}>
+            <Text style={visualStyles.livePageDateText}>SATURDAY • OCT 25, 2026</Text>
+            <Text style={visualStyles.livePageFractionText}>25 / 31</Text>
           </View>
+          <Text style={visualStyles.livePageHeadlineText} numberOfLines={1}>
+            Bamboo Groves & Moss Gardens ✎
+          </Text>
+
+          {/* 2x2 Recessed Photo Pockets Grid */}
+          <View style={visualStyles.livePage2x2Grid}>
+            {SAMPLE_PAGE_PHOTOS_B.map((url, i) => (
+              <View key={`b-${i}`} style={visualStyles.livePolaroidPocket}>
+                <Image source={{ uri: url }} style={visualStyles.livePocketPhoto} resizeMode="cover" />
+                <View style={visualStyles.livePocketChin}>
+                  <View style={visualStyles.livePocketChinLine1} />
+                  <View style={visualStyles.livePocketChinLine2} />
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {/* Bottom Page Navigation Footer */}
+          <View style={visualStyles.livePageFooterRow}>
+            <Text style={visualStyles.livePageFooterText}>‹ Oct 24</Text>
+            <Text style={visualStyles.livePageFooterText}>Oct 26 ›</Text>
+          </View>
+        </View>
+
+        {/* TOP FLIPPING SPREAD (DAY 24) */}
+        <Animated.View style={[visualStyles.livePageSpread, visualStyles.flippingPageLeaf, flippingPageStyle]}>
+          <View style={visualStyles.livePageHeaderRow}>
+            <Text style={visualStyles.livePageDateText}>FRIDAY • OCT 24, 2026</Text>
+            <Text style={visualStyles.livePageFractionText}>24 / 31</Text>
+          </View>
+          <Text style={visualStyles.livePageHeadlineText} numberOfLines={1}>
+            Autumn Solitude in Kyoto ✎
+          </Text>
+
+          {/* 2x2 Recessed Photo Pockets Grid */}
+          <View style={visualStyles.livePage2x2Grid}>
+            {SAMPLE_PAGE_PHOTOS_A.map((url, i) => (
+              <View key={`a-${i}`} style={visualStyles.livePolaroidPocket}>
+                <Image source={{ uri: url }} style={visualStyles.livePocketPhoto} resizeMode="cover" />
+                <View style={visualStyles.livePocketChin}>
+                  <View style={visualStyles.livePocketChinLine1} />
+                  <View style={visualStyles.livePocketChinLine2} />
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {/* Bottom Page Navigation Footer with Corner Curl Flap */}
+          <View style={visualStyles.livePageFooterRow}>
+            <Text style={visualStyles.livePageFooterText}>‹ Cover</Text>
+            <Text style={visualStyles.livePageFooterText}>Oct 25 ›</Text>
+          </View>
+
+          <View style={visualStyles.liveCornerCurlFlap} />
         </Animated.View>
       </View>
     </View>
@@ -152,24 +191,24 @@ function MiniPhotobookOpeningVisual() {
 // ─── Slide 1: Half-Cut Smartphone with Endless Scrolling Photo Gallery ──────
 
 const DUMMY_PHOTOS = [
-  { id: '1', bg: '#D4A373' },
-  { id: '2', bg: '#A3B18A' },
-  { id: '3', bg: '#588157' },
-  { id: '4', bg: '#E29578' },
-  { id: '5', bg: '#83C5BE' },
-  { id: '6', bg: '#006D77' },
-  { id: '7', bg: '#EDF6F9' },
-  { id: '8', bg: '#FFDDD2' },
-  { id: '9', bg: '#E27396' },
-  { id: '10', bg: '#B5838D' },
-  { id: '11', bg: '#6B705C' },
-  { id: '12', bg: '#DDBEA9' },
-  { id: '13', bg: '#CB997E' },
-  { id: '14', bg: '#9A8C98' },
-  { id: '15', bg: '#4A4E69' },
-  { id: '16', bg: '#C9ADA7' },
-  { id: '17', bg: '#F28482' },
-  { id: '18', bg: '#84A59D' },
+  { id: '1', bg: '#DF5739' },
+  { id: '2', bg: '#C8462A' },
+  { id: '3', bg: '#E86A4E' },
+  { id: '4', bg: '#F28C72' },
+  { id: '5', bg: '#D45335' },
+  { id: '6', bg: '#B53D23' },
+  { id: '7', bg: '#EB7D63' },
+  { id: '8', bg: '#FA9E88' },
+  { id: '9', bg: '#A6341B' },
+  { id: '10', bg: '#E56749' },
+  { id: '11', bg: '#F07A5E' },
+  { id: '12', bg: '#D95232' },
+  { id: '13', bg: '#BE4124' },
+  { id: '14', bg: '#F69982' },
+  { id: '15', bg: '#DF5739' },
+  { id: '16', bg: '#C8462A' },
+  { id: '17', bg: '#E86A4E' },
+  { id: '18', bg: '#F28C72' },
 ];
 
 function ScrollingPhoneGalleryVisual() {
@@ -177,7 +216,7 @@ function ScrollingPhoneGalleryVisual() {
 
   useEffect(() => {
     scrollAnim.value = withRepeat(
-      withTiming(-180, { duration: 4200, easing: Easing.linear }),
+      withTiming(-210, { duration: 4200, easing: Easing.linear }),
       -1,
       false
     );
@@ -225,18 +264,34 @@ function ScrollingPhoneGalleryVisual() {
   );
 }
 
-// ─── Slide 2: 4 Photos Placed by Animated Hand + Confetti Burst ─────────────
+// ─── Slide 2: Real Photos Placed by Animated Hand + Confetti Burst ───────────
 
 const MOCK_FOUR_PHOTOS = [
-  { id: 0, bg: '#F7EDE2', color: '#C47B3A', icon: Coffee },
-  { id: 1, bg: '#EBF2EE', color: '#3A7EC4', icon: Airplane },
-  { id: 2, bg: '#FBF0E8', color: '#E8593A', icon: BookOpen },
-  { id: 3, bg: '#F8EBF0', color: '#E83A7A', icon: Heart },
+  {
+    id: 0,
+    url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=400&q=80',
+    title: 'Morning matcha',
+  },
+  {
+    id: 1,
+    url: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400&q=80',
+    title: 'Cherry petals',
+  },
+  {
+    id: 2,
+    url: 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=400&q=80',
+    title: 'Handmade soba',
+  },
+  {
+    id: 3,
+    url: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&q=80',
+    title: 'Lantern dusk',
+  },
 ];
 
 function MiniHandSvg() {
   return (
-    <Svg viewBox="0 0 180 180" style={{ width: 80, height: 80, overflow: 'visible' }}>
+    <Svg viewBox="0 0 180 180" style={{ width: 92, height: 92, overflow: 'visible' }}>
       <path d="M42 46 C55 32, 82 38, 98 56 L124 88 L88 112 L52 76 C38 64, 34 54, 42 46 Z" fill="#D69C7A" />
       <path d="M24 28 C14 18, 28 4, 44 14 C60 24, 84 48, 102 66 L138 106 L104 138 L66 96 C48 76, 36 58, 22 42 C16 35, 19 31, 24 28 Z" fill="#E9B89A" stroke="#C58B6B" strokeWidth="1.5" />
       <ellipse cx="31" cy="21" rx="7.5" ry="5" transform="rotate(-32 31 21)" fill="#FCEAE0" stroke="#D8A489" strokeWidth="1" />
@@ -251,8 +306,8 @@ function MiniHandSvg() {
 function TuckFourPhotosVisual() {
   const [activeSlot, setActiveSlot] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
-  const handX = useSharedValue(60);
-  const handY = useSharedValue(60);
+  const handX = useSharedValue(70);
+  const handY = useSharedValue(70);
   const handOpacity = useSharedValue(0);
 
   useEffect(() => {
@@ -260,15 +315,15 @@ function TuckFourPhotosVisual() {
     const interval = setInterval(() => {
       if (current < 4) {
         const slotTargets = [
-          { x: -36, y: -36 },
-          { x: 36, y: -36 },
-          { x: -36, y: 36 },
-          { x: 36, y: 36 },
+          { x: -55, y: -45 },
+          { x: 55, y: -45 },
+          { x: -55, y: 45 },
+          { x: 55, y: 45 },
         ];
         const target = slotTargets[current];
 
-        handX.value = target.x + 30;
-        handY.value = target.y + 30;
+        handX.value = target.x + 40;
+        handY.value = target.y + 40;
         handOpacity.value = withTiming(1, { duration: 160 });
 
         handX.value = withTiming(target.x, { duration: 420, easing: Easing.out(Easing.cubic) });
@@ -288,11 +343,11 @@ function TuckFourPhotosVisual() {
               setShowConfetti(false);
               setActiveSlot(0);
               current = 0;
-            }, 2200);
+            }, 2300);
           }
         }, 500);
       }
-    }, 1050);
+    }, 1100);
 
     return () => clearInterval(interval);
   }, []);
@@ -305,20 +360,30 @@ function TuckFourPhotosVisual() {
   return (
     <View style={visualStyles.tuckCenter}>
       <View style={visualStyles.tuckPageCard}>
+        {/* Subtle Page Header */}
+        <View style={visualStyles.tuckHeaderRow}>
+          <Text style={visualStyles.tuckHeaderTitle}>DAILY SELECTION • 4 SLOTS</Text>
+          <Text style={visualStyles.tuckHeaderCount}>{activeSlot}/4 TUCKED</Text>
+        </View>
+
         <View style={visualStyles.tuckGrid}>
           {MOCK_FOUR_PHOTOS.map((item, idx) => {
             const isPlaced = idx < activeSlot;
-            const IconComp = item.icon;
             return (
               <View key={item.id} style={visualStyles.tuckSlot}>
                 {isPlaced ? (
-                  <View style={[visualStyles.tuckPlacedPhoto, { backgroundColor: item.bg }]}>
-                    <IconComp size={16} color={item.color} weight="duotone" />
-                    <View style={visualStyles.tuckSlotChinLine} />
+                  <View style={visualStyles.tuckPlacedPhoto}>
+                    <Image source={{ uri: item.url }} style={visualStyles.tuckPhotoImg} resizeMode="cover" />
+                    <View style={visualStyles.tuckPolaroidChin}>
+                      <Text style={visualStyles.tuckChinText} numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                    </View>
                   </View>
                 ) : (
                   <View style={visualStyles.tuckEmptySlot}>
-                    <View style={visualStyles.tuckPlusCircle} />
+                    <Images size={18} color="#C4B8A6" weight="duotone" />
+                    <Text style={visualStyles.tuckEmptySlotLabel}>Slot {idx + 1}</Text>
                   </View>
                 )}
               </View>
@@ -333,14 +398,14 @@ function TuckFourPhotosVisual() {
         {showConfetti && (
           <View style={visualStyles.miniConfettiOverlay} pointerEvents="none">
             {[
-              { x: -45, y: -30, c: '#DF5739', r: 4 },
-              { x: 35, y: -40, c: '#F2C97D', r: 5 },
-              { x: -20, y: 25, c: '#3A7EC4', r: 4 },
-              { x: 40, y: 30, c: '#E83A7A', r: 5 },
-              { x: 0, y: -48, c: '#2B2420', r: 3 },
-              { x: -48, y: 10, c: '#DF5739', r: 4 },
-              { x: 48, y: -10, c: '#84A59D', r: 4 },
-              { x: 15, y: 42, c: '#F2C97D', r: 5 },
+              { x: -65, y: -45, c: '#DF5739', r: 5 },
+              { x: 50, y: -55, c: '#F2C97D', r: 6 },
+              { x: -30, y: 35, c: '#C8462A', r: 5 },
+              { x: 55, y: 40, c: '#E86A4E', r: 6 },
+              { x: 0, y: -65, c: '#2B2420', r: 4 },
+              { x: -68, y: 15, c: '#DF5739', r: 5 },
+              { x: 68, y: -15, c: '#EB7D63', r: 5 },
+              { x: 22, y: 60, c: '#F2C97D', r: 6 },
             ].map((p, i) => (
               <View
                 key={i}
@@ -406,10 +471,10 @@ function ClosingBookCoverTiltVisual() {
   const animatedBookStyle = useAnimatedStyle(() => {
     return {
       transform: [
-        { perspective: 700 },
+        { perspective: 850 },
         { rotateX: `${tiltX.value}deg` },
         { rotateY: `${tiltY.value}deg` },
-        { scale: 1.04 },
+        { scale: 1.02 },
       ],
     };
   });
@@ -424,12 +489,16 @@ function ClosingBookCoverTiltVisual() {
 
           <View style={visualStyles.tiltedInsetCard}>
             <View style={visualStyles.tiltedPhotoWindow}>
-              <Images size={26} color="#C47B3A" weight="duotone" />
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=600&q=80' }}
+                style={visualStyles.tiltedPhotoInner}
+                resizeMode="cover"
+              />
             </View>
             <Text style={visualStyles.tiltedBookTitle} numberOfLines={1}>
               {RANDOM_TITLES[titleIdx]}
             </Text>
-            <View style={{ width: 22, height: 1.5, backgroundColor: '#DF5739', marginTop: 2 }} />
+            <View style={{ width: 26, height: 2, backgroundColor: '#DF5739', marginTop: 3 }} />
           </View>
 
           <Text style={visualStyles.tiltedCoverBrand}>DEAR DAY</Text>
@@ -1002,7 +1071,7 @@ export default function OnboardingScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Get Started"
                 >
-                  <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Get Started ✨</Text>
+                  <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Get Started</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -1276,193 +1345,246 @@ const visualStyles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
   },
 
-  /* Slide 0: Mini Photobook Opening */
-  bookOpeningCenter: {
+  /* Slide 0: Live Photobook Spread with 3D Page Turn */
+  liveBookCenter: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 195,
+    height: 275,
     position: 'relative',
   },
-  miniBookShadow: {
+  liveBookDropShadow: {
     position: 'absolute',
-    bottom: 22,
-    width: 210,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(25, 18, 12, 0.16)',
-    filter: 'blur(8px)',
+    bottom: 12,
+    width: 290,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(25, 18, 12, 0.18)',
+    filter: 'blur(10px)',
   },
-  miniBookSpread: {
-    width: 200,
-    height: 140,
-    flexDirection: 'row',
+  liveBookStage: {
+    width: 284,
+    height: 236,
     position: 'relative',
-  },
-  miniLeftPage: {
-    flex: 1,
     backgroundColor: '#FAF8F5',
-    borderTopLeftRadius: 6,
-    borderBottomLeftRadius: 6,
-    padding: 8,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E8E2D7',
-    borderRightWidth: 0,
-    justifyContent: 'space-between',
-  },
-  miniRightPage: {
-    flex: 1,
-    backgroundColor: '#FAF8F5',
-    borderTopRightRadius: 6,
-    borderBottomRightRadius: 6,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#E8E2D7',
-    borderLeftWidth: 0,
-    justifyContent: 'space-between',
-  },
-  miniPageHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: 4,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#EBE5D8',
-  },
-  miniPolaroidFrame: {
-    backgroundColor: '#FFFFFF',
-    padding: 4,
-    borderRadius: 3,
-    borderWidth: 0.5,
-    borderColor: '#E2DACB',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  miniPolaroidPhotoArea: {
-    width: '100%',
-    height: 48,
-    borderRadius: 2,
-    backgroundColor: '#F7EDE2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  miniBookSpineLine: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: '50%',
-    width: 2,
-    marginLeft: -1,
-    backgroundColor: '#D5CBB8',
-    zIndex: 10,
-  },
-  miniCoverLeaf: {
-    position: 'absolute',
-    left: '50%',
-    top: 0,
-    width: 100,
-    height: 140,
-    transformOrigin: 'left center',
-  },
-  miniCoverFront: {
-    flex: 1,
-    backgroundColor: '#2B2420',
-    borderTopRightRadius: 6,
-    borderBottomRightRadius: 6,
-    borderTopLeftRadius: 2,
-    borderBottomLeftRadius: 2,
-    padding: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: '#E8E1D3',
     shadowColor: '#000',
-    shadowOpacity: 0.28,
-    shadowRadius: 8,
-    shadowOffset: { width: 4, height: 6 },
-    elevation: 6,
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    shadowOffset: { width: 4, height: 8 },
+    elevation: 8,
   },
-  miniCoverSpineRib: {
+  liveBookSpine: {
     position: 'absolute',
-    left: 2,
+    left: 0,
     top: 0,
     bottom: 0,
-    width: 4,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  miniCoverEmbossBadge: {
+    width: 12,
+    backgroundColor: '#B53D22',
+    borderTopLeftRadius: 7,
+    borderBottomLeftRadius: 7,
+    zIndex: 30,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+  },
+  liveBookSpineStitch: {
+    width: 2,
+    height: '84%',
+    borderStyle: 'dashed',
     borderWidth: 1,
-    borderColor: 'rgba(218, 165, 32, 0.45)',
-    borderRadius: 4,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderColor: 'rgba(255, 235, 205, 0.65)',
   },
-  miniCoverTitle: {
-    color: '#F4E8D1',
-    fontSize: 9,
+  liveBookRightEdge: {
+    position: 'absolute',
+    right: -4,
+    top: 4,
+    bottom: 4,
+    width: 4,
+    backgroundColor: '#FAF5EE',
+    borderTopRightRadius: 2,
+    borderBottomRightRadius: 2,
+    borderLeftWidth: 1,
+    borderLeftColor: '#E2DACB',
+  },
+  liveBookBottomEdge: {
+    position: 'absolute',
+    bottom: -4,
+    left: 12,
+    right: 0,
+    height: 4,
+    backgroundColor: '#FAF5EE',
+    borderBottomLeftRadius: 2,
+    borderBottomRightRadius: 2,
+    borderTopWidth: 1,
+    borderTopColor: '#E2DACB',
+  },
+  livePageSpread: {
+    position: 'absolute',
+    left: 12,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: '#FAF8F5',
+    borderTopRightRadius: 7,
+    borderBottomRightRadius: 7,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 8,
+    justifyContent: 'space-between',
+  },
+  flippingPageLeaf: {
+    zIndex: 20,
+    transformOrigin: 'left center',
+    borderLeftWidth: 0.5,
+    borderLeftColor: 'rgba(0,0,0,0.08)',
+  },
+  livePageHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 2,
+  },
+  livePageDateText: {
+    fontSize: 8,
     fontFamily: 'Inter_700Bold',
-    letterSpacing: 1.2,
-  },
-  miniCoverSub: {
-    color: 'rgba(244, 232, 209, 0.65)',
-    fontSize: 6.5,
-    fontFamily: 'Inter_600SemiBold',
     letterSpacing: 0.8,
+    color: '#8C7A6B',
+  },
+  livePageFractionText: {
+    fontSize: 8.5,
+    fontFamily: 'Inter_700Bold',
+    color: '#8C7A6B',
+  },
+  livePageHeadlineText: {
+    fontSize: 11,
+    fontFamily: 'PlayfairDisplay_700Bold',
+    color: '#2B2420',
+    marginBottom: 4,
+  },
+  livePage2x2Grid: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    justifyContent: 'space-between',
+  },
+  livePolaroidPocket: {
+    width: '48.5%',
+    height: 74,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 3,
+    padding: 3,
+    borderWidth: 0.5,
+    borderColor: '#DDD6C7',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  },
+  livePocketPhoto: {
+    width: '100%',
+    height: 50,
+    borderRadius: 2,
+    backgroundColor: '#F2EBE1',
+  },
+  livePocketChin: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: 2.5,
+    paddingHorizontal: 2,
+  },
+  livePocketChinLine1: {
+    height: 2.5,
+    width: '80%',
+    backgroundColor: 'rgba(43, 36, 32, 0.28)',
+    borderRadius: 1.5,
+  },
+  livePocketChinLine2: {
+    height: 2.5,
+    width: '52%',
+    backgroundColor: 'rgba(43, 36, 32, 0.15)',
+    borderRadius: 1.5,
+  },
+  livePageFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#EBE4D5',
+  },
+  livePageFooterText: {
+    fontSize: 8,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#8C7A6B',
+  },
+  liveCornerCurlFlap: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 14,
+    height: 14,
+    backgroundColor: '#EDE6D8',
+    borderTopLeftRadius: 6,
+    borderBottomRightRadius: 7,
+    borderLeftWidth: 1,
+    borderTopWidth: 1,
+    borderColor: '#D8CEBF',
   },
 
   /* Slide 1: Half-Cut Smartphone Gallery */
   phoneChassisCenter: {
     alignItems: 'center',
     justifyContent: 'flex-start',
-    height: 195,
+    height: 275,
   },
   phoneBodyFrame: {
-    width: 168,
-    height: 190,
+    width: 235,
+    height: 265,
     backgroundColor: '#1E1916',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: 34,
+    borderTopRightRadius: 34,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
-    borderWidth: 4,
+    borderWidth: 4.5,
     borderColor: '#38312B',
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
   },
   phoneTopBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingTop: 6,
-    paddingBottom: 4,
+    paddingHorizontal: 14,
+    paddingTop: 8,
+    paddingBottom: 6,
     backgroundColor: '#1E1916',
     zIndex: 20,
   },
   phoneClock: {
-    fontSize: 8,
+    fontSize: 9.5,
     fontFamily: 'Inter_700Bold',
     color: '#FAF6F0',
   },
   phoneDynamicIsland: {
-    width: 44,
-    height: 9,
-    borderRadius: 4.5,
+    width: 58,
+    height: 12,
+    borderRadius: 6,
     backgroundColor: '#000000',
   },
   phoneBatteryIcon: {
-    width: 13,
-    height: 7,
-    borderRadius: 2,
-    borderWidth: 0.8,
+    width: 16,
+    height: 9,
+    borderRadius: 2.5,
+    borderWidth: 1,
     borderColor: '#FAF6F0',
-    padding: 0.8,
+    padding: 1,
     justifyContent: 'center',
   },
   phoneBatteryLevel: {
@@ -1475,8 +1597,8 @@ const visualStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     backgroundColor: '#1E1916',
     zIndex: 20,
     borderBottomWidth: 0.5,
@@ -1484,12 +1606,12 @@ const visualStyles = StyleSheet.create({
   },
   phoneGalleryTitle: {
     color: '#FAF6F0',
-    fontSize: 10,
+    fontSize: 12,
     fontFamily: 'Inter_700Bold',
   },
   phoneGalleryCount: {
-    color: 'rgba(250,246,240,0.5)',
-    fontSize: 7.5,
+    color: 'rgba(250,246,240,0.55)',
+    fontSize: 9,
     fontFamily: 'Inter_500Medium',
   },
   phoneScreenViewport: {
@@ -1501,13 +1623,13 @@ const visualStyles = StyleSheet.create({
   phoneGridTrack: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 3,
-    padding: 4,
+    gap: 4,
+    padding: 6,
   },
   phonePhotoThumb: {
-    width: 48,
-    height: 48,
-    borderRadius: 3,
+    width: 68,
+    height: 68,
+    borderRadius: 4,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -1521,7 +1643,7 @@ const visualStyles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 36,
+    height: 48,
     ...Platform.select({
       web: {
         backgroundImage: 'linear-gradient(to bottom, transparent 0%, #14100E 100%)',
@@ -1534,78 +1656,106 @@ const visualStyles = StyleSheet.create({
     pointerEvents: 'none',
   },
 
-  /* Slide 2: Tuck 4 Photos Visual */
+  /* Slide 2: Real Photos Placed by Hand Visual */
   tuckCenter: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 195,
+    height: 275,
   },
   tuckPageCard: {
-    width: 200,
-    height: 155,
-    borderRadius: 8,
+    width: 280,
+    height: 236,
+    borderRadius: 10,
     backgroundColor: '#FAF8F5',
     borderWidth: 1,
     borderColor: '#E5DEC9',
-    padding: 8,
+    padding: 10,
     position: 'relative',
     shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+    justifyContent: 'space-between',
+  },
+  tuckHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#EBE3D4',
+  },
+  tuckHeaderTitle: {
+    fontSize: 8.5,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: 0.8,
+    color: '#8C7A6B',
+  },
+  tuckHeaderCount: {
+    fontSize: 8.5,
+    fontFamily: 'Inter_700Bold',
+    color: '#DF5739',
   },
   tuckGrid: {
     flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    paddingTop: 8,
     justifyContent: 'space-between',
   },
   tuckSlot: {
-    width: 86,
-    height: 64,
-    borderRadius: 4,
+    width: 124,
+    height: 88,
+    borderRadius: 5,
     overflow: 'hidden',
   },
   tuckPlacedPhoto: {
     width: '100%',
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 5,
     borderWidth: 2,
     borderColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
     shadowColor: '#000',
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.14,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    elevation: 3,
   },
-  tuckSlotChinLine: {
-    position: 'absolute',
-    bottom: 4,
-    width: 24,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: 'rgba(43, 36, 32, 0.2)',
+  tuckPhotoImg: {
+    width: '100%',
+    height: 60,
+    borderRadius: 3,
+    backgroundColor: '#F5ECE1',
+  },
+  tuckPolaroidChin: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  tuckChinText: {
+    fontSize: 8.5,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#2B2420',
   },
   tuckEmptySlot: {
     width: '100%',
     height: '100%',
-    borderRadius: 4,
-    borderWidth: 1,
+    borderRadius: 5,
+    borderWidth: 1.2,
     borderStyle: 'dashed',
     borderColor: '#D8CFBF',
     backgroundColor: '#F3EDE2',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 4,
   },
-  tuckPlusCircle: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#E0D6C5',
+  tuckEmptySlotLabel: {
+    fontSize: 8.5,
+    fontFamily: 'Inter_500Medium',
+    color: '#A09282',
   },
   tuckHandContainer: {
     position: 'absolute',
@@ -1628,95 +1778,100 @@ const visualStyles = StyleSheet.create({
   bookTiltCenter: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 195,
+    height: 275,
   },
   tiltedCoverWrap: {
-    width: 145,
-    height: 175,
+    width: 205,
+    height: 250,
     position: 'relative',
     shadowColor: '#000',
-    shadowOpacity: 0.32,
-    shadowRadius: 14,
-    shadowOffset: { width: 6, height: 10 },
-    elevation: 8,
+    shadowOpacity: 0.34,
+    shadowRadius: 18,
+    shadowOffset: { width: 8, height: 14 },
+    elevation: 10,
   },
   tiltedSpine: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    width: 10,
+    width: 14,
     backgroundColor: '#1E1815',
-    borderTopLeftRadius: 5,
-    borderBottomLeftRadius: 5,
+    borderTopLeftRadius: 6,
+    borderBottomLeftRadius: 6,
     zIndex: 5,
   },
   tiltedCoverSurface: {
     position: 'absolute',
-    left: 8,
+    left: 12,
     top: 0,
     right: 4,
     bottom: 0,
     backgroundColor: '#2B2420',
-    borderTopRightRadius: 12,
-    borderBottomRightRadius: 12,
-    padding: 12,
+    borderTopRightRadius: 14,
+    borderBottomRightRadius: 14,
+    padding: 14,
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
   },
   tiltedCoverHeader: {
-    fontSize: 7.5,
+    fontSize: 8.5,
     fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 1.2,
-    color: 'rgba(255,255,255,0.5)',
+    letterSpacing: 1.4,
+    color: 'rgba(255,255,255,0.55)',
   },
   tiltedInsetCard: {
-    width: '92%',
+    width: '94%',
     backgroundColor: '#FAF8F5',
-    borderRadius: 6,
-    padding: 10,
+    borderRadius: 8,
+    padding: 12,
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
     shadowColor: '#000',
-    shadowOpacity: 0.16,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
   tiltedPhotoWindow: {
-    width: 72,
-    height: 58,
-    borderRadius: 3,
+    width: 110,
+    height: 86,
+    borderRadius: 4,
     backgroundColor: '#F5ECE1',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  tiltedPhotoInner: {
+    width: '100%',
+    height: '100%',
   },
   tiltedBookTitle: {
-    fontSize: 10.5,
+    fontSize: 12.5,
     fontFamily: 'PlayfairDisplay_700Bold',
     color: '#2B2420',
     textAlign: 'center',
   },
   tiltedCoverBrand: {
-    fontSize: 8.5,
+    fontSize: 9.5,
     fontFamily: 'Inter_700Bold',
-    letterSpacing: 1.5,
-    color: 'rgba(255,255,255,0.65)',
+    letterSpacing: 1.8,
+    color: 'rgba(255,255,255,0.68)',
   },
   tiltedPageEdge: {
     position: 'absolute',
-    right: -2,
-    top: 6,
-    bottom: 6,
-    width: 6,
+    right: -3,
+    top: 8,
+    bottom: 8,
+    width: 7,
     backgroundColor: '#FAF5EE',
     borderTopRightRadius: 3,
     borderBottomRightRadius: 3,
     borderLeftWidth: 1,
-    borderLeftColor: '#DFD7C7',
+    borderLeftColor: '#E0D8CC',
   },
 });
 
@@ -2034,7 +2189,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
   },
   visualStage: {
-    height: 200,
+    height: 280,
     alignItems: 'center',
     justifyContent: 'center',
   },
