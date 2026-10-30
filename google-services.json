@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "564713560218",
+    "project_id": "deardayandroid",
+    "storage_bucket": "deardayandroid.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:564713560218:android:dde5fe42e203d03c696723",
+        "android_client_info": {
+          "package_name": "app.daily5.android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_EHV-J3lRwCsoK_eqZESAv4qm50czxxY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

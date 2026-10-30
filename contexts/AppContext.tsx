@@ -4,6 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Appearance, Platform } from 'react-native';
 import { KEYS } from '@/lib/storage';
 import { deleteBackupFile } from '@/lib/backup';
+import { syncCustomerProfile, updateCustomerActivity } from '@/lib/firebase';
 
 const ACCESS_TOKEN_STORE_KEY   = 'daily5_access_token';
 const DRIVE_TOKEN_STORE_KEY    = 'daily5_drive_token';
@@ -93,7 +94,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const hasUser = !!userJson;
       const bioEnabled = biometric === 'true';
 
-      if (userJson) setUser(JSON.parse(userJson) as AppUser);
+      if (userJson) {
+        try {
+          const parsedUser = JSON.parse(userJson) as AppUser;
+          setUser(parsedUser);
+          if (parsedUser?.email) {
+            updateCustomerActivity(parsedUser.email).catch(() => {});
+          }
+        } catch {}
+      }
       if (deviceOnboarded === 'true' || onboarded === 'true' || hasUser) {
         setHasOnboarded(true);
       }
@@ -151,6 +160,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       } else {
         await SecureStore.deleteItemAsync(ACCESS_TOKEN_STORE_KEY).catch(() => {});
       }
+    }
+
+    // Sync customer profile to Firestore for retargeting & user management
+    if (u.email) {
+      syncCustomerProfile({
+        email: u.email,
+        displayName: u.name,
+        avatar: u.avatar,
+      }).catch(() => {});
     }
   }
 
@@ -279,6 +297,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const updated = { ...user, ...updates };
     await AsyncStorage.setItem(KEYS.AUTH_USER, JSON.stringify(updated));
     setUser(updated);
+
+    if (updated.email) {
+      syncCustomerProfile({
+        email: updated.email,
+        displayName: updated.name,
+        avatar: updated.avatar,
+      }).catch(() => {});
+    }
   }
 
   async function setBackupEnabled(v: boolean): Promise<void> {
