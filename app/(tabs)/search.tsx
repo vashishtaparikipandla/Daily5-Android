@@ -455,7 +455,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 12,
   },
-  headerTitle: { fontSize: 24 },
+  headerTitle: {
+    fontSize: 28,
+    letterSpacing: 0.2,
+  },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -748,16 +748,16 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
           >
             <View style={styles.clusterRow}>
               <View style={[styles.clusterItem, { transform: [{ rotate: '-10deg' }] }]}>
-                {STICKER_CATALOG[0].render(0.36)}
+                {STICKER_CATALOG[0].render(0.48)}
               </View>
               <View style={[styles.clusterItem, { transform: [{ rotate: '4deg' }], zIndex: 2 }]}>
-                {STICKER_CATALOG[3].render(0.48)}
+                {STICKER_CATALOG[1].render(0.68)}
               </View>
               <View style={[styles.clusterItem, { transform: [{ rotate: '12deg' }], zIndex: 3 }]}>
-                {STICKER_CATALOG[6].render(0.55)}
+                {STICKER_CATALOG[2].render(0.60)}
               </View>
               <View style={[styles.clusterItem, { transform: [{ rotate: '-6deg' }], zIndex: 2 }]}>
-                {STICKER_CATALOG[12].render(0.50)}
+                {STICKER_CATALOG[3].render(0.72)}
               </View>
             </View>
           </TouchableOpacity>
@@ -769,7 +769,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
               onPress={() => setStickerTrayOpen(false)}
               activeOpacity={0.8}
             >
-              <X size={14} color="#3A312B" weight="bold" />
+              <X size={16} color="#3A312B" weight="bold" />
             </TouchableOpacity>
 
             <ScrollView
@@ -780,7 +780,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
               {STICKER_CATALOG.map(stk => (
                 <TouchableOpacity
                   key={stk.id}
-                  style={[styles.stickerTrayItem, { minWidth: stk.trayWidth, height: 48, justifyContent: 'center', alignItems: 'center' }]}
+                  style={[styles.stickerTrayItem, { minWidth: stk.trayWidth, height: 68, justifyContent: 'center', alignItems: 'center' }]}
                   onPress={() => handleAddSticker(stk.id)}
                   activeOpacity={0.8}
                 >
@@ -1650,11 +1650,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   stickerTrayItem: {
-    padding: 3,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    borderWidth: 1,
-    borderColor: '#E2D9C8',
+    padding: 2,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
   },
 
   // Gallery Picker Bottom Sheet

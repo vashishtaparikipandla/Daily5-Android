@@ -185,18 +185,17 @@ export default function ProfileTab() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* Header matching Library, Discover, Search */}
+      <View style={[styles.header, { paddingTop: topPad, borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+          Profile
+        </Text>
+      </View>
+
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: topPad + 16, paddingBottom: botPad }]}
+        contentContainerStyle={[styles.content, { paddingTop: 16, paddingBottom: botPad }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Official Brand Badge */}
-        <View style={styles.brandBadge}>
-          <BrandLogoIcon size={22} color={colors.primary} />
-          <Text style={[styles.brandBadgeText, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-            Dear Day
-          </Text>
-        </View>
-
         {/* Avatar + name */}
         <View style={styles.avatarBlock}>
           <TouchableOpacity
@@ -460,6 +459,15 @@ export default function ProfileTab() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  title: {
+    fontSize: 28,
+    letterSpacing: 0.2,
+  },
   content: { paddingHorizontal: 20, gap: 16 },
   brandBadge: {
     flexDirection: 'row',

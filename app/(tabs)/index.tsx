@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiary } from '@/contexts/DiaryContext';
 import { WoodenTableBackground } from '@/components/WoodenTableBackground';
 import { DappledPlantShadowOverlay } from '@/components/DappledPlantShadowOverlay';
-import { BrandLogoIcon } from '@/components/BrandLogo';
+import { BrandLogoHorizontal } from '@/components/BrandLogo';
 import { HeirloomPhotobook } from '@/components/HeirloomPhotobook';
 import { todayStr } from '@/lib/data';
 import { getUnreadNotificationCount } from '@/lib/notifications';
@@ -52,15 +52,12 @@ export default function TodayTab() {
         contentContainerStyle={[styles.content, { paddingTop: topPad + 4, paddingBottom: botPad }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Crisp White Header Card for DEAR DAY Brand & Notification Bell */}
+        {/* Seamless Header Row matching Library, Discover, Search (Unboxed) */}
         <View style={styles.headerRow}>
-          <View style={styles.brandRow}>
-            <BrandLogoIcon size={26} color={colors.primary} />
-            <Text style={[styles.brandText, { color: colors.primary }]}>DEAR DAY</Text>
-          </View>
+          <BrandLogoHorizontal height={28} color={colors.primary} />
 
           <TouchableOpacity
-            style={[styles.notifBtn, { backgroundColor: '#F8F6F1', borderColor: 'rgba(0,0,0,0.08)' }]}
+            style={[styles.notifBtn, { backgroundColor: 'rgba(255,255,255,0.75)', borderColor: 'rgba(215, 205, 190, 0.6)' }]}
             onPress={() => {
               Haptics.selectionAsync();
               router.push('/notifications');
@@ -132,17 +129,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(215, 205, 190, 0.7)',
-    shadowColor: '#1A140E',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
+    paddingHorizontal: 4,
+    paddingVertical: 6,
     marginBottom: 4,
   },
   brandRow: {
