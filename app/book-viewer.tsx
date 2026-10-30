@@ -598,7 +598,7 @@ export function BookViewerContent() {
         contentContainerStyle={{ paddingVertical: 12, alignItems: 'center' }}
         showsVerticalScrollIndicator={false}
       >
-        <HeirloomPhotobook monthKey={book.monthKey} />
+        <HeirloomPhotobook monthKey={book.monthKey} initialDay={1} />
       </ScrollView>
 
       {/* ── Layout & Typography Customizer Modal ───────────────────────────── */}

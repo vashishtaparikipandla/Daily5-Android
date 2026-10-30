@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
-import { loadBooks, saveBooks } from '@/lib/storage';
+import { loadBooks, saveBooks, getJoinDate } from '@/lib/storage';
 import { seedDemoData } from '@/lib/seed';
 import {
   uid, todayStr, monthKey,
@@ -77,31 +77,60 @@ interface DiaryContextValue {
 const DiaryContext = createContext<DiaryContextValue | null>(null);
 
 /**
- * Ensures monthly continuum books automatically exist up to the current month.
- * Books exist as automated empty/active volumes ready to be filled.
+ * Ensures monthly continuum books automatically exist tied to the user's join date.
+ * If user joined in October 2026, books start from October.
+ * As months progress (e.g. November, December), new monthly continuum books automatically appear.
  */
-function ensureAutomatedMonthlyBooks(existingBooks: Book[]): Book[] {
+function ensureAutomatedMonthlyBooks(existingBooks: Book[], joinDate: Date): Book[] {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth(); // 0-based: 0 = Jan, 9 = Oct
-  const updated = [...existingBooks];
 
-  for (let m = 0; m <= currentMonth; m++) {
-    const mk = `${currentYear}-${String(m + 1).padStart(2, '0')}`;
+  const joinYear = joinDate.getFullYear();
+  const joinMonth = joinDate.getMonth();
+
+  // Compute all valid continuum monthKeys from joinMonth to currentMonth
+  const allowedKeys: string[] = [];
+  let y = joinYear;
+  let m = joinMonth;
+  while (y < currentYear || (y === currentYear && m <= currentMonth)) {
+    const mk = `${y}-${String(m + 1).padStart(2, '0')}`;
+    allowedKeys.push(mk);
+    m++;
+    if (m > 11) {
+      m = 0;
+      y++;
+    }
+  }
+
+  // Filter out any empty automated monthly volumes that were before the join month
+  // (Preserve sample books, custom books, or books with real user entries)
+  const updated = existingBooks.filter(b => {
+    if (b.isSample || b.isCustom) return true;
+    const hasContent = b.days && b.days.some(d => d.entries && d.entries.some(e => e.text || (e.photos && e.photos.length > 0)));
+    if (hasContent) return true;
+    return allowedKeys.includes(b.monthKey);
+  });
+
+  // Ensure every month from join date to current date exists
+  for (const mk of allowedKeys) {
     if (!updated.some(b => b.monthKey === mk)) {
-      const monthDate = new Date(currentYear, m, 1);
+      const [yrStr, moStr] = mk.split('-');
+      const yr = parseInt(yrStr, 10);
+      const mo = parseInt(moStr, 10) - 1;
+      const monthDate = new Date(yr, mo, 1);
       const monthName = monthDate.toLocaleDateString('en-US', { month: 'long' });
       updated.push({
         monthKey: mk,
-        title: `${monthName} ${currentYear}`,
+        title: `${monthName} ${yr}`,
         description: `Automated Monthly Volume`,
         coverColor: '#2F3E34',
         coverConfig: {
           type: 'solid',
           value: '#2F3E34',
           fontFamily: 'playfair',
-          title: `${monthName} ${currentYear}`,
-          spineTag: `VOL. ${String(m + 1).padStart(2, '0')}`,
+          title: `${monthName} ${yr}`,
+          spineTag: `VOL. ${moStr}`,
         },
         pageLayout: 'quad',
         fontFamily: 'playfair',
@@ -132,6 +161,7 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
     try {
       await seedDemoData();
       const loaded = await loadBooks();
+      const joinDate = await getJoinDate();
 
       // If no local books exist, check for a backup to restore
       if (loaded.length === 0) {
@@ -148,7 +178,7 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
                   const restored = await loadBackupFromFile();
                   if (restored && Array.isArray(restored) && restored.length > 0) {
                     const booksData = restored as Book[];
-                    const withAuto = ensureAutomatedMonthlyBooks(booksData);
+                    const withAuto = ensureAutomatedMonthlyBooks(booksData, joinDate);
                     await saveBooks(withAuto);
                     setBooks(withAuto);
                     Alert.alert('Restored', 'Your diary has been restored from backup.');
@@ -166,8 +196,8 @@ export function DiaryProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const finalBooks = ensureAutomatedMonthlyBooks(loaded);
-      if (finalBooks.length !== loaded.length) {
+      const finalBooks = ensureAutomatedMonthlyBooks(loaded, joinDate);
+      if (finalBooks.length !== loaded.length || JSON.stringify(finalBooks.map(b => b.monthKey)) !== JSON.stringify(loaded.map(b => b.monthKey))) {
         await saveBooks(finalBooks);
       }
       setBooks(finalBooks);

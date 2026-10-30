@@ -514,26 +514,40 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
   const { getDayLog, upsertDayEntries, getBook, updateBookConfig } = useDiary();
 
   const today = new Date();
-  const currentMonth = today.getMonth(); // 0..11
-  const currentYear = today.getFullYear();
   const todayDayNum = today.getDate();
-  const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const effectiveMonthKey = monthKey || currentMonthKey;
+
+  // Extract year and monthIndex from effectiveMonthKey (e.g. "2026-10" -> year 2026, monthIndex 9)
+  const [bmYearStr, bmMonthStr] = effectiveMonthKey.split('-');
+  const bookYear = parseInt(bmYearStr, 10) || today.getFullYear();
+  const bookMonthIndex = (parseInt(bmMonthStr, 10) || (today.getMonth() + 1)) - 1;
+
+  const totalDays = new Date(bookYear, bookMonthIndex + 1, 0).getDate();
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const monthName = monthNames[currentMonth];
+  const monthName = monthNames[bookMonthIndex] || 'October';
   const daysOfWeek = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+
+  const isCurrentMonthBook = effectiveMonthKey === currentMonthKey;
+
+  // If opening from library or another month: default to Day 1 (first page of month).
+  // Only for current month on homepage (when initialDay is not specified and no monthKey passed) default to today's date!
+  const defaultInitialDay = initialDay !== undefined 
+    ? initialDay 
+    : (isCurrentMonthBook && !monthKey ? todayDayNum : 1);
 
   // Book & Page State:
   // 0 = Front Cover (0.68x scale), 1..totalDays = Day, totalDays + 1 = Back Cover (0.68x scale)
-  const [activePage, setActivePage] = useState(initialDay ?? todayDayNum);
-  const [lastViewedDay, setLastViewedDay] = useState(initialDay ?? todayDayNum);
+  const [activePage, setActivePage] = useState(defaultInitialDay);
+  const [lastViewedDay, setLastViewedDay] = useState(defaultInitialDay);
   const [linenIndex, setLinenIndex] = useState(0); // Terracotta default
 
   // Cover State
   const [coverPhoto, setCoverPhoto] = useState(
     'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=600&q=80'
   );
-  const [coverTitle, setCoverTitle] = useState(`${monthName} Family Memories`);
+  const [coverTitle, setCoverTitle] = useState(`${monthName} ${bookYear}`);
   const [coverSubtitle, setCoverSubtitle] = useState('Curated daily • Printed for the living room');
   const [editingCoverField, setEditingCoverField] = useState<'title' | 'subtitle' | null>(null);
 
@@ -557,7 +571,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
   const [captionEditor, setCaptionEditor] = useState<{ slotIdx: number; text: string } | null>(null);
   const [stickerTrayOpen, setStickerTrayOpen] = useState(false);
   const [pageStickers, setPageStickers] = useState<Record<number, Array<{ uid: string; id: string; x: number; y: number; rot: number }>>>({
-    [todayDayNum]: [{ uid: 'init-stk-1', id: 'stk-star', x: 132, y: 210, rot: -6 }]
+    [defaultInitialDay]: [{ uid: 'init-stk-1', id: 'stk-star', x: 132, y: 210, rot: -6 }]
   });
   const [draggingSticker, setDraggingSticker] = useState<{ uid: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
 
@@ -572,7 +586,11 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
 
   const currentLinen = LINEN_THEMES[linenIndex];
   const isCoverView = activePage === 0 || activePage === totalDays + 1;
-  const isFutureDay = activePage > todayDayNum && activePage <= totalDays;
+  const isPastMonth = effectiveMonthKey < currentMonthKey;
+  const isFutureMonth = effectiveMonthKey > currentMonthKey;
+  const isFutureDay = isFutureMonth
+    ? (activePage >= 1 && activePage <= totalDays)
+    : (isCurrentMonthBook && activePage > todayDayNum && activePage <= totalDays);
 
   // Load Google Fonts & confetti script once
   useEffect(() => {
@@ -665,11 +683,15 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
   }, [todayDayNum, totalDays]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      playEntryBookFlipSequence();
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [playEntryBookFlipSequence]);
+    // Only execute the intro flip animation on the homepage for the current month volume!
+    // When opened from the Library or for another month, do NOT animate-flip to today!
+    if (!monthKey && isCurrentMonthBook) {
+      const timer = setTimeout(() => {
+        playEntryBookFlipSequence();
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [playEntryBookFlipSequence, monthKey, isCurrentMonthBook]);
 
   // --------------------------------------------------------------------------
   // PAGE FLIP HELPER
@@ -789,8 +811,8 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
     }, 440);
 
     setTimeout(() => {
-      const y = currentYear;
-      const m = String(currentMonth + 1).padStart(2, '0');
+      const y = bookYear;
+      const m = String(bookMonthIndex + 1).padStart(2, '0');
       const d = String(targetDay).padStart(2, '0');
       const dateStr = `${y}-${m}-${d}`;
 
@@ -935,7 +957,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
         if (coverMenuVisible) {
           setCoverMenuVisible(false);
         } else {
-          triggerFlipToPage(lastViewedDay || todayDayNum, 'next');
+          triggerFlipToPage(lastViewedDay || defaultInitialDay, 'next');
         }
       }
       return;
@@ -964,7 +986,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
   // Sticker Handlers
   const handleAddSticker = (stickerId: string) => {
     if (isCoverView) {
-      triggerFlipToPage(todayDayNum, 'next');
+      triggerFlipToPage(defaultInitialDay, 'next');
       return;
     }
     if (isFutureDay) {
@@ -1008,8 +1030,8 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
   const [headlineEditor, setHeadlineEditor] = useState<{ text: string } | null>(null);
 
   // Get current active day's log & entries
-  const y = currentYear;
-  const m = String(currentMonth + 1).padStart(2, '0');
+  const y = bookYear;
+  const m = String(bookMonthIndex + 1).padStart(2, '0');
   const d = String(activePage).padStart(2, '0');
   const activeDateStr = `${y}-${m}-${d}`;
   const currentDayLog = getDayLog(activeDateStr);
@@ -1022,7 +1044,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
     playPaperRustleSound(1.2);
   };
   const dowName = activePage >= 1 && activePage <= totalDays
-    ? daysOfWeek[new Date(currentYear, currentMonth, activePage).getDay()]
+    ? daysOfWeek[new Date(bookYear, bookMonthIndex, activePage).getDay()]
     : '';
 
   const activeTilt = userDragTilt || (isCoverView ? gyroTilt : { x: 2, y: -2.5 });
@@ -1191,10 +1213,10 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
           <span>Close</span>
         </button>
 
-        {/* Today CTA Pill */}
+        {/* Today / Day 1 CTA Pill */}
         <button
           type="button"
-          onClick={() => triggerFlipToPage(todayDayNum, todayDayNum > activePage ? 'next' : 'prev')}
+          onClick={() => triggerFlipToPage(isCurrentMonthBook ? todayDayNum : 1, (isCurrentMonthBook ? todayDayNum : 1) > activePage ? 'next' : 'prev')}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -1204,16 +1226,16 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
             fontSize: 11.5,
             fontWeight: 600,
             cursor: 'pointer',
-            border: !isCoverView && activePage === todayDayNum ? '1.5px solid #DF5739' : '1px solid #D5CBB8',
-            backgroundColor: !isCoverView && activePage === todayDayNum ? '#DF5739' : '#FFFFFF',
-            color: !isCoverView && activePage === todayDayNum ? '#FFFFFF' : '#3A2E28',
+            border: !isCoverView && activePage === (isCurrentMonthBook ? todayDayNum : 1) ? '1.5px solid #DF5739' : '1px solid #D5CBB8',
+            backgroundColor: !isCoverView && activePage === (isCurrentMonthBook ? todayDayNum : 1) ? '#DF5739' : '#FFFFFF',
+            color: !isCoverView && activePage === (isCurrentMonthBook ? todayDayNum : 1) ? '#FFFFFF' : '#3A2E28',
             boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
             transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
           }}
-          title={`Flip to today (${monthName.slice(0, 3)} ${todayDayNum})`}
+          title={isCurrentMonthBook ? `Flip to today (${monthName.slice(0, 3)} ${todayDayNum})` : `Flip to Day 1 (${monthName.slice(0, 3)} 1)`}
         >
-          <Calendar size={13} color={!isCoverView && activePage === todayDayNum ? '#FFFFFF' : '#6A584C'} />
-          <span>Today ({monthName.slice(0, 3)} {todayDayNum})</span>
+          <Calendar size={13} color={!isCoverView && activePage === (isCurrentMonthBook ? todayDayNum : 1) ? '#FFFFFF' : '#6A584C'} />
+          <span>{isCurrentMonthBook ? `Today (${monthName.slice(0, 3)} ${todayDayNum})` : `Day 1 (${monthName.slice(0, 3)} 1)`}</span>
         </button>
       </div>
 
@@ -1801,7 +1823,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
               <div style={{ borderBottom: '1px solid #EAE3D5', paddingBottom: 4 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: '#8C7A6B' }}>
                   <span>
-                    {dowName} • {monthName.slice(0, 3).toUpperCase()} {activePage}, {currentYear}
+                    {dowName} • {monthName.slice(0, 3).toUpperCase()} {activePage}, {bookYear}
                   </span>
                   <span style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: 'italic', fontSize: 12 }}>
                     {activePage} / {totalDays}
@@ -2466,8 +2488,8 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                 onClick={() => {
                   const trimmed = captionEditor.text.trim();
                   const targetDay = activePage;
-                  const y = currentYear;
-                  const m = String(currentMonth + 1).padStart(2, '0');
+                  const y = bookYear;
+                  const m = String(bookMonthIndex + 1).padStart(2, '0');
                   const d = String(targetDay).padStart(2, '0');
                   const dateStr = `${y}-${m}-${d}`;
 

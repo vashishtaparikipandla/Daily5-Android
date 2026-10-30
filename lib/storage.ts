@@ -18,7 +18,26 @@ export const KEYS = {
   DRIVE_LAST_BACKUP: '@daily5/drive_last_backup', // ISO timestamp
   FTUO_COMPLETED: '@dearday/ftuo_completed',
   DEVICE_ONBOARDED: '@dearday/device_onboarded',
+  JOIN_DATE: '@daily5/joined_date',
 };
+
+export async function getJoinDate(): Promise<Date> {
+  try {
+    const raw = await AsyncStorage.getItem(KEYS.JOIN_DATE);
+    if (raw) return new Date(raw);
+    const now = new Date();
+    await AsyncStorage.setItem(KEYS.JOIN_DATE, now.toISOString());
+    return now;
+  } catch {
+    return new Date();
+  }
+}
+
+export async function setJoinDate(date: Date): Promise<void> {
+  try {
+    await AsyncStorage.setItem(KEYS.JOIN_DATE, date.toISOString());
+  } catch {}
+}
 
 export async function loadBooks(): Promise<Book[]> {
   try {

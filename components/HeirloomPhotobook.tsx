@@ -83,12 +83,29 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
 
   const today = new Date();
   const todayDayNum = today.getDate();
-  const currentMonthYear = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  const currentMonthName = today.toLocaleDateString('en-US', { month: 'long' });
-  const totalDaysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const effectiveMonthKey = monthKey || currentMonthKey;
+
+  // Extract year and monthIndex from effectiveMonthKey (e.g. "2026-09" -> year 2026, monthIndex 8)
+  const [bmYearStr, bmMonthStr] = effectiveMonthKey.split('-');
+  const bookYear = parseInt(bmYearStr, 10) || today.getFullYear();
+  const bookMonthIndex = (parseInt(bmMonthStr, 10) || (today.getMonth() + 1)) - 1;
+
+  const bookDate = new Date(bookYear, bookMonthIndex, 1);
+  const totalDaysInMonth = new Date(bookYear, bookMonthIndex + 1, 0).getDate();
+  const currentMonthYear = bookDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const currentMonthName = bookDate.toLocaleDateString('en-US', { month: 'long' });
+
+  const isCurrentMonthBook = effectiveMonthKey === currentMonthKey;
+
+  // If opening from library or another month: default to Day 1 (first page of month).
+  // Only for current month on homepage (when initialDay is not specified and no monthKey passed) default to today's date!
+  const defaultInitialDay = initialDay !== undefined 
+    ? initialDay 
+    : (isCurrentMonthBook && !monthKey ? todayDayNum : 1);
 
   // Page index: 0 = Front Cover (0.68x), 1..totalDays = Day, totalDays + 1 = Back Cover
-  const [activePage, setActivePage] = useState<number>(initialDay ?? todayDayNum);
+  const [activePage, setActivePage] = useState<number>(defaultInitialDay);
   const [linenIndex, setLinenIndex] = useState(0); // Terracotta default
   const [cornerTeased, setCornerTeased] = useState(false);
   const [shakingSlotIdx, setShakingSlotIdx] = useState<number | null>(null);
@@ -107,7 +124,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
   // Sticker tray & placed stickers per day
   const [stickerTrayOpen, setStickerTrayOpen] = useState(false);
   const [pageStickers, setPageStickers] = useState<Record<number, PlacedSticker[]>>({
-    [todayDayNum]: [
+    [defaultInitialDay]: [
       { uid: 'init-stk-1', id: 'stk-star', x: 130, y: 195, rot: -6 },
     ],
   });
@@ -123,12 +140,16 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
 
   const currentLinen = LINEN_THEMES[linenIndex];
   const isCoverView = activePage === 0 || activePage === totalDaysInMonth + 1;
-  const isFutureDay = activePage > todayDayNum && activePage <= totalDaysInMonth;
+  const isPastMonth = effectiveMonthKey < currentMonthKey;
+  const isFutureMonth = effectiveMonthKey > currentMonthKey;
+  const isFutureDay = isFutureMonth
+    ? (activePage >= 1 && activePage <= totalDaysInMonth)
+    : (isCurrentMonthBook && activePage > todayDayNum && activePage <= totalDaysInMonth);
 
   // Convert activePage to date string YYYY-MM-DD
   function getActiveDateStr(dayNum: number): string {
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const y = bookYear;
+    const m = String(bookMonthIndex + 1).padStart(2, '0');
     const d = String(dayNum).padStart(2, '0');
     return `${y}-${m}-${d}`;
   }
@@ -136,7 +157,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
   const activeDateStr = getActiveDateStr(activePage);
   const activeDayLog = getDayLog(activeDateStr);
   const dayOfWeekName = activePage >= 1 && activePage <= totalDaysInMonth
-    ? DAYS_OF_WEEK[new Date(today.getFullYear(), today.getMonth(), activePage).getDay()]
+    ? DAYS_OF_WEEK[new Date(bookYear, bookMonthIndex, activePage).getDay()]
     : '';
 
   // Get current 4 slots for active day
@@ -333,16 +354,33 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.todayPillBtn, activePage === todayDayNum && styles.todayPillBtnActive]}
-          onPress={() => flipToPage(todayDayNum)}
-          activeOpacity={0.8}
-        >
-          <Calendar size={13} color={activePage === todayDayNum ? '#FFFFFF' : '#6A584C'} />
-          <Text style={[styles.todayPillBtnText, activePage === todayDayNum && styles.todayPillBtnTextActive]}>
-            Today (Oct {todayDayNum})
-          </Text>
-        </TouchableOpacity>
+        {isCurrentMonthBook ? (
+          <TouchableOpacity
+            style={[styles.todayPillBtn, activePage === todayDayNum && styles.todayPillBtnActive]}
+            onPress={() => flipToPage(todayDayNum)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={`Flip to today (${currentMonthName.slice(0, 3)} ${todayDayNum})`}
+          >
+            <Calendar size={13} color={activePage === todayDayNum ? '#FFFFFF' : '#6A584C'} />
+            <Text style={[styles.todayPillBtnText, activePage === todayDayNum && styles.todayPillBtnTextActive]}>
+              Today ({currentMonthName.slice(0, 3)} {todayDayNum})
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[styles.todayPillBtn, activePage === 1 && styles.todayPillBtnActive]}
+            onPress={() => flipToPage(1)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={`Flip to first day (${currentMonthName.slice(0, 3)} 1)`}
+          >
+            <Calendar size={13} color={activePage === 1 ? '#FFFFFF' : '#6A584C'} />
+            <Text style={[styles.todayPillBtnText, activePage === 1 && styles.todayPillBtnTextActive]}>
+              Day 1 ({currentMonthName.slice(0, 3)} 1)
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Share Toast */}
@@ -402,7 +440,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
             onPress={() => flipToPage(activePage - 1)}
             activeOpacity={0.8}
             accessibilityRole="button"
-            accessibilityLabel={`Flip back to ${activePage === 2 ? 'Cover' : `Oct ${activePage - 1}`}`}
+            accessibilityLabel={`Flip back to ${activePage === 2 ? 'Cover' : `${currentMonthName.slice(0, 3)} ${activePage - 1}`}`}
           >
             <CaretLeft size={14} color="#8A7E72" weight="bold" />
           </TouchableOpacity>
@@ -414,7 +452,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
         {isCoverView ? (
           <TouchableOpacity
             activeOpacity={1}
-            onPress={() => flipToPage(todayDayNum)}
+            onPress={() => flipToPage(isCurrentMonthBook && !monthKey ? todayDayNum : 1)}
             onLongPress={() => {
               setCoverMenuVisible(prev => !prev);
               playPaperRustleSound(1.3);
@@ -428,7 +466,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
             {/* Top Embossed Volume Line */}
             <View style={styles.coverTopLine}>
               <Text style={styles.coverTopText}>
-                {activePage === 0 ? 'VOLUME 2026 · ARCHIVAL LINEN' : 'HEIRLOOM EDITION'}
+                {activePage === 0 ? `VOLUME ${bookYear} · ARCHIVAL LINEN` : 'HEIRLOOM EDITION'}
               </Text>
             </View>
 
@@ -519,7 +557,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
             <View style={styles.pageHeader}>
               <View style={styles.pageHeaderRow}>
                 <Text style={styles.pageHeaderDate}>
-                  {dayOfWeekName} • {currentMonthName.toUpperCase()} {activePage}, {today.getFullYear()}
+                  {dayOfWeekName} • {currentMonthName.toUpperCase()} {activePage}, {bookYear}
                 </Text>
                 <Text style={styles.pageHeaderFraction}>
                   {activePage} / {totalDaysInMonth}
