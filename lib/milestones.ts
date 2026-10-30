@@ -37,6 +37,8 @@ export interface MilestoneStats {
   totalPhotos: number;
   lockedVolumesCount: number;
   distinctCategoriesCount: number;
+  maxMomentsInDay?: number;
+  completedDaysCount?: number;
 }
 
 export interface ArchivalStampDef {
@@ -56,7 +58,7 @@ export const ARCHIVAL_STAMPS: ArchivalStampDef[] = [
     id: 'first-ink',
     serialNumber: '№ 0001',
     title: 'First Ink',
-    description: 'Began the archival habit with your first recorded memory.',
+    description: 'Captured your very first memory in Dear Day.',
     postmarkText: 'FIRST MEMORY',
     motif: 'quill',
     accentColor: '#E8593A',
@@ -67,8 +69,8 @@ export const ARCHIVAL_STAMPS: ArchivalStampDef[] = [
     id: 'the-octet',
     serialNumber: '№ 0007',
     title: 'The Octet',
-    description: 'Recorded memories across 7 distinct days.',
-    postmarkText: 'ONE WEEK BOUND',
+    description: 'Preserved memories across 7 distinct days.',
+    postmarkText: '7 DAYS ARCHIVED',
     motif: 'stars',
     accentColor: '#3A6888',
     category: 'journey',
@@ -78,8 +80,8 @@ export const ARCHIVAL_STAMPS: ArchivalStampDef[] = [
     id: 'the-fortnight',
     serialNumber: '№ 0014',
     title: 'The Fortnight',
-    description: 'Recorded memories across 14 distinct days.',
-    postmarkText: 'TWO WEEKS ARCHIVED',
+    description: 'Dedicated two full weeks (14 days) to remembering your days.',
+    postmarkText: '14 DAYS PRESERVED',
     motif: 'waxseal',
     accentColor: '#7A4A28',
     category: 'streak',
@@ -89,8 +91,8 @@ export const ARCHIVAL_STAMPS: ArchivalStampDef[] = [
     id: 'moon-cycle',
     serialNumber: '№ 0030',
     title: 'Moon Cycle',
-    description: 'A full lunar cycle of 30 days preserved.',
-    postmarkText: 'ONE FULL ORBIT',
+    description: 'A full monthly cycle of 30 days kept alive in your photobook.',
+    postmarkText: '30 DAYS RECORDED',
     motif: 'moon',
     accentColor: '#4A3B68',
     category: 'journey',
@@ -100,19 +102,19 @@ export const ARCHIVAL_STAMPS: ArchivalStampDef[] = [
     id: 'centennial',
     serialNumber: '№ 0100',
     title: 'Centennial',
-    description: 'One hundred recorded days in your life archive.',
-    postmarkText: 'ONE HUNDRED DAYS',
+    description: 'Reached 100 moments preserved against the rush of time.',
+    postmarkText: '100 MOMENTS',
     motif: 'column',
     accentColor: '#B8860B',
     category: 'journey',
-    isUnlocked: stats => stats.totalDays >= 100,
+    isUnlocked: stats => stats.totalMoments >= 100 || stats.totalDays >= 100,
   },
   {
     id: 'photographer-eye',
     serialNumber: '№ 0024',
     title: 'Photographer’s Eye',
-    description: 'Richly documented 10 moments with original photographs.',
-    postmarkText: 'PHOTOGRAPHIC MEMOIR',
+    description: 'Richly documented 10 moments with original photographs tucked into pages.',
+    postmarkText: '10 PHOTOS TUCKED',
     motif: 'camera',
     accentColor: '#2F6852',
     category: 'craft',
@@ -121,24 +123,24 @@ export const ARCHIVAL_STAMPS: ArchivalStampDef[] = [
   {
     id: 'polymath',
     serialNumber: '№ 0055',
-    title: 'The Polymath',
-    description: 'Captured life across at least 5 different categories.',
-    postmarkText: 'MULTIFACETED LIFE',
+    title: 'The Keepsake',
+    description: 'Crafted a full 4-moment daily spread in your photobook.',
+    postmarkText: 'FULL SPREAD BOUND',
     motif: 'polymath',
     accentColor: '#8C4368',
     category: 'craft',
-    isUnlocked: stats => stats.distinctCategoriesCount >= 5,
+    isUnlocked: stats => (stats.maxMomentsInDay ?? 0) >= 4 || stats.totalMoments >= 4,
   },
   {
     id: 'first-volume',
     serialNumber: '№ 0101',
     title: 'First Bound Volume',
-    description: 'Preserved and locked your first complete monthly photobook volume.',
-    postmarkText: 'VOLUME I ARCHIVED',
+    description: 'Began your automated monthly archival photobook volume.',
+    postmarkText: 'MONTHLY ARCHIVE',
     motif: 'hardbound',
     accentColor: '#8F3E2C',
     category: 'volume',
-    isUnlocked: stats => stats.lockedVolumesCount >= 1,
+    isUnlocked: stats => stats.totalMoments >= 1,
   },
 ];
 
@@ -147,15 +149,22 @@ export function computeMilestoneStats(books: Book[], streakCount: number): Miles
   const categoriesSet = new Set<string>();
   let totalMoments = 0;
   let totalPhotos = 0;
-  let lockedVolumesCount = 0;
+  let maxMomentsInDay = 0;
+  let completedDaysCount = 0;
 
   for (const b of books) {
     if (b.isSample) continue;
-    if (b.locked) lockedVolumesCount++;
 
     for (const d of b.days) {
-      if (d.entries.length > 0) {
+      const dayMomentsCount = d.entries.length + d.extras.length;
+      if (dayMomentsCount > 0) {
         datesSet.add(d.date);
+        if (dayMomentsCount > maxMomentsInDay) {
+          maxMomentsInDay = dayMomentsCount;
+        }
+        if (dayMomentsCount >= 4) {
+          completedDaysCount++;
+        }
       }
       for (const e of d.entries) {
         totalMoments++;
@@ -179,7 +188,9 @@ export function computeMilestoneStats(books: Book[], streakCount: number): Miles
     totalMoments,
     streakCount,
     totalPhotos,
-    lockedVolumesCount,
+    lockedVolumesCount: books.filter(b => !b.isSample).length,
     distinctCategoriesCount: categoriesSet.size,
+    maxMomentsInDay,
+    completedDaysCount,
   };
 }

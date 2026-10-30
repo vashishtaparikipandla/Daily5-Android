@@ -12,6 +12,8 @@ export interface CustomerStats {
   totalMemories?: number;
   streakDays?: number;
   booksCount?: number;
+  unlockedBadgeCount?: number;
+  unlockedBadgeIds?: string[];
 }
 
 export interface CustomerProfile {
@@ -154,5 +156,36 @@ export async function updateCustomerActivity(email: string): Promise<void> {
     });
   } catch (err) {
     // Non-blocking fail-safe
+  }
+}
+
+/**
+ * Updates unlocked badge count and IDs in Firebase Firestore for customer analytics and retargeting.
+ */
+export async function updateCustomerBadgeStats(
+  email: string,
+  unlockedBadgeCount: number,
+  unlockedBadgeIds: string[]
+): Promise<boolean> {
+  if (!email) return false;
+  const docId = sanitizeDocId(email);
+
+  try {
+    const url = `${BASE_URL}/users/${encodeURIComponent(docId)}?key=${FIREBASE_CONFIG.apiKey}&updateMask.fieldPaths=stats.unlockedBadgeCount&updateMask.fieldPaths=stats.unlockedBadgeIds`;
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fields: {
+          'stats.unlockedBadgeCount': encodeFirestoreValue(unlockedBadgeCount),
+          'stats.unlockedBadgeIds': encodeFirestoreValue(unlockedBadgeIds),
+        },
+      }),
+    });
+
+    return res.ok;
+  } catch (err) {
+    console.warn('Error updating badge stats in Firestore:', err);
+    return false;
   }
 }

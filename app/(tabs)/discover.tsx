@@ -34,29 +34,37 @@ export default function DiscoverTab() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: botPad }]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: botPad },
+          onThisDay.length === 0 && styles.emptyContentGrow,
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.dateChip}>
-          <CalendarBlank size={14} color={colors.primary} />
-          <Text style={[styles.dateChipText, { color: colors.primary }]}>
-            {dayOfWeek}, {fullDate}
+        <View style={styles.topSection}>
+          <View style={styles.dateChip}>
+            <CalendarBlank size={14} color={colors.primary} />
+            <Text style={[styles.dateChipText, { color: colors.primary }]}>
+              {dayOfWeek}, {fullDate}
+            </Text>
+          </View>
+
+          <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+            On this day
           </Text>
         </View>
 
-        <Text style={[styles.heading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-          On this day
-        </Text>
-
         {onThisDay.length === 0 ? (
-          <EmptyState
-            icon={Clock}
-            title="No Memories on This Day Yet"
-            description="Moments recorded on this day in past years will magically surface here as your archival diary grows."
-            actionLabel="Capture Today's Moments"
-            onAction={() => router.push({ pathname: '/log-modal', params: { date: today } })}
-            style={{ minHeight: 280 }}
-          />
+          <View style={styles.emptyCenterWrapper}>
+            <EmptyState
+              icon={Clock}
+              title="No Memories on This Day Yet"
+              description="Moments recorded on this day in past years will magically surface here as your archival diary grows."
+              actionLabel="Capture Today's Moments"
+              onAction={() => router.push({ pathname: '/log-modal', params: { date: today } })}
+              style={styles.emptyStateFill}
+            />
+          </View>
         ) : (
           onThisDay.map(({ book, day }) => (
             <TouchableOpacity
@@ -93,6 +101,20 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 28, letterSpacing: 0.2 },
   content: { paddingHorizontal: 20, paddingTop: 20, gap: 16 },
+  emptyContentGrow: { flexGrow: 1 },
+  topSection: { gap: 8 },
+  emptyCenterWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    marginTop: -24,
+  },
+  emptyStateFill: {
+    flex: 1,
+    minHeight: 0,
+    justifyContent: 'center',
+  },
   dateChip: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dateChipText: { fontSize: 13, fontFamily: 'Inter_500Medium' },
   heading: { fontSize: 22, letterSpacing: 0.2 },

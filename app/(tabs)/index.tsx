@@ -6,27 +6,80 @@ import {
 import { router, useFocusEffect } from 'expo-router';
 import { Bell } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useApp } from '@/contexts/AppContext';
 import { useDiary } from '@/contexts/DiaryContext';
 import { WoodenTableBackground } from '@/components/WoodenTableBackground';
 import { DappledPlantShadowOverlay } from '@/components/DappledPlantShadowOverlay';
 import { BrandLogoHorizontal } from '@/components/BrandLogo';
 import { HeirloomPhotobook } from '@/components/HeirloomPhotobook';
+import { BadgeUnlockCelebrationModal } from '@/components/BadgeUnlockCelebrationModal';
+import { ARCHIVAL_STAMPS, computeMilestoneStats, type ArchivalStampDef } from '@/lib/milestones';
+import { updateCustomerBadgeStats } from '@/lib/firebase';
 import { todayStr } from '@/lib/data';
 import { getUnreadNotificationCount } from '@/lib/notifications';
 
 export default function TodayTab() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { getOnThisDay } = useDiary();
+  const { user } = useApp();
+  const { books, streakCount, totalMoments, getOnThisDay } = useDiary();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [celebratingBadge, setCelebratingBadge] = useState<ArchivalStampDef | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       getUnreadNotificationCount().then(setUnreadCount);
     }, [])
   );
+
+  // Check for newly unlocked milestone badges and celebrate on homepage
+  useEffect(() => {
+    let isMounted = true;
+    async function checkBadgeUnlocks() {
+      try {
+        const stats = computeMilestoneStats(books, streakCount);
+        const unlocked = ARCHIVAL_STAMPS.filter(s => s.isUnlocked(stats));
+        const rawCelebrated = await AsyncStorage.getItem('@dearday_celebrated_badges_v1');
+        const celebratedIds: string[] = rawCelebrated ? JSON.parse(rawCelebrated) : [];
+
+        // Find the first unlocked badge not yet celebrated
+        const newlyUnlocked = unlocked.find(s => !celebratedIds.includes(s.id));
+        if (newlyUnlocked && isMounted) {
+          setCelebratingBadge(newlyUnlocked);
+        }
+
+        // Always sync current unlocked count to Firebase Firestore
+        const userEmail = user?.email || 'demo@dearday.app';
+        updateCustomerBadgeStats(userEmail, unlocked.length, unlocked.map(s => s.id));
+      } catch (err) {
+        // Safe non-blocking
+      }
+    }
+
+    checkBadgeUnlocks();
+    return () => {
+      isMounted = false;
+    };
+  }, [books, streakCount, totalMoments, user?.email]);
+
+  const handleDismissCelebration = async () => {
+    if (!celebratingBadge) return;
+    const badgeId = celebratingBadge.id;
+    setCelebratingBadge(null);
+    try {
+      const rawCelebrated = await AsyncStorage.getItem('@dearday_celebrated_badges_v1');
+      const celebratedIds: string[] = rawCelebrated ? JSON.parse(rawCelebrated) : [];
+      if (!celebratedIds.includes(badgeId)) {
+        celebratedIds.push(badgeId);
+        await AsyncStorage.setItem('@dearday_celebrated_badges_v1', JSON.stringify(celebratedIds));
+      }
+    } catch {
+      // Safe non-blocking
+    }
+  };
 
   const today = todayStr();
   const onThisDay = getOnThisDay();
@@ -118,6 +171,17 @@ export default function TodayTab() {
           </View>
         )}
       </ScrollView>
+
+      {/* Celebratory Milestone Badge Unlock Modal */}
+      <BadgeUnlockCelebrationModal
+        visible={!!celebratingBadge}
+        badge={celebratingBadge}
+        onClose={handleDismissCelebration}
+        onViewProfile={() => {
+          handleDismissCelebration();
+          router.push('/profile');
+        }}
+      />
     </WoodenTableBackground>
   );
 }

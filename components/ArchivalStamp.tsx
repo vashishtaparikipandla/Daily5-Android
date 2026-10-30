@@ -92,11 +92,11 @@ export function ArchivalStamp({
             resizeMode="contain"
           />
 
-          {/* Locked Badge Overlay */}
+          {/* Locked Badge Overlay - Positioned cleanly at corner */}
           {!isUnlocked && (
             <View style={styles.lockBadgeOverlay} pointerEvents="none">
               <View style={styles.lockBadgePill}>
-                <Lock size={12} color="#FFFFFF" weight="fill" />
+                <Lock size={11} color="#FFFFFF" weight="fill" />
               </View>
             </View>
           )}
@@ -157,14 +157,6 @@ export function ArchivalStamp({
 
               <Text style={[styles.modalTitle, { color: colors.foreground }]}>{stamp.title}</Text>
               <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>{stamp.description}</Text>
-
-              {/* 3D Tilt Cue Badge */}
-              <View style={styles.tiltCueRow}>
-                <Sparkle size={12} color="#A3876B" weight="bold" />
-                <Text style={styles.tiltCueText}>
-                  {Platform.OS === 'web' ? 'Hover cursor to tilt in 3D' : 'Drag to tilt and inspect in 3D'}
-                </Text>
-              </View>
             </View>
 
             {/* Action Button */}
@@ -350,7 +342,7 @@ function Tilting3DStampShowcase({ stamp, isUnlocked, stampAsset }: Tilting3DProp
               objectFit: 'contain',
               filter: isUnlocked
                 ? `drop-shadow(${(-tilt.ry * 0.9).toFixed(1)}px ${(14 + tilt.rx * 0.7).toFixed(1)}px 24px rgba(22, 14, 8, 0.35))`
-                : 'grayscale(100%) opacity(0.32)',
+                : 'grayscale(100%) contrast(1.1) brightness(0.95) opacity(0.70)',
               transition: 'filter 0.14s ease-out',
             }}
           />
@@ -419,21 +411,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 6,
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   stampLockedWrap: {
-    opacity: 0.85,
+    opacity: 0.92,
   },
   stampBadgeContainer: {
-    width: 68,
-    height: 68,
+    width: 80,
+    height: 80,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    overflow: 'visible',
   },
   thumbnail3DImage: {
-    width: 64,
-    height: 64,
+    width: 74,
+    height: 74,
     shadowColor: '#1A140E',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.22,
@@ -441,33 +434,40 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   thumbnail3DImageLocked: {
-    opacity: 0.32,
-    tintColor: '#8C8276',
+    opacity: 0.68,
+    ...(Platform.OS === 'web'
+      ? ({
+          filter: 'grayscale(100%) contrast(1.1) brightness(0.95)',
+        } as any)
+      : {}),
   },
   lockBadgeOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    zIndex: 10,
   },
   lockBadgePill: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: 'rgba(32, 24, 18, 0.75)',
+    backgroundColor: 'rgba(32, 24, 18, 0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.35,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 4,
   },
   stampTitle: {
     fontSize: 11,
     fontFamily: 'Inter_600SemiBold',
     letterSpacing: 0.2,
     textAlign: 'center',
-    maxWidth: 72,
+    maxWidth: 82,
   },
 
   /* Modal Showcase */
@@ -556,21 +556,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
     paddingHorizontal: 8,
-  },
-  tiltCueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 2,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    backgroundColor: 'rgba(163, 135, 107, 0.1)',
-  },
-  tiltCueText: {
-    fontSize: 11,
-    fontFamily: 'Inter_500Medium',
-    color: '#8A6D52',
   },
   shareBtn: {
     width: '100%',

@@ -17,7 +17,6 @@ import {
   Fire,
   Sparkle,
   Check,
-  FilmStrip,
 } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
@@ -25,9 +24,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '@/contexts/AppContext';
 import { useDiary } from '@/contexts/DiaryContext';
 import { StreakCalendarModal } from '@/components/StreakCalendarModal';
-import { WeeklyReelModal } from '@/components/WeeklyReelModal';
 import { BrandLogoIcon } from '@/components/BrandLogo';
-import { getHonorificTitle, computeMilestoneStats, ARCHIVAL_STAMPS } from '@/lib/milestones';
+import { computeMilestoneStats, ARCHIVAL_STAMPS } from '@/lib/milestones';
 import { ArchivalStamp } from '@/components/ArchivalStamp';
 import { todayStr, type DayLog } from '@/lib/data';
 
@@ -50,10 +48,8 @@ export default function ProfileTab() {
   const { user, signOut } = useApp();
   const { books, totalDays, totalMoments, streakCount, getDayLog } = useDiary();
   const [showStreakModal, setShowStreakModal] = useState(false);
-  const [showWeeklyReel, setShowWeeklyReel] = useState(false);
 
   const today = todayStr();
-  const honorific = getHonorificTitle(streakCount);
   const milestoneStats = React.useMemo(() => computeMilestoneStats(books, streakCount), [books, streakCount]);
   const unlockedStampsCount = ARCHIVAL_STAMPS.filter(s => s.isUnlocked(milestoneStats)).length;
 
@@ -89,11 +85,6 @@ export default function ProfileTab() {
     }
     return days;
   }, [today, getDayLog]);
-
-  const weeklyDaysLogs = useMemo(() => {
-    return weekDays.map(w => getDayLog(w.dateStr)).filter(Boolean) as DayLog[];
-  }, [weekDays, getDayLog]);
-  const hasWeeklyMoments = weeklyDaysLogs.some(d => d.entries.length > 0);
 
   const topPad = insets.top + (Platform.OS === 'web' ? 67 : 0);
   const botPad = insets.bottom + 90;
@@ -215,12 +206,6 @@ export default function ProfileTab() {
             {user?.name ?? 'You'}
           </Text>
           <Text style={[styles.email, { color: colors.mutedForeground }]}>{user?.email}</Text>
-
-          {/* Archival Honorific Rank Badge */}
-          <View style={[styles.honorificPill, { backgroundColor: colors.accentLight, borderColor: colors.primary + '35' }]}>
-            <Text style={styles.honorificBadge}>{honorific.badge}</Text>
-            <Text style={[styles.honorificTitle, { color: colors.primary }]}>{honorific.title}</Text>
-          </View>
         </View>
 
         {/* Stats Row */}
@@ -284,7 +269,7 @@ export default function ProfileTab() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.streakTitle, { color: colors.foreground }]}>
-                  {streakCount > 0 ? `${streakCount}-Day Streak · ${honorific.title}` : 'Start Your Streak'}
+                  {streakCount > 0 ? `${streakCount}-Day Streak` : 'Start Your Streak'}
                 </Text>
                 <Text style={[styles.streakSubtitle, { color: colors.mutedForeground }]} numberOfLines={1}>
                   {streakCount > 0
@@ -354,33 +339,6 @@ export default function ProfileTab() {
               </View>
             ))}
           </View>
-
-          {/* Sunday Edition / Weekly Story Reel Trigger */}
-          {hasWeeklyMoments && (
-            <TouchableOpacity
-              style={[styles.weeklyReelBanner, { borderTopColor: colors.border }]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                setShowWeeklyReel(true);
-              }}
-              activeOpacity={0.8}
-            >
-              <View style={styles.weeklyReelLeft}>
-                <View style={[styles.reelIconCircle, { backgroundColor: colors.accentLight }]}>
-                  <FilmStrip size={15} color={colors.primary} weight="bold" />
-                </View>
-                <View>
-                  <Text style={[styles.weeklyReelTitle, { color: colors.foreground }]}>
-                    The Sunday Edition · 7-Day Reel
-                  </Text>
-                  <Text style={[styles.weeklyReelSubtitle, { color: colors.mutedForeground }]}>
-                    Relive this week's moments in a visual story
-                  </Text>
-                </View>
-              </View>
-              <CaretRight size={16} color={colors.primary} weight="bold" />
-            </TouchableOpacity>
-          )}
         </View>
 
         {/* Passport & Milestone Stamps Album */}
@@ -391,7 +349,7 @@ export default function ProfileTab() {
             </Text>
             <View style={[styles.passportRankChip, { backgroundColor: colors.accentLight }]}>
               <Text style={[styles.passportRankChipText, { color: colors.primary }]}>
-                {honorific.title}
+                {unlockedStampsCount} / {ARCHIVAL_STAMPS.length} COLLECTED
               </Text>
             </View>
           </View>
@@ -445,13 +403,6 @@ export default function ProfileTab() {
       <StreakCalendarModal
         visible={showStreakModal}
         onClose={() => setShowStreakModal(false)}
-      />
-
-      <WeeklyReelModal
-        visible={showWeeklyReel}
-        weeklyDays={weeklyDaysLogs}
-        streakCount={streakCount}
-        onClose={() => setShowWeeklyReel(false)}
       />
     </View>
   );
@@ -613,36 +564,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 2,
   },
-  weeklyReelBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-    marginTop: 4,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  weeklyReelLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  reelIconCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  weeklyReelTitle: {
-    fontSize: 13,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  weeklyReelSubtitle: {
-    fontSize: 11,
-    fontFamily: 'Inter_400Regular',
-    marginTop: 1,
-  },
   passportHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -665,15 +586,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
   },
   stampAlbumCard: {
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingVertical: 12,
+    paddingTop: 16,
+    paddingBottom: 16,
     paddingHorizontal: 8,
   },
   stampScroll: {
-    paddingHorizontal: 4,
-    gap: 8,
-    alignItems: 'center',
+    paddingHorizontal: 6,
+    gap: 12,
+    alignItems: 'flex-start',
   },
   section: { gap: 6 },
   sectionTitle: { fontSize: 11, fontFamily: 'Inter_600SemiBold', letterSpacing: 0.8, textTransform: 'uppercase', paddingLeft: 4 },
