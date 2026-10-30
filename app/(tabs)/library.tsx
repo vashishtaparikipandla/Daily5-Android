@@ -42,7 +42,7 @@ export default function LibraryTab() {
   });
 
   const filtered = sortedBooks
-    .filter(b => !b.isSample)
+    .filter(b => !b.isSample && !b.isCustom)
     .filter(b => {
       if (!search.trim()) return true;
       const q = search.toLowerCase();

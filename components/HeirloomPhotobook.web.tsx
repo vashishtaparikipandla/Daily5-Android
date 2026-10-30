@@ -11,6 +11,7 @@ import {
   BookOpen,
   Calendar,
   Pencil,
+  Trash2,
 } from 'lucide-react';
 import { useDiary } from '@/contexts/DiaryContext';
 import { uid, todayStr, type Entry } from '@/lib/data';
@@ -25,345 +26,346 @@ const LINEN_THEMES = [
   { name: 'Oatmeal', main: '#D8CFC2', spine: '#B5AA9B', border: '#C5BBAE' }
 ];
 
-const STICKER_ASSETS: Record<string, any> = {
-  'stk-3d-ghost': require('@/assets/images/stickers/ghost-3d.png'),
-  'stk-3d-lollipop': require('@/assets/images/stickers/lollipop-3d.png'),
-  'stk-3d-thumbsup': require('@/assets/images/stickers/thumbsup-3d.png'),
-  'stk-3d-shield': require('@/assets/images/stickers/shield-3d.png'),
-  'stk-3d-star': require('@/assets/images/stickers/star-3d.png'),
-  'stk-3d-heart': require('@/assets/images/stickers/heart.png'),
-  'stk-3d-hearteyes': require('@/assets/images/stickers/heartEyes.png'),
-  'stk-3d-party': require('@/assets/images/stickers/party.png'),
-  'stk-3d-sunglasses': require('@/assets/images/stickers/sunglasses.png'),
-  'stk-3d-kiss': require('@/assets/images/stickers/kiss.png'),
-  'stk-3d-robot': require('@/assets/images/stickers/robot.png'),
-  'stk-3d-smile': require('@/assets/images/stickers/smile.png'),
+const PNG_STICKER_ASSETS: Record<string, any> = {
+  'stk-tape-1': require('@/assets/stickers/tape_1.png'),
+  'stk-tape-2': require('@/assets/stickers/tape_2.png'),
+  'stk-tape-3': require('@/assets/stickers/tape_3.png'),
+  'stk-badge-1': require('@/assets/stickers/sticker_badge_1.png'),
+  'stk-badge-2': require('@/assets/stickers/sticker_gemini_3.png'),
+  'stk-badge-3': require('@/assets/stickers/sticker_gemini_6.png'),
+  'stk-stamp-1': require('@/assets/stickers/sticker_vintage_1.png'),
+  'stk-stamp-2': require('@/assets/stickers/sticker_vintage_2.png'),
+  'stk-stamp-3': require('@/assets/stickers/sticker_vintage_3.png'),
+  'stk-stamp-4': require('@/assets/stickers/sticker_vintage_4.png'),
+  'stk-stamp-5': require('@/assets/stickers/sticker_vintage_5.png'),
+  'stk-stamp-6': require('@/assets/stickers/sticker_vintage_6.png'),
+  'stk-emblem-1': require('@/assets/stickers/sticker_gemini_1.png'),
+  'stk-emblem-2': require('@/assets/stickers/sticker_gemini_4.png'),
+  'stk-emblem-3': require('@/assets/stickers/sticker_gemini_5.png'),
+  'stk-accent-1': require('@/assets/stickers/sticker_gemini_2.png'),
+  'stk-accent-2': require('@/assets/stickers/sticker_gemini_7.png'),
+  'stk-accent-3': require('@/assets/stickers/sticker_gemini_8.png'),
 };
 
 const resolveStickerUri = (asset: any) =>
   typeof asset === 'string' ? asset : asset?.uri || asset?.default || asset;
 
 const STICKER_CATALOG = [
-  // ─── 1. RESTORED NOSTALGIC HEIRLOOM STICKERS (ORIGINAL 12) ───────────────────
+  // ─── 1. LONG WASHI RIBBON TAPES (~3:1 ASPECT RATIO) ─────────────────────
   {
-    id: 'stk-love',
-    name: 'Best Day Label',
-    render: (size = 46) => (
-      <svg viewBox="0 0 84 44" style={{ width: size * 1.5, height: size * 0.8, pointerEvents: 'none', userSelect: 'none' }}>
-        <rect x="3" y="6" width="78" height="32" rx="16" fill="#FFF8F0" stroke="#DF5739" strokeWidth="2" />
-        <text x="42" y="27" textAnchor="middle" fontFamily="Caveat, cursive" fontSize="19" fontWeight="bold" fill="#C8462A">
-          best day ♡
-        </text>
-      </svg>
+    id: 'stk-tape-1',
+    name: 'Washi Ribbon Tape',
+    width: 130,
+    height: 43,
+    trayWidth: 70,
+    trayHeight: 23,
+    render: (scale = 1) => (
+      <img
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-tape-1'])}
+        alt="Washi Ribbon Tape"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: Math.round(130 * scale), height: Math.round(43 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
     )
   },
   {
-    id: 'stk-camera',
-    name: 'Vintage Camera',
-    render: (size = 46) => (
-      <svg viewBox="0 0 64 56" style={{ width: size, height: size * 0.88, pointerEvents: 'none', userSelect: 'none' }}>
-        <rect x="6" y="12" width="52" height="36" rx="8" fill="#3B3532" stroke="#F4EFE6" strokeWidth="2.5" />
-        <rect x="18" y="6" width="16" height="6" rx="2" fill="#DF5739" />
-        <circle cx="34" cy="30" r="11" fill="#F2C97D" stroke="#FAF6F0" strokeWidth="2.5" />
-        <circle cx="34" cy="30" r="5" fill="#231F1D" />
-        <circle cx="16" cy="21" r="3.5" fill="#FFBD00" />
-      </svg>
+    id: 'stk-tape-2',
+    name: 'Archival Washi Strip',
+    width: 130,
+    height: 43,
+    trayWidth: 70,
+    trayHeight: 23,
+    render: (scale = 1) => (
+      <img
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-tape-2'])}
+        alt="Archival Washi Strip"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: Math.round(130 * scale), height: Math.round(43 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
     )
   },
   {
-    id: 'stk-heart',
-    name: 'Blush Heart',
-    render: (size = 46) => (
-      <svg viewBox="0 0 60 60" style={{ width: size, height: size, pointerEvents: 'none', userSelect: 'none' }}>
-        <circle cx="30" cy="30" r="25" fill="#FFD6E0" stroke="#E06377" strokeWidth="2.5" />
-        <path d="M30 43 C30 43 16 33 16 23 C16 18 21 15 25 18 C28 19 30 22 30 22 C30 22 32 19 35 18 C39 15 44 18 44 23 C44 33 30 43 30 43 Z" fill="#E03E52" />
-      </svg>
-    )
-  },
-  {
-    id: 'stk-flower',
-    name: 'Daisy Flower',
-    render: (size = 46) => (
-      <svg viewBox="0 0 60 60" style={{ width: size, height: size, pointerEvents: 'none', userSelect: 'none' }}>
-        <g fill="#FFFDF9" stroke="#E2D9C8" strokeWidth="1.5">
-          <ellipse cx="30" cy="14" rx="6.5" ry="11" />
-          <ellipse cx="30" cy="46" rx="6.5" ry="11" />
-          <ellipse cx="14" cy="30" rx="11" ry="6.5" />
-          <ellipse cx="46" cy="30" rx="11" ry="6.5" />
-          <ellipse cx="19" cy="19" rx="6.5" ry="11" transform="rotate(-45 19 19)" />
-          <ellipse cx="41" cy="41" rx="6.5" ry="11" transform="rotate(-45 41 41)" />
-          <ellipse cx="41" cy="19" rx="11" ry="6.5" transform="rotate(-45 41 19)" />
-          <ellipse cx="19" cy="41" rx="11" ry="6.5" transform="rotate(-45 19 41)" />
-        </g>
-        <circle cx="30" cy="30" r="8.5" fill="#FFBD00" stroke="#D99B00" strokeWidth="1.5" />
-      </svg>
-    )
-  },
-  {
-    id: 'stk-music',
-    name: 'Music Note',
-    render: (size = 46) => (
-      <svg viewBox="0 0 60 60" style={{ width: size, height: size, pointerEvents: 'none', userSelect: 'none' }}>
-        <rect x="5" y="5" width="50" height="50" rx="15" fill="#FFF7EB" stroke="#F2C97D" strokeWidth="2.5" />
-        <path d="M23 40 V20 L41 16 V36" fill="none" stroke="#DF5739" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="19" cy="40" r="5.5" fill="#DF5739" />
-        <circle cx="37" cy="36" r="5.5" fill="#DF5739" />
-      </svg>
-    )
-  },
-  {
-    id: 'stk-tape',
-    name: 'Washi Tape',
-    render: (size = 46) => (
-      <svg viewBox="0 0 90 40" style={{ width: size * 1.6, height: size * 0.7, pointerEvents: 'none', userSelect: 'none' }}>
-        <path d="M4 8 L86 5 L83 33 L6 35 Z" fill="#84C7AE" fillOpacity="0.9" stroke="#569E85" strokeWidth="1.5" />
-        <path d="M18 7 L18 34 M36 7 L36 34 M54 6 L54 33 M72 6 L72 33" stroke="#FFFFFF" strokeWidth="2" strokeOpacity="0.65" />
-      </svg>
-    )
-  },
-  {
-    id: 'stk-sun',
-    name: 'Radiant Sun',
-    render: (size = 46) => (
-      <svg viewBox="0 0 60 60" style={{ width: size, height: size, pointerEvents: 'none', userSelect: 'none' }}>
-        <circle cx="30" cy="30" r="14" fill="#FFA834" stroke="#E07A12" strokeWidth="2" />
-        <g stroke="#FFA834" strokeWidth="3" strokeLinecap="round">
-          <line x1="30" y1="6" x2="30" y2="11" />
-          <line x1="30" y1="49" x2="30" y2="54" />
-          <line x1="6" y1="30" x2="11" y2="30" />
-          <line x1="49" y1="30" x2="54" y2="30" />
-          <line x1="13" y1="13" x2="17" y2="17" />
-          <line x1="43" y1="43" x2="47" y2="47" />
-          <line x1="47" y1="13" x2="43" y2="17" />
-          <line x1="17" y1="43" x2="13" y2="47" />
-        </g>
-      </svg>
-    )
-  },
-  {
-    id: 'stk-coffee',
-    name: 'Warm Coffee',
-    render: (size = 46) => (
-      <svg viewBox="0 0 60 60" style={{ width: size, height: size, pointerEvents: 'none', userSelect: 'none' }}>
-        <path d="M14 22 H42 V36 C42 44 35 49 28 49 C21 49 14 44 14 36 Z" fill="#D9825B" stroke="#8C4A2E" strokeWidth="2.5" />
-        <path d="M42 25 H47 C50 25 52 27 52 30 C52 33 50 35 47 35 H42" fill="none" stroke="#8C4A2E" strokeWidth="2.5" />
-        <path d="M22 15 Q24 10 22 7 M30 15 Q32 10 30 7 M36 15 Q38 10 36 7" fill="none" stroke="#B89F8D" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    )
-  },
-  {
-    id: 'stk-clock',
-    name: 'Pocket Clock',
-    render: (size = 46) => (
-      <svg viewBox="0 0 60 60" style={{ width: size, height: size, pointerEvents: 'none', userSelect: 'none' }}>
-        <circle cx="30" cy="30" r="25" fill="#FFE484" stroke="#E09F1F" strokeWidth="2.5" />
-        <circle cx="30" cy="30" r="19" fill="#FFFDF7" />
-        <path d="M30 17 V30 L38 34" fill="none" stroke="#2B2420" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    )
-  },
-  {
-    id: 'stk-rainbow',
-    name: 'Retro Rainbow',
-    render: (size = 46) => (
-      <svg viewBox="0 0 64 52" style={{ width: size, height: size * 0.82, pointerEvents: 'none', userSelect: 'none' }}>
-        <path d="M8 42 A24 24 0 0 1 56 42" fill="none" stroke="#E05A47" strokeWidth="5" strokeLinecap="round" />
-        <path d="M13 42 A19 19 0 0 1 51 42" fill="none" stroke="#F2A93B" strokeWidth="5" strokeLinecap="round" />
-        <path d="M18 42 A14 14 0 0 1 46 42" fill="none" stroke="#62B6CB" strokeWidth="5" strokeLinecap="round" />
-      </svg>
-    )
-  },
-  {
-    id: 'stk-star',
-    name: 'Golden Star',
-    render: (size = 46) => (
-      <svg viewBox="0 0 60 60" style={{ width: size, height: size, pointerEvents: 'none', userSelect: 'none' }}>
-        <polygon points="30,5 37,21 55,23 41,35 45,53 30,43 15,53 19,35 5,23 23,21" fill="#FFBD00" stroke="#D99B00" strokeWidth="2.2" />
-      </svg>
-    )
-  },
-  {
-    id: 'stk-stamp',
-    name: 'Airmail Stamp',
-    render: (size = 46) => (
-      <svg viewBox="0 0 64 72" style={{ width: size, height: size * 1.1, pointerEvents: 'none', userSelect: 'none' }}>
-        <rect x="6" y="6" width="52" height="60" rx="4" fill="#F7F1E3" stroke="#5B7B9C" strokeWidth="2.5" strokeDasharray="4 3" />
-        <rect x="12" y="12" width="40" height="48" fill="#D5E5F2" />
-        <circle cx="32" cy="32" r="10" fill="#E06D53" />
-        <path d="M18 50 Q32 42 46 50" fill="none" stroke="#3B5978" strokeWidth="2.5" />
-      </svg>
+    id: 'stk-tape-3',
+    name: 'Vintage Paper Tape',
+    width: 130,
+    height: 43,
+    trayWidth: 70,
+    trayHeight: 23,
+    render: (scale = 1) => (
+      <img
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-tape-3'])}
+        alt="Vintage Paper Tape"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: Math.round(130 * scale), height: Math.round(43 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
     )
   },
 
-  // ─── 2. 3D VINYL STICKERS (EXPANDED 12) ──────────────────────────────────────
+  // ─── 2. RECTANGULAR BADGES & LABELS (~1.4 - 1.6 ASPECT RATIO) ─────────────
   {
-    id: 'stk-3d-ghost',
-    name: 'Spooky Ghost',
-    asset: STICKER_ASSETS['stk-3d-ghost'],
-    render: (size = 46) => (
+    id: 'stk-badge-1',
+    name: 'Keepsake Label Badge',
+    width: 74,
+    height: 53,
+    trayWidth: 46,
+    trayHeight: 33,
+    render: (scale = 1) => (
       <img
-        src={resolveStickerUri(STICKER_ASSETS['stk-3d-ghost'])}
-        alt="Spooky Ghost"
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-badge-1'])}
+        alt="Keepsake Label Badge"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+        style={{ width: Math.round(74 * scale), height: Math.round(53 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
       />
     )
   },
   {
-    id: 'stk-3d-lollipop',
-    name: 'Swirl Lollipop',
-    asset: STICKER_ASSETS['stk-3d-lollipop'],
-    render: (size = 46) => (
+    id: 'stk-badge-2',
+    name: 'Story Ephemera Badge',
+    width: 74,
+    height: 54,
+    trayWidth: 46,
+    trayHeight: 33,
+    render: (scale = 1) => (
       <img
-        src={resolveStickerUri(STICKER_ASSETS['stk-3d-lollipop'])}
-        alt="Swirl Lollipop"
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-badge-2'])}
+        alt="Story Ephemera Badge"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+        style={{ width: Math.round(74 * scale), height: Math.round(54 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
       />
     )
   },
   {
-    id: 'stk-3d-thumbsup',
-    name: 'Thumbs Up',
-    asset: STICKER_ASSETS['stk-3d-thumbsup'],
-    render: (size = 46) => (
+    id: 'stk-badge-3',
+    name: 'Archival Banner Pill',
+    width: 78,
+    height: 49,
+    trayWidth: 48,
+    trayHeight: 30,
+    render: (scale = 1) => (
       <img
-        src={resolveStickerUri(STICKER_ASSETS['stk-3d-thumbsup'])}
-        alt="Thumbs Up"
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-badge-3'])}
+        alt="Archival Banner Pill"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+        style={{ width: Math.round(78 * scale), height: Math.round(49 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+
+  // ─── 3. SQUARE ARCHIVAL STAMPS (~1:1 ASPECT RATIO) ───────────────────────
+  {
+    id: 'stk-stamp-1',
+    name: 'Vintage Postal Stamp I',
+    width: 54,
+    height: 54,
+    trayWidth: 36,
+    trayHeight: 36,
+    render: (scale = 1) => (
+      <img
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-stamp-1'])}
+        alt="Vintage Postal Stamp I"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: Math.round(54 * scale), height: Math.round(54 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
       />
     )
   },
   {
-    id: 'stk-3d-shield',
-    name: 'Verified Shield',
-    asset: STICKER_ASSETS['stk-3d-shield'],
-    render: (size = 46) => (
+    id: 'stk-stamp-2',
+    name: 'Vintage Postal Stamp II',
+    width: 54,
+    height: 55,
+    trayWidth: 36,
+    trayHeight: 36,
+    render: (scale = 1) => (
       <img
-        src={resolveStickerUri(STICKER_ASSETS['stk-3d-shield'])}
-        alt="Verified Shield"
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-stamp-2'])}
+        alt="Vintage Postal Stamp II"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+        style={{ width: Math.round(54 * scale), height: Math.round(55 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
       />
     )
   },
   {
-    id: 'stk-3d-star',
-    name: '3D Star',
-    asset: STICKER_ASSETS['stk-3d-star'],
-    render: (size = 46) => (
+    id: 'stk-stamp-3',
+    name: 'Vintage Postal Stamp III',
+    width: 53,
+    height: 55,
+    trayWidth: 36,
+    trayHeight: 36,
+    render: (scale = 1) => (
       <img
-        src={resolveStickerUri(STICKER_ASSETS['stk-3d-star'])}
-        alt="3D Star"
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-stamp-3'])}
+        alt="Vintage Postal Stamp III"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+        style={{ width: Math.round(53 * scale), height: Math.round(55 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
       />
     )
   },
   {
-    id: 'stk-3d-heart',
-    name: 'Glossy Heart',
-    asset: STICKER_ASSETS['stk-3d-heart'],
-    render: (size = 46) => (
+    id: 'stk-stamp-4',
+    name: 'Vintage Postal Stamp IV',
+    width: 53,
+    height: 56,
+    trayWidth: 36,
+    trayHeight: 36,
+    render: (scale = 1) => (
       <img
-        src={resolveStickerUri(STICKER_ASSETS['stk-3d-heart'])}
-        alt="Glossy Heart"
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-stamp-4'])}
+        alt="Vintage Postal Stamp IV"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+        style={{ width: Math.round(53 * scale), height: Math.round(56 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
       />
     )
   },
   {
-    id: 'stk-3d-hearteyes',
-    name: 'Heart Eyes',
-    asset: STICKER_ASSETS['stk-3d-hearteyes'],
-    render: (size = 46) => (
+    id: 'stk-stamp-5',
+    name: 'Vintage Postal Stamp V',
+    width: 55,
+    height: 56,
+    trayWidth: 36,
+    trayHeight: 36,
+    render: (scale = 1) => (
       <img
-        src={resolveStickerUri(STICKER_ASSETS['stk-3d-hearteyes'])}
-        alt="Heart Eyes"
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-stamp-5'])}
+        alt="Vintage Postal Stamp V"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+        style={{ width: Math.round(55 * scale), height: Math.round(56 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
       />
     )
   },
   {
-    id: 'stk-3d-party',
-    name: 'Party Popper',
-    asset: STICKER_ASSETS['stk-3d-party'],
-    render: (size = 46) => (
+    id: 'stk-stamp-6',
+    name: 'Vintage Postal Stamp VI',
+    width: 56,
+    height: 53,
+    trayWidth: 36,
+    trayHeight: 34,
+    render: (scale = 1) => (
       <img
-        src={resolveStickerUri(STICKER_ASSETS['stk-3d-party'])}
-        alt="Party Popper"
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-stamp-6'])}
+        alt="Vintage Postal Stamp VI"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+        style={{ width: Math.round(56 * scale), height: Math.round(53 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+
+  // ─── 4. 3D MEMORY EMBLEMS & SEALS ─────────────────────────────────────────
+  {
+    id: 'stk-emblem-1',
+    name: 'Heirloom Wax Crest',
+    width: 60,
+    height: 51,
+    trayWidth: 40,
+    trayHeight: 34,
+    render: (scale = 1) => (
+      <img
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-emblem-1'])}
+        alt="Heirloom Wax Crest"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: Math.round(60 * scale), height: Math.round(51 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
       />
     )
   },
   {
-    id: 'stk-3d-sunglasses',
-    name: 'Cool Sunglasses',
-    asset: STICKER_ASSETS['stk-3d-sunglasses'],
-    render: (size = 46) => (
+    id: 'stk-emblem-2',
+    name: '3D Memory Seal I',
+    width: 54,
+    height: 54,
+    trayWidth: 36,
+    trayHeight: 36,
+    render: (scale = 1) => (
       <img
-        src={resolveStickerUri(STICKER_ASSETS['stk-3d-sunglasses'])}
-        alt="Cool Sunglasses"
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-emblem-2'])}
+        alt="3D Memory Seal I"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+        style={{ width: Math.round(54 * scale), height: Math.round(54 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
       />
     )
   },
   {
-    id: 'stk-3d-kiss',
-    name: 'Blowing Kiss',
-    asset: STICKER_ASSETS['stk-3d-kiss'],
-    render: (size = 46) => (
+    id: 'stk-emblem-3',
+    name: '3D Memory Seal II',
+    width: 54,
+    height: 54,
+    trayWidth: 36,
+    trayHeight: 36,
+    render: (scale = 1) => (
       <img
-        src={resolveStickerUri(STICKER_ASSETS['stk-3d-kiss'])}
-        alt="Blowing Kiss"
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-emblem-3'])}
+        alt="3D Memory Seal II"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+        style={{ width: Math.round(54 * scale), height: Math.round(54 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+      />
+    )
+  },
+
+  // ─── 5. PETITE ACCENT CHARMS (DELICATE EMBELLISHMENTS) ─────────────────────
+  {
+    id: 'stk-accent-1',
+    name: 'Petite Star Charm',
+    width: 42,
+    height: 38,
+    trayWidth: 30,
+    trayHeight: 27,
+    render: (scale = 1) => (
+      <img
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-accent-1'])}
+        alt="Petite Star Charm"
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
+        style={{ width: Math.round(42 * scale), height: Math.round(38 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
       />
     )
   },
   {
-    id: 'stk-3d-robot',
-    name: 'Retro Robot',
-    asset: STICKER_ASSETS['stk-3d-robot'],
-    render: (size = 46) => (
+    id: 'stk-accent-2',
+    name: 'Mini Ribbon Charm',
+    width: 38,
+    height: 39,
+    trayWidth: 28,
+    trayHeight: 29,
+    render: (scale = 1) => (
       <img
-        src={resolveStickerUri(STICKER_ASSETS['stk-3d-robot'])}
-        alt="Retro Robot"
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-accent-2'])}
+        alt="Mini Ribbon Charm"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+        style={{ width: Math.round(38 * scale), height: Math.round(39 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
       />
     )
   },
   {
-    id: 'stk-3d-smile',
-    name: 'Big Smile',
-    asset: STICKER_ASSETS['stk-3d-smile'],
-    render: (size = 46) => (
+    id: 'stk-accent-3',
+    name: 'Vertical Accent Tag',
+    width: 32,
+    height: 41,
+    trayWidth: 24,
+    trayHeight: 31,
+    render: (scale = 1) => (
       <img
-        src={resolveStickerUri(STICKER_ASSETS['stk-3d-smile'])}
-        alt="Big Smile"
+        src={resolveStickerUri(PNG_STICKER_ASSETS['stk-accent-3'])}
+        alt="Vertical Accent Tag"
         draggable={false}
         onDragStart={(e) => e.preventDefault()}
-        style={{ width: size, height: size, objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
+        style={{ width: Math.round(32 * scale), height: Math.round(41 * scale), objectFit: 'contain', pointerEvents: 'none', userSelect: 'none', display: 'block' }}
       />
     )
-  },
+  }
 ];
 
 // ============================================================================
@@ -571,9 +573,11 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
   const [captionEditor, setCaptionEditor] = useState<{ slotIdx: number; text: string } | null>(null);
   const [stickerTrayOpen, setStickerTrayOpen] = useState(false);
   const [pageStickers, setPageStickers] = useState<Record<number, Array<{ uid: string; id: string; x: number; y: number; rot: number }>>>({
-    [defaultInitialDay]: [{ uid: 'init-stk-1', id: 'stk-star', x: 132, y: 210, rot: -6 }]
+    [defaultInitialDay]: [{ uid: 'init-stk-1', id: 'stk-tape-1', x: 100, y: 195, rot: -4 }]
   });
   const [draggingSticker, setDraggingSticker] = useState<{ uid: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const [isOverTrash, setIsOverTrash] = useState(false);
+  const [selectedStickerUid, setSelectedStickerUid] = useState<string | null>(null);
 
   // Hidden File Inputs for Direct Device Photo Selection
   const slotFileInputRef = useRef<HTMLInputElement>(null);
@@ -904,6 +908,10 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
       const newX = Math.max(6, Math.min(275, draggingSticker.origX + dx));
       const newY = Math.max(6, Math.min(480, draggingSticker.origY + dy));
 
+      // Check proximity to bottom trash target (centered at x: 145, y: 440)
+      const distToTrash = Math.hypot(newX - 145, newY - 440);
+      setIsOverTrash(distToTrash < 65);
+
       setPageStickers(prev => {
         const cur = prev[activePage] || [];
         return {
@@ -941,7 +949,12 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
   const handlePointerUp = (e: React.PointerEvent) => {
     clearCoverLongPress();
     if (draggingSticker) {
+      if (isOverTrash) {
+        handleRemoveSticker(draggingSticker.uid);
+        playPaperRustleSound(1.4);
+      }
       setDraggingSticker(null);
+      setIsOverTrash(false);
       return;
     }
     if (!swipeStartRef.current) return;
@@ -1176,19 +1189,21 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
         }
       `}</style>
 
-      {/* Top Mobile Book Bar — Symmetrical Balanced Action Pills */}
+      {/* Top Mobile Book Bar — Symmetrical Balanced Action Pills (Consistent Padding & Scoped CTAs) */}
       <div
         style={{
           width: '100%',
+          maxWidth: 368,
+          margin: '0 auto 10px auto',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '6px 16px',
+          padding: '8px 14px',
+          boxSizing: 'border-box',
           borderBottom: '1px solid rgba(220, 210, 195, 0.45)',
-          marginBottom: 8
         }}
       >
-        {/* Close CTA Pill */}
+        {/* Left CTA Pill: "Close" on homepage, "Cover" from library */}
         <button
           type="button"
           onClick={() => triggerFlipToPage(0, 'prev')}
@@ -1207,36 +1222,62 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
             boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
             transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
           }}
-          title="Close photobook to cover"
+          title={monthKey ? "Flip to book cover" : "Close photobook to cover"}
         >
           <BookOpen size={13} color={isCoverView ? '#DF5739' : '#6A584C'} />
-          <span>Close</span>
+          <span>{monthKey ? 'Cover' : 'Close'}</span>
         </button>
 
-        {/* Today / Day 1 CTA Pill */}
-        <button
-          type="button"
-          onClick={() => triggerFlipToPage(isCurrentMonthBook ? todayDayNum : 1, (isCurrentMonthBook ? todayDayNum : 1) > activePage ? 'next' : 'prev')}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '6px 15px',
-            borderRadius: 20,
-            fontSize: 11.5,
-            fontWeight: 600,
-            cursor: 'pointer',
-            border: !isCoverView && activePage === (isCurrentMonthBook ? todayDayNum : 1) ? '1.5px solid #DF5739' : '1px solid #D5CBB8',
-            backgroundColor: !isCoverView && activePage === (isCurrentMonthBook ? todayDayNum : 1) ? '#DF5739' : '#FFFFFF',
-            color: !isCoverView && activePage === (isCurrentMonthBook ? todayDayNum : 1) ? '#FFFFFF' : '#3A2E28',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-          }}
-          title={isCurrentMonthBook ? `Flip to today (${monthName.slice(0, 3)} ${todayDayNum})` : `Flip to Day 1 (${monthName.slice(0, 3)} 1)`}
-        >
-          <Calendar size={13} color={!isCoverView && activePage === (isCurrentMonthBook ? todayDayNum : 1) ? '#FFFFFF' : '#6A584C'} />
-          <span>{isCurrentMonthBook ? `Today (${monthName.slice(0, 3)} ${todayDayNum})` : `Day 1 (${monthName.slice(0, 3)} 1)`}</span>
-        </button>
+        {/* Right CTA Pill: "Today" on homepage, "End" from library */}
+        {monthKey ? (
+          <button
+            type="button"
+            onClick={() => triggerFlipToPage(totalDays, totalDays > activePage ? 'next' : 'prev')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 15px',
+              borderRadius: 20,
+              fontSize: 11.5,
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: !isCoverView && activePage === totalDays ? '1.5px solid #DF5739' : '1px solid #D5CBB8',
+              backgroundColor: !isCoverView && activePage === totalDays ? '#DF5739' : '#FFFFFF',
+              color: !isCoverView && activePage === totalDays ? '#FFFFFF' : '#3A2E28',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+            title={`Flip to end of volume (${monthName.slice(0, 3)} ${totalDays})`}
+          >
+            <Calendar size={13} color={!isCoverView && activePage === totalDays ? '#FFFFFF' : '#6A584C'} />
+            <span>End</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => triggerFlipToPage(todayDayNum, todayDayNum > activePage ? 'next' : 'prev')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 15px',
+              borderRadius: 20,
+              fontSize: 11.5,
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: !isCoverView && activePage === todayDayNum ? '1.5px solid #DF5739' : '1px solid #D5CBB8',
+              backgroundColor: !isCoverView && activePage === todayDayNum ? '#DF5739' : '#FFFFFF',
+              color: !isCoverView && activePage === todayDayNum ? '#FFFFFF' : '#3A2E28',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+            title={`Flip to today (${monthName.slice(0, 3)} ${todayDayNum})`}
+          >
+            <Calendar size={13} color={!isCoverView && activePage === todayDayNum ? '#FFFFFF' : '#6A584C'} />
+            <span>Today ({monthName.slice(0, 3)} {todayDayNum})</span>
+          </button>
+        )}
       </div>
 
       {/* Share Toast */}
@@ -2124,9 +2165,14 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                     <div
                       key={stk.uid}
                       className="placed-sticker"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedStickerUid(stk.uid === selectedStickerUid ? null : stk.uid);
+                      }}
                       onPointerDown={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        setSelectedStickerUid(stk.uid);
                         setDraggingSticker({
                           uid: stk.uid,
                           startX: e.clientX,
@@ -2138,6 +2184,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                       onDoubleClick={(e) => {
                         e.stopPropagation();
                         handleRemoveSticker(stk.uid);
+                        playPaperRustleSound(1.3);
                       }}
                       style={{
                         position: 'absolute',
@@ -2150,13 +2197,45 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                         userSelect: 'none',
                         WebkitUserSelect: 'none',
                         filter: draggingSticker?.uid === stk.uid 
-                          ? 'drop-shadow(0 10px 18px rgba(28,20,14,0.36)) scale(1.05)'
+                          ? (isOverTrash
+                              ? 'drop-shadow(0 0 16px rgba(220, 50, 30, 0.9)) scale(1.1) brightness(0.9)'
+                              : 'drop-shadow(0 10px 18px rgba(28,20,14,0.36)) scale(1.05)')
                           : 'drop-shadow(0 4px 8px rgba(28,20,14,0.24))',
                         transition: draggingSticker?.uid === stk.uid ? 'none' : 'filter 0.2s ease, transform 0.2s ease'
                       }}
-                      title="Drag to move • Double-click to remove"
+                      title="Drag to move • Drag to trash at bottom to delete"
                     >
                       {cat.render()}
+                      {/* Tap to delete badge */}
+                      {selectedStickerUid === stk.uid && !draggingSticker && (
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveSticker(stk.uid);
+                            playPaperRustleSound(1.3);
+                            setSelectedStickerUid(null);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: -8,
+                            right: -8,
+                            width: 20,
+                            height: 20,
+                            borderRadius: '50%',
+                            backgroundColor: '#DF5739',
+                            color: '#FFFFFF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+                            cursor: 'pointer',
+                            zIndex: 1000,
+                          }}
+                          title="Remove sticker"
+                        >
+                          <X size={11} color="#FFFFFF" />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -2216,6 +2295,38 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
               </div>
             </div>
           )}
+
+          {/* Drag-to-Delete Floating Target Zone (Request 4) */}
+          {draggingSticker && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 22,
+                left: '50%',
+                transform: `translateX(-50%) scale(${isOverTrash ? 1.15 : 1})`,
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: isOverTrash ? '9px 22px' : '7px 18px',
+                borderRadius: 30,
+                backgroundColor: isOverTrash ? '#C83820' : 'rgba(38, 26, 18, 0.90)',
+                color: '#FFFFFF',
+                boxShadow: isOverTrash
+                  ? '0 10px 28px rgba(200, 56, 32, 0.65)'
+                  : '0 6px 20px rgba(0,0,0,0.35)',
+                border: isOverTrash ? '2px solid #FFFFFF' : '1.5px solid rgba(255,255,255,0.25)',
+                transition: 'all 0.16s cubic-bezier(0.16, 1, 0.3, 1)',
+                pointerEvents: 'none',
+                backdropFilter: 'blur(10px)',
+              }}
+            >
+              <Trash2 size={16} color="#FFFFFF" />
+              <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.02em' }}>
+                {isOverTrash ? 'Release to Remove' : 'Drag here to remove'}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -2249,10 +2360,10 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', margin: '0 -4px' }}>
-              <div style={{ transform: 'rotate(-12deg)', margin: '0 -4px' }}>{STICKER_CATALOG[0].render(28)}</div>
-              <div style={{ transform: 'rotate(4deg)', margin: '0 -4px', zIndex: 2 }}>{STICKER_CATALOG[1].render(30)}</div>
-              <div style={{ transform: 'rotate(12deg)', margin: '0 -4px', zIndex: 3 }}>{STICKER_CATALOG[2].render(28)}</div>
-              <div style={{ transform: 'rotate(-6deg)', margin: '0 -4px', zIndex: 2 }}>{STICKER_CATALOG[4].render(28)}</div>
+              <div style={{ transform: 'rotate(-10deg)', margin: '0 -2px' }}>{STICKER_CATALOG[0].render(0.36)}</div>
+              <div style={{ transform: 'rotate(4deg)', margin: '0 -2px', zIndex: 2 }}>{STICKER_CATALOG[3].render(0.48)}</div>
+              <div style={{ transform: 'rotate(12deg)', margin: '0 -2px', zIndex: 3 }}>{STICKER_CATALOG[6].render(0.55)}</div>
+              <div style={{ transform: 'rotate(-6deg)', margin: '0 -2px', zIndex: 2 }}>{STICKER_CATALOG[12].render(0.50)}</div>
             </div>
           </button>
         ) : (
@@ -2276,7 +2387,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
             >
               <X style={{ width: 14, height: 14 }} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflowX: 'auto', padding: '2px 4px', flex: 1 }} className="no-scrollbar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflowX: 'auto', padding: '4px 6px', flex: 1 }} className="no-scrollbar">
               {STICKER_CATALOG.map((stk) => (
                 <button
                   key={stk.id}
@@ -2284,14 +2395,25 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                   onClick={() => handleAddSticker(stk.id)}
                   style={{
                     flexShrink: 0,
-                    padding: 4,
+                    padding: '4px 8px',
                     borderRadius: 12,
                     backgroundColor: 'rgba(255,255,255,0.85)',
                     border: '1px solid #E2D9C8',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: stk.trayWidth,
+                    height: 48,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
                   }}
+                  title={stk.name}
                 >
-                  {stk.render()}
+                  <img
+                    src={resolveStickerUri(PNG_STICKER_ASSETS[stk.id])}
+                    alt={stk.name}
+                    style={{ width: `${stk.trayWidth}px`, height: `${stk.trayHeight}px`, objectFit: 'contain' }}
+                  />
                 </button>
               ))}
             </div>

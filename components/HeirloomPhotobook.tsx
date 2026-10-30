@@ -123,9 +123,10 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
 
   // Sticker tray & placed stickers per day
   const [stickerTrayOpen, setStickerTrayOpen] = useState(false);
+  const [selectedStickerUid, setSelectedStickerUid] = useState<string | null>(null);
   const [pageStickers, setPageStickers] = useState<Record<number, PlacedSticker[]>>({
     [defaultInitialDay]: [
-      { uid: 'init-stk-1', id: 'stk-star', x: 130, y: 195, rot: -6 },
+      { uid: 'init-stk-1', id: 'stk-tape-1', x: 100, y: 195, rot: -4 },
     ],
   });
 
@@ -350,11 +351,24 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
         >
           <BookOpen size={13} color={isCoverView ? '#DF5739' : '#6A584C'} />
           <Text style={[styles.topBarBtnText, isCoverView && styles.topBarBtnTextActive]}>
-            Close
+            {monthKey ? 'Cover' : 'Close'}
           </Text>
         </TouchableOpacity>
 
-        {isCurrentMonthBook ? (
+        {monthKey ? (
+          <TouchableOpacity
+            style={[styles.todayPillBtn, activePage === totalDaysInMonth && styles.todayPillBtnActive]}
+            onPress={() => flipToPage(totalDaysInMonth)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={`Flip to end of volume (${currentMonthName.slice(0, 3)} ${totalDaysInMonth})`}
+          >
+            <Calendar size={13} color={activePage === totalDaysInMonth ? '#FFFFFF' : '#6A584C'} />
+            <Text style={[styles.todayPillBtnText, activePage === totalDaysInMonth && styles.todayPillBtnTextActive]}>
+              End
+            </Text>
+          </TouchableOpacity>
+        ) : (
           <TouchableOpacity
             style={[styles.todayPillBtn, activePage === todayDayNum && styles.todayPillBtnActive]}
             onPress={() => flipToPage(todayDayNum)}
@@ -365,19 +379,6 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
             <Calendar size={13} color={activePage === todayDayNum ? '#FFFFFF' : '#6A584C'} />
             <Text style={[styles.todayPillBtnText, activePage === todayDayNum && styles.todayPillBtnTextActive]}>
               Today ({currentMonthName.slice(0, 3)} {todayDayNum})
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.todayPillBtn, activePage === 1 && styles.todayPillBtnActive]}
-            onPress={() => flipToPage(1)}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={`Flip to first day (${currentMonthName.slice(0, 3)} 1)`}
-          >
-            <Calendar size={13} color={activePage === 1 ? '#FFFFFF' : '#6A584C'} />
-            <Text style={[styles.todayPillBtnText, activePage === 1 && styles.todayPillBtnTextActive]}>
-              Day 1 ({currentMonthName.slice(0, 3)} 1)
             </Text>
           </TouchableOpacity>
         )}
@@ -644,9 +645,10 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                       },
                     ]}
                     onLongPress={() => handleRemoveSticker(stk.uid)}
+                    onPress={() => setSelectedStickerUid(stk.uid === selectedStickerUid ? null : stk.uid)}
                     activeOpacity={0.8}
                   >
-                    {cat.render(44)}
+                    {cat.render(1)}
                   </TouchableOpacity>
                 );
               })}
@@ -745,17 +747,17 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
             activeOpacity={0.85}
           >
             <View style={styles.clusterRow}>
-              <View style={[styles.clusterItem, { transform: [{ rotate: '-12deg' }] }]}>
-                {STICKER_CATALOG[0].render(28)}
+              <View style={[styles.clusterItem, { transform: [{ rotate: '-10deg' }] }]}>
+                {STICKER_CATALOG[0].render(0.36)}
               </View>
               <View style={[styles.clusterItem, { transform: [{ rotate: '4deg' }], zIndex: 2 }]}>
-                {STICKER_CATALOG[1].render(30)}
+                {STICKER_CATALOG[3].render(0.48)}
               </View>
               <View style={[styles.clusterItem, { transform: [{ rotate: '12deg' }], zIndex: 3 }]}>
-                {STICKER_CATALOG[2].render(28)}
+                {STICKER_CATALOG[6].render(0.55)}
               </View>
               <View style={[styles.clusterItem, { transform: [{ rotate: '-6deg' }], zIndex: 2 }]}>
-                {STICKER_CATALOG[3].render(28)}
+                {STICKER_CATALOG[12].render(0.50)}
               </View>
             </View>
           </TouchableOpacity>
@@ -778,11 +780,11 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
               {STICKER_CATALOG.map(stk => (
                 <TouchableOpacity
                   key={stk.id}
-                  style={styles.stickerTrayItem}
+                  style={[styles.stickerTrayItem, { minWidth: stk.trayWidth, height: 48, justifyContent: 'center', alignItems: 'center' }]}
                   onPress={() => handleAddSticker(stk.id)}
                   activeOpacity={0.8}
                 >
-                  {stk.render(38)}
+                  {stk.render(stk.trayWidth / stk.width)}
                 </TouchableOpacity>
               ))}
             </ScrollView>

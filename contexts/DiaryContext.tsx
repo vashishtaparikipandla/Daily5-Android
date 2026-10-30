@@ -103,12 +103,10 @@ function ensureAutomatedMonthlyBooks(existingBooks: Book[], joinDate: Date): Boo
     }
   }
 
-  // Filter out any empty automated monthly volumes that were before the join month
-  // (Preserve sample books, custom books, or books with real user entries)
+  // Strictly automated monthly continuum books only.
+  // Purge sample books and custom books (such as old 'Vashis') so only automated monthly volumes exist.
   const updated = existingBooks.filter(b => {
-    if (b.isSample || b.isCustom) return true;
-    const hasContent = b.days && b.days.some(d => d.entries && d.entries.some(e => e.text || (e.photos && e.photos.length > 0)));
-    if (hasContent) return true;
+    if (b.isSample || b.isCustom) return false;
     return allowedKeys.includes(b.monthKey);
   });
 

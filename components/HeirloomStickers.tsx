@@ -1,323 +1,313 @@
 import React from 'react';
-import { View, Image, StyleSheet } from 'react-native';
-import Svg, {
-  Rect,
-  Circle,
-  Path,
-  G,
-  Ellipse,
-  Polygon,
-  Line,
-  Text as SvgText,
-} from 'react-native-svg';
+import { Image } from 'react-native';
 
-export const STICKER_ASSETS: Record<string, any> = {
-  'stk-3d-ghost': require('@/assets/images/stickers/ghost-3d.png'),
-  'stk-3d-lollipop': require('@/assets/images/stickers/lollipop-3d.png'),
-  'stk-3d-thumbsup': require('@/assets/images/stickers/thumbsup-3d.png'),
-  'stk-3d-shield': require('@/assets/images/stickers/shield-3d.png'),
-  'stk-3d-star': require('@/assets/images/stickers/star-3d.png'),
-  'stk-3d-heart': require('@/assets/images/stickers/heart.png'),
-  'stk-3d-hearteyes': require('@/assets/images/stickers/heartEyes.png'),
-  'stk-3d-party': require('@/assets/images/stickers/party.png'),
-  'stk-3d-sunglasses': require('@/assets/images/stickers/sunglasses.png'),
-  'stk-3d-kiss': require('@/assets/images/stickers/kiss.png'),
-  'stk-3d-robot': require('@/assets/images/stickers/robot.png'),
-  'stk-3d-smile': require('@/assets/images/stickers/smile.png'),
+export const PNG_STICKER_ASSETS: Record<string, any> = {
+  'stk-tape-1': require('@/assets/stickers/tape_1.png'),
+  'stk-tape-2': require('@/assets/stickers/tape_2.png'),
+  'stk-tape-3': require('@/assets/stickers/tape_3.png'),
+  'stk-badge-1': require('@/assets/stickers/sticker_badge_1.png'),
+  'stk-badge-2': require('@/assets/stickers/sticker_gemini_3.png'),
+  'stk-badge-3': require('@/assets/stickers/sticker_gemini_6.png'),
+  'stk-stamp-1': require('@/assets/stickers/sticker_vintage_1.png'),
+  'stk-stamp-2': require('@/assets/stickers/sticker_vintage_2.png'),
+  'stk-stamp-3': require('@/assets/stickers/sticker_vintage_3.png'),
+  'stk-stamp-4': require('@/assets/stickers/sticker_vintage_4.png'),
+  'stk-stamp-5': require('@/assets/stickers/sticker_vintage_5.png'),
+  'stk-stamp-6': require('@/assets/stickers/sticker_vintage_6.png'),
+  'stk-emblem-1': require('@/assets/stickers/sticker_gemini_1.png'),
+  'stk-emblem-2': require('@/assets/stickers/sticker_gemini_4.png'),
+  'stk-emblem-3': require('@/assets/stickers/sticker_gemini_5.png'),
+  'stk-accent-1': require('@/assets/stickers/sticker_gemini_2.png'),
+  'stk-accent-2': require('@/assets/stickers/sticker_gemini_7.png'),
+  'stk-accent-3': require('@/assets/stickers/sticker_gemini_8.png'),
 };
 
 export interface StickerCatalogItem {
   id: string;
   name: string;
-  render: (size?: number) => React.ReactNode;
+  width: number;
+  height: number;
+  trayWidth: number;
+  trayHeight: number;
+  render: (scale?: number) => React.ReactNode;
 }
 
 export const STICKER_CATALOG: StickerCatalogItem[] = [
-  // ─── 1. NOSTALGIC HEIRLOOM STICKERS (RESTORED ORIGINAL 12) ───────────────────
+  // ─── 1. LONG WASHI RIBBON TAPES (~3:1 ASPECT RATIO) ─────────────────────
   {
-    id: 'stk-love',
-    name: 'Best Day Label',
-    render: (size = 46) => (
-      <Svg width={size * 1.5} height={size * 0.8} viewBox="0 0 84 44">
-        <Rect x="3" y="6" width="78" height="32" rx="16" fill="#FFF8F0" stroke="#DF5739" strokeWidth="2" />
-        <SvgText x="42" y="27" textAnchor="middle" fontSize="18" fontWeight="bold" fill="#C8462A">
-          best day ♡
-        </SvgText>
-      </Svg>
+    id: 'stk-tape-1',
+    name: 'Washi Ribbon Tape',
+    width: 130,
+    height: 43,
+    trayWidth: 72,
+    trayHeight: 24,
+    render: (scale = 1) => (
+      <Image
+        source={PNG_STICKER_ASSETS['stk-tape-1']}
+        style={{ width: 130 * scale, height: 43 * scale }}
+        resizeMode="contain"
+      />
     ),
   },
   {
-    id: 'stk-camera',
-    name: 'Retro Camera',
-    render: (size = 46) => (
-      <Svg width={size} height={size * 0.88} viewBox="0 0 64 56">
-        <Rect x="6" y="12" width="52" height="36" rx="8" fill="#3B3532" stroke="#F4EFE6" strokeWidth="2.5" />
-        <Rect x="18" y="6" width="16" height="6" rx="2" fill="#DF5739" />
-        <Circle cx="34" cy="30" r="11" fill="#F2C97D" stroke="#FAF6F0" strokeWidth="2.5" />
-        <Circle cx="34" cy="30" r="5" fill="#231F1D" />
-        <Circle cx="16" cy="21" r="3.5" fill="#FFBD00" />
-      </Svg>
+    id: 'stk-tape-2',
+    name: 'Archival Washi Strip',
+    width: 130,
+    height: 43,
+    trayWidth: 72,
+    trayHeight: 24,
+    render: (scale = 1) => (
+      <Image
+        source={PNG_STICKER_ASSETS['stk-tape-2']}
+        style={{ width: 130 * scale, height: 43 * scale }}
+        resizeMode="contain"
+      />
     ),
   },
   {
-    id: 'stk-heart',
-    name: 'Blush Heart',
-    render: (size = 46) => (
-      <Svg width={size} height={size} viewBox="0 0 60 60">
-        <Circle cx="30" cy="30" r="25" fill="#FFD6E0" stroke="#E06377" strokeWidth="2.5" />
-        <Path
-          d="M30 43 C30 43 16 33 16 23 C16 18 21 15 25 18 C28 19 30 22 30 22 C30 22 32 19 35 18 C39 15 44 18 44 23 C44 33 30 43 30 43 Z"
-          fill="#E03E52"
-        />
-      </Svg>
-    ),
-  },
-  {
-    id: 'stk-flower',
-    name: 'Daisy Bloom',
-    render: (size = 46) => (
-      <Svg width={size} height={size} viewBox="0 0 60 60">
-        <G fill="#FFFDF9" stroke="#E2D9C8" strokeWidth="1.5">
-          <Ellipse cx="30" cy="14" rx="6.5" ry="11" />
-          <Ellipse cx="30" cy="46" rx="6.5" ry="11" />
-          <Ellipse cx="14" cy="30" rx="11" ry="6.5" />
-          <Ellipse cx="46" cy="30" rx="11" ry="6.5" />
-          <G transform="rotate(-45 30 30)">
-            <Ellipse cx="30" cy="14" rx="6.5" ry="11" />
-            <Ellipse cx="30" cy="46" rx="6.5" ry="11" />
-            <Ellipse cx="14" cy="30" rx="11" ry="6.5" />
-            <Ellipse cx="46" cy="30" rx="11" ry="6.5" />
-          </G>
-        </G>
-        <Circle cx="30" cy="30" r="8.5" fill="#FFBD00" stroke="#D99B00" strokeWidth="1.5" />
-      </Svg>
-    ),
-  },
-  {
-    id: 'stk-music',
-    name: 'Music Note',
-    render: (size = 46) => (
-      <Svg width={size} height={size} viewBox="0 0 60 60">
-        <Rect x="5" y="5" width="50" height="50" rx="15" fill="#FFF7EB" stroke="#F2C97D" strokeWidth="2.5" />
-        <Path d="M23 40 V20 L41 16 V36" fill="none" stroke="#DF5739" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-        <Circle cx="19" cy="40" r="5.5" fill="#DF5739" />
-        <Circle cx="37" cy="36" r="5.5" fill="#DF5739" />
-      </Svg>
-    ),
-  },
-  {
-    id: 'stk-tape',
-    name: 'Washi Tape',
-    render: (size = 46) => (
-      <Svg width={size * 1.6} height={size * 0.7} viewBox="0 0 90 40">
-        <Path d="M4 8 L86 5 L83 33 L6 35 Z" fill="#84C7AE" fillOpacity="0.9" stroke="#569E85" strokeWidth="1.5" />
-        <Path d="M18 7 L18 34 M36 7 L36 34 M54 6 L54 33 M72 6 L72 33" stroke="#FFFFFF" strokeWidth="2" strokeOpacity="0.65" />
-      </Svg>
-    ),
-  },
-  {
-    id: 'stk-sun',
-    name: 'Sunshine',
-    render: (size = 46) => (
-      <Svg width={size} height={size} viewBox="0 0 60 60">
-        <Circle cx="30" cy="30" r="14" fill="#FFA834" stroke="#E07A12" strokeWidth="2" />
-        <G stroke="#FFA834" strokeWidth="3" strokeLinecap="round">
-          <Line x1="30" y1="6" x2="30" y2="11" />
-          <Line x1="30" y1="49" x2="30" y2="54" />
-          <Line x1="6" y1="30" x2="11" y2="30" />
-          <Line x1="49" y1="30" x2="54" y2="30" />
-          <Line x1="13" y1="13" x2="17" y2="17" />
-          <Line x1="43" y1="43" x2="47" y2="47" />
-          <Line x1="47" y1="13" x2="43" y2="17" />
-          <Line x1="17" y1="43" x2="13" y2="47" />
-        </G>
-      </Svg>
-    ),
-  },
-  {
-    id: 'stk-coffee',
-    name: 'Warm Coffee',
-    render: (size = 46) => (
-      <Svg width={size} height={size} viewBox="0 0 60 60">
-        <Path d="M14 22 H42 V36 C42 44 35 49 28 49 C21 49 14 44 14 36 Z" fill="#D9825B" stroke="#8C4A2E" strokeWidth="2.5" />
-        <Path d="M42 25 H47 C50 25 52 27 52 30 C52 33 50 35 47 35 H42" fill="none" stroke="#8C4A2E" strokeWidth="2.5" />
-        <Path d="M22 15 Q24 10 22 7 M30 15 Q32 10 30 7 M36 15 Q38 10 36 7" fill="none" stroke="#B89F8D" strokeWidth="2" strokeLinecap="round" />
-      </Svg>
-    ),
-  },
-  {
-    id: 'stk-clock',
-    name: 'Pocket Clock',
-    render: (size = 46) => (
-      <Svg width={size} height={size} viewBox="0 0 60 60">
-        <Circle cx="30" cy="30" r="25" fill="#FFE484" stroke="#E09F1F" strokeWidth="2.5" />
-        <Circle cx="30" cy="30" r="19" fill="#FFFDF7" />
-        <Path d="M30 17 V30 L38 34" fill="none" stroke="#2B2420" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-      </Svg>
-    ),
-  },
-  {
-    id: 'stk-rainbow',
-    name: 'Pastel Rainbow',
-    render: (size = 46) => (
-      <Svg width={size} height={size * 0.82} viewBox="0 0 64 52">
-        <Path d="M8 42 A24 24 0 0 1 56 42" fill="none" stroke="#E05A47" strokeWidth="5" strokeLinecap="round" />
-        <Path d="M13 42 A19 19 0 0 1 51 42" fill="none" stroke="#F2A93B" strokeWidth="5" strokeLinecap="round" />
-        <Path d="M18 42 A14 14 0 0 1 46 42" fill="none" stroke="#62B6CB" strokeWidth="5" strokeLinecap="round" />
-      </Svg>
-    ),
-  },
-  {
-    id: 'stk-star',
-    name: 'Gold Star',
-    render: (size = 46) => (
-      <Svg width={size} height={size} viewBox="0 0 60 60">
-        <Polygon points="30,5 37,21 55,23 41,35 45,53 30,43 15,53 19,35 5,23 23,21" fill="#FFBD00" stroke="#D99B00" strokeWidth="2.2" />
-      </Svg>
-    ),
-  },
-  {
-    id: 'stk-stamp',
-    name: 'Airmail Stamp',
-    render: (size = 46) => (
-      <Svg width={size} height={size * 1.1} viewBox="0 0 64 72">
-        <Rect x="6" y="6" width="52" height="60" rx="4" fill="#F7F1E3" stroke="#5B7B9C" strokeWidth="2.5" strokeDasharray="4 3" />
-        <Rect x="12" y="12" width="40" height="48" fill="#D5E5F2" />
-        <Circle cx="32" cy="32" r="10" fill="#E06D53" />
-        <Path d="M18 50 Q32 42 46 50" fill="none" stroke="#3B5978" strokeWidth="2.5" />
-      </Svg>
+    id: 'stk-tape-3',
+    name: 'Vintage Paper Tape',
+    width: 130,
+    height: 43,
+    trayWidth: 72,
+    trayHeight: 24,
+    render: (scale = 1) => (
+      <Image
+        source={PNG_STICKER_ASSETS['stk-tape-3']}
+        style={{ width: 130 * scale, height: 43 * scale }}
+        resizeMode="contain"
+      />
     ),
   },
 
-  // ─── 2. 3D VINYL STICKERS (EXPANDED COLLECTION) ──────────────────────────────
+  // ─── 2. RECTANGULAR BADGES & LABELS (~1.4 - 1.6 ASPECT RATIO) ─────────────
   {
-    id: 'stk-3d-ghost',
-    name: '3D Ghost',
-    render: (size = 46) => (
+    id: 'stk-badge-1',
+    name: 'Keepsake Label Badge',
+    width: 74,
+    height: 53,
+    trayWidth: 46,
+    trayHeight: 33,
+    render: (scale = 1) => (
       <Image
-        source={STICKER_ASSETS['stk-3d-ghost']}
-        style={{ width: size, height: size }}
+        source={PNG_STICKER_ASSETS['stk-badge-1']}
+        style={{ width: 74 * scale, height: 53 * scale }}
         resizeMode="contain"
       />
     ),
   },
   {
-    id: 'stk-3d-lollipop',
-    name: '3D Lollipop',
-    render: (size = 46) => (
+    id: 'stk-badge-2',
+    name: 'Story Ephemera Badge',
+    width: 74,
+    height: 54,
+    trayWidth: 46,
+    trayHeight: 33,
+    render: (scale = 1) => (
       <Image
-        source={STICKER_ASSETS['stk-3d-lollipop']}
-        style={{ width: size, height: size }}
+        source={PNG_STICKER_ASSETS['stk-badge-2']}
+        style={{ width: 74 * scale, height: 54 * scale }}
         resizeMode="contain"
       />
     ),
   },
   {
-    id: 'stk-3d-thumbsup',
-    name: '3D Thumbs Up',
-    render: (size = 46) => (
+    id: 'stk-badge-3',
+    name: 'Archival Banner Pill',
+    width: 78,
+    height: 49,
+    trayWidth: 48,
+    trayHeight: 30,
+    render: (scale = 1) => (
       <Image
-        source={STICKER_ASSETS['stk-3d-thumbsup']}
-        style={{ width: size, height: size }}
+        source={PNG_STICKER_ASSETS['stk-badge-3']}
+        style={{ width: 78 * scale, height: 49 * scale }}
+        resizeMode="contain"
+      />
+    ),
+  },
+
+  // ─── 3. SQUARE ARCHIVAL STAMPS (~1:1 ASPECT RATIO) ───────────────────────
+  {
+    id: 'stk-stamp-1',
+    name: 'Vintage Postal Stamp I',
+    width: 54,
+    height: 54,
+    trayWidth: 36,
+    trayHeight: 36,
+    render: (scale = 1) => (
+      <Image
+        source={PNG_STICKER_ASSETS['stk-stamp-1']}
+        style={{ width: 54 * scale, height: 54 * scale }}
         resizeMode="contain"
       />
     ),
   },
   {
-    id: 'stk-3d-shield',
-    name: '3D Shield',
-    render: (size = 46) => (
+    id: 'stk-stamp-2',
+    name: 'Vintage Postal Stamp II',
+    width: 54,
+    height: 55,
+    trayWidth: 36,
+    trayHeight: 36,
+    render: (scale = 1) => (
       <Image
-        source={STICKER_ASSETS['stk-3d-shield']}
-        style={{ width: size, height: size }}
+        source={PNG_STICKER_ASSETS['stk-stamp-2']}
+        style={{ width: 54 * scale, height: 55 * scale }}
         resizeMode="contain"
       />
     ),
   },
   {
-    id: 'stk-3d-star',
-    name: '3D Star',
-    render: (size = 46) => (
+    id: 'stk-stamp-3',
+    name: 'Vintage Postal Stamp III',
+    width: 53,
+    height: 55,
+    trayWidth: 36,
+    trayHeight: 36,
+    render: (scale = 1) => (
       <Image
-        source={STICKER_ASSETS['stk-3d-star']}
-        style={{ width: size, height: size }}
+        source={PNG_STICKER_ASSETS['stk-stamp-3']}
+        style={{ width: 53 * scale, height: 55 * scale }}
         resizeMode="contain"
       />
     ),
   },
   {
-    id: 'stk-3d-heart',
-    name: '3D Heart',
-    render: (size = 46) => (
+    id: 'stk-stamp-4',
+    name: 'Vintage Postal Stamp IV',
+    width: 53,
+    height: 56,
+    trayWidth: 36,
+    trayHeight: 36,
+    render: (scale = 1) => (
       <Image
-        source={STICKER_ASSETS['stk-3d-heart']}
-        style={{ width: size, height: size }}
+        source={PNG_STICKER_ASSETS['stk-stamp-4']}
+        style={{ width: 53 * scale, height: 56 * scale }}
         resizeMode="contain"
       />
     ),
   },
   {
-    id: 'stk-3d-hearteyes',
-    name: '3D Heart Eyes',
-    render: (size = 46) => (
+    id: 'stk-stamp-5',
+    name: 'Vintage Postal Stamp V',
+    width: 55,
+    height: 56,
+    trayWidth: 36,
+    trayHeight: 36,
+    render: (scale = 1) => (
       <Image
-        source={STICKER_ASSETS['stk-3d-hearteyes']}
-        style={{ width: size, height: size }}
+        source={PNG_STICKER_ASSETS['stk-stamp-5']}
+        style={{ width: 55 * scale, height: 56 * scale }}
         resizeMode="contain"
       />
     ),
   },
   {
-    id: 'stk-3d-party',
-    name: '3D Party Popper',
-    render: (size = 46) => (
+    id: 'stk-stamp-6',
+    name: 'Vintage Postal Stamp VI',
+    width: 56,
+    height: 53,
+    trayWidth: 36,
+    trayHeight: 34,
+    render: (scale = 1) => (
       <Image
-        source={STICKER_ASSETS['stk-3d-party']}
-        style={{ width: size, height: size }}
+        source={PNG_STICKER_ASSETS['stk-stamp-6']}
+        style={{ width: 56 * scale, height: 53 * scale }}
+        resizeMode="contain"
+      />
+    ),
+  },
+
+  // ─── 4. 3D MEMORY EMBLEMS & SEALS ─────────────────────────────────────────
+  {
+    id: 'stk-emblem-1',
+    name: 'Heirloom Wax Crest',
+    width: 60,
+    height: 51,
+    trayWidth: 40,
+    trayHeight: 34,
+    render: (scale = 1) => (
+      <Image
+        source={PNG_STICKER_ASSETS['stk-emblem-1']}
+        style={{ width: 60 * scale, height: 51 * scale }}
         resizeMode="contain"
       />
     ),
   },
   {
-    id: 'stk-3d-sunglasses',
-    name: '3D Sunglasses',
-    render: (size = 46) => (
+    id: 'stk-emblem-2',
+    name: '3D Memory Seal I',
+    width: 54,
+    height: 54,
+    trayWidth: 36,
+    trayHeight: 36,
+    render: (scale = 1) => (
       <Image
-        source={STICKER_ASSETS['stk-3d-sunglasses']}
-        style={{ width: size, height: size }}
+        source={PNG_STICKER_ASSETS['stk-emblem-2']}
+        style={{ width: 54 * scale, height: 54 * scale }}
         resizeMode="contain"
       />
     ),
   },
   {
-    id: 'stk-3d-kiss',
-    name: '3D Kiss',
-    render: (size = 46) => (
+    id: 'stk-emblem-3',
+    name: '3D Memory Seal II',
+    width: 54,
+    height: 54,
+    trayWidth: 36,
+    trayHeight: 36,
+    render: (scale = 1) => (
       <Image
-        source={STICKER_ASSETS['stk-3d-kiss']}
-        style={{ width: size, height: size }}
+        source={PNG_STICKER_ASSETS['stk-emblem-3']}
+        style={{ width: 54 * scale, height: 54 * scale }}
+        resizeMode="contain"
+      />
+    ),
+  },
+
+  // ─── 5. PETITE ACCENT CHARMS (DELICATE EMBELLISHMENTS) ─────────────────────
+  {
+    id: 'stk-accent-1',
+    name: 'Petite Star Charm',
+    width: 42,
+    height: 38,
+    trayWidth: 30,
+    trayHeight: 27,
+    render: (scale = 1) => (
+      <Image
+        source={PNG_STICKER_ASSETS['stk-accent-1']}
+        style={{ width: 42 * scale, height: 38 * scale }}
         resizeMode="contain"
       />
     ),
   },
   {
-    id: 'stk-3d-robot',
-    name: '3D Robot',
-    render: (size = 46) => (
+    id: 'stk-accent-2',
+    name: 'Mini Ribbon Charm',
+    width: 38,
+    height: 39,
+    trayWidth: 28,
+    trayHeight: 29,
+    render: (scale = 1) => (
       <Image
-        source={STICKER_ASSETS['stk-3d-robot']}
-        style={{ width: size, height: size }}
+        source={PNG_STICKER_ASSETS['stk-accent-2']}
+        style={{ width: 38 * scale, height: 39 * scale }}
         resizeMode="contain"
       />
     ),
   },
   {
-    id: 'stk-3d-smile',
-    name: '3D Smile',
-    render: (size = 46) => (
+    id: 'stk-accent-3',
+    name: 'Vertical Accent Tag',
+    width: 32,
+    height: 41,
+    trayWidth: 24,
+    trayHeight: 31,
+    render: (scale = 1) => (
       <Image
-        source={STICKER_ASSETS['stk-3d-smile']}
-        style={{ width: size, height: size }}
+        source={PNG_STICKER_ASSETS['stk-accent-3']}
+        style={{ width: 32 * scale, height: 41 * scale }}
         resizeMode="contain"
       />
     ),

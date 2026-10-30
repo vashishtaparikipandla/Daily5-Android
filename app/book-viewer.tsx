@@ -517,33 +517,6 @@ export function BookViewerContent() {
         </View>
 
         <View style={styles.headerActions}>
-          {/* Watch Volume Retrospective Story Reel */}
-          {sortedDays.length > 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                setShowVolumeReel(true);
-              }}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={styles.headerBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Watch Volume Reel"
-            >
-              <FilmStrip size={20} color={colors.primary} weight="bold" />
-            </TouchableOpacity>
-          )}
-
-          {/* Layout & Typography Studio Trigger */}
-          <TouchableOpacity
-            onPress={() => setShowLayoutModal(true)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={styles.headerBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Change page layout and typography"
-          >
-            <SlidersHorizontal size={20} color={colors.foreground} />
-          </TouchableOpacity>
-
           {/* Hide/Unhide toggle for current day */}
           {currentDay && (
             <TouchableOpacity
@@ -595,138 +568,11 @@ export function BookViewerContent() {
 
       {/* 3D Heirloom Photobook Viewport */}
       <ScrollView
-        contentContainerStyle={{ paddingVertical: 12, alignItems: 'center' }}
+        contentContainerStyle={{ paddingVertical: 14, paddingHorizontal: 16, alignItems: 'center' }}
         showsVerticalScrollIndicator={false}
       >
         <HeirloomPhotobook monthKey={book.monthKey} initialDay={1} />
       </ScrollView>
-
-      {/* ── Layout & Typography Customizer Modal ───────────────────────────── */}
-      <Modal
-        visible={showLayoutModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowLayoutModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.modalSheet,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.borderStrong,
-                paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16) + 24,
-              },
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-                  Book Layout & Type
-                </Text>
-                <Text style={[styles.modalSub, { color: colors.mutedForeground }]}>
-                  Customize how memories reflow on the printed page
-                </Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowLayoutModal(false)}>
-                <X size={22} color={colors.foreground} weight="bold" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
-              {/* 1. Page Layout Selection (5 Visual Layouts) */}
-              <View style={{ gap: 8 }}>
-                <Text style={[styles.settingLabel, { color: colors.tertiary }]}>
-                  PAGE LAYOUT STYLE (5 STYLES)
-                </Text>
-                <VisualLayoutPicker
-                  selectedLayout={selectedLayout}
-                  onSelectLayout={handleSelectLayout}
-                />
-              </View>
-
-              {/* 2. Book-Wide Typography (Live Visual Font Specimens) */}
-              <View style={{ gap: 8 }}>
-                <Text style={[styles.settingLabel, { color: colors.tertiary }]}>
-                  BOOK-WIDE FONT (APPLIES TO ENTIRE VOLUME)
-                </Text>
-                <View style={styles.fontGrid}>
-                  {[
-                    {
-                      id: 'playfair' as const,
-                      name: 'Playfair Serif',
-                      specimen: 'Aa Bb Gg 123',
-                      sample: '“Every sunset is an archive of a day well lived.”',
-                      fontStyle: { fontFamily: 'PlayfairDisplay_700Bold' },
-                      bodyStyle: { fontFamily: 'PlayfairDisplay_400Regular' },
-                    },
-                    {
-                      id: 'garamond' as const,
-                      name: 'Garamond',
-                      specimen: 'Aa Bb Gg 123',
-                      sample: '“Every sunset is an archive of a day well lived.”',
-                      fontStyle: { fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif', fontWeight: 'bold' as const },
-                      bodyStyle: { fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif' },
-                    },
-                    {
-                      id: 'sans' as const,
-                      name: 'Inter Sans',
-                      specimen: 'Aa Bb Gg 123',
-                      sample: '“Every sunset is an archive of a day well lived.”',
-                      fontStyle: { fontFamily: 'Inter_700Bold' },
-                      bodyStyle: { fontFamily: 'Inter_400Regular' },
-                    },
-                    {
-                      id: 'typewriter' as const,
-                      name: 'Typewriter',
-                      specimen: 'Aa Bb Gg 123',
-                      sample: '“Every sunset is an archive of a day well lived.”',
-                      fontStyle: { fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', fontWeight: 'bold' as const },
-                      bodyStyle: { fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-                    },
-                  ].map(f => {
-                    const active = selectedFont === f.id;
-                    return (
-                      <TouchableOpacity
-                        key={f.id}
-                        style={[
-                          styles.fontCard,
-                          {
-                            borderColor: active ? colors.primary : colors.borderStrong,
-                            backgroundColor: active ? colors.accentLight : colors.card,
-                          },
-                        ]}
-                        onPress={() => handleSelectFont(f.id)}
-                        activeOpacity={0.8}
-                      >
-                        <View style={styles.fontCardHeader}>
-                          <Text style={[styles.fontCardName, { color: colors.foreground }]}>{f.name}</Text>
-                          {active && <Check size={16} color={colors.primary} weight="bold" />}
-                        </View>
-                        <Text style={[styles.fontSpecimen, f.fontStyle, { color: colors.foreground }]}>
-                          {f.specimen}
-                        </Text>
-                        <Text style={[styles.fontSampleText, f.bodyStyle, { color: colors.mutedForeground }]} numberOfLines={2}>
-                          {f.sample}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            </ScrollView>
-
-            <TouchableOpacity
-              style={[styles.modalDoneBtn, { backgroundColor: colors.primary }]}
-              onPress={() => setShowLayoutModal(false)}
-            >
-              <Text style={[styles.modalDoneBtnText, { color: colors.primaryForeground }]}>
-                Apply to Book ✓
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
       {/* ── Volume Retrospective Story Reel Modal ──────────────────────── */}
       <WeeklyReelModal
