@@ -47,6 +47,8 @@ const PNG_STICKER_ASSETS: Record<string, any> = {
   'stk-accent-3': require('@/assets/stickers/sticker_gemini_8.png'),
 };
 
+const HAND_PLACING_ASSET = require('@/assets/images/hand_placing.png');
+
 const resolveStickerUri = (asset: any) =>
   typeof asset === 'string' ? asset : asset?.uri || asset?.default || asset;
 
@@ -2075,39 +2077,27 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                             />
                           </div>
 
-                          {/* Hand with Oatmeal Sweater Cuff */}
+                          {/* 3D Realistic Hand Placement Visual */}
                           <div
                             style={{
                               position: 'absolute',
-                              bottom: -64,
-                              right: -48,
-                              width: 128,
-                              height: 128,
+                              bottom: -84,
+                              right: -24,
+                              width: 108,
+                              height: 192,
                               pointerEvents: 'none',
+                              transform: 'rotate(-14deg)',
+                              transformOrigin: 'top center',
                               animation: 'handWithdrawAfterTuck 1.05s ease-out forwards',
-                              filter: 'drop-shadow(-6px 10px 14px rgba(28, 20, 14, 0.32))'
+                              filter: 'drop-shadow(-8px 14px 18px rgba(25, 18, 12, 0.40))'
                             }}
                           >
-                            <svg viewBox="0 0 180 180" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-                              <defs>
-                                <linearGradient id="naturalSkinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                  <stop offset="0%" stopColor="#F7D5BE" />
-                                  <stop offset="55%" stopColor="#E9B89A" />
-                                  <stop offset="100%" stopColor="#D69C7A" />
-                                </linearGradient>
-                                <linearGradient id="sleeveClothGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                  <stop offset="0%" stopColor="#EFE9DF" />
-                                  <stop offset="100%" stopColor="#D5CBB8" />
-                                </linearGradient>
-                              </defs>
-                              <path d="M42 46 C55 32, 82 38, 98 56 L124 88 L88 112 L52 76 C38 64, 34 54, 42 46 Z" fill="#D69C7A" />
-                              <path d="M24 28 C14 18, 28 4, 44 14 C60 24, 84 48, 102 66 L138 106 L104 138 L66 96 C48 76, 36 58, 22 42 C16 35, 19 31, 24 28 Z" fill="url(#naturalSkinGrad)" stroke="#C58B6B" strokeWidth="1.5" />
-                              <ellipse cx="31" cy="21" rx="7.5" ry="5" transform="rotate(-32 31 21)" fill="#FCEAE0" stroke="#D8A489" strokeWidth="1" />
-                              <path d="M52 44 Q58 39 63 43" fill="none" stroke="#C28666" strokeWidth="1.4" strokeLinecap="round" />
-                              <path d="M72 65 Q79 59 85 64" fill="none" stroke="#C28666" strokeWidth="1.3" strokeLinecap="round" />
-                              <path d="M94 122 L134 86 L176 132 L136 168 Z" fill="url(#sleeveClothGrad)" stroke="#C2B6A1" strokeWidth="2" strokeLinejoin="round" />
-                              <path d="M102 114 L126 92" stroke="#DF5739" strokeWidth="2.5" strokeDasharray="4 4" strokeLinecap="round" />
-                            </svg>
+                            <img
+                              src={resolveStickerUri(HAND_PLACING_ASSET)}
+                              alt="Hand placing photo"
+                              draggable={false}
+                              style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none', userSelect: 'none' }}
+                            />
                           </div>
                         </div>
                       )}

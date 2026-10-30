@@ -289,17 +289,24 @@ const MOCK_FOUR_PHOTOS = [
   },
 ];
 
-function MiniHandSvg() {
+const HAND_PLACING_ASSET = require('@/assets/images/hand_placing.png');
+
+function MiniHandPlacement() {
   return (
-    <Svg viewBox="0 0 180 180" style={{ width: 92, height: 92, overflow: 'visible' }}>
-      <path d="M42 46 C55 32, 82 38, 98 56 L124 88 L88 112 L52 76 C38 64, 34 54, 42 46 Z" fill="#D69C7A" />
-      <path d="M24 28 C14 18, 28 4, 44 14 C60 24, 84 48, 102 66 L138 106 L104 138 L66 96 C48 76, 36 58, 22 42 C16 35, 19 31, 24 28 Z" fill="#E9B89A" stroke="#C58B6B" strokeWidth="1.5" />
-      <ellipse cx="31" cy="21" rx="7.5" ry="5" transform="rotate(-32 31 21)" fill="#FCEAE0" stroke="#D8A489" strokeWidth="1" />
-      <path d="M52 44 Q58 39 63 43" fill="none" stroke="#C28666" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M72 65 Q79 59 85 64" fill="none" stroke="#C28666" strokeWidth="1.3" strokeLinecap="round" />
-      <path d="M94 122 L134 86 L176 132 L136 168 Z" fill="#E0D7C6" stroke="#C2B6A1" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M102 114 L126 92" stroke="#DF5739" strokeWidth="2" strokeDasharray="3 3" strokeLinecap="round" />
-    </Svg>
+    <View style={{ width: 72, height: 128, transform: [{ rotate: '-12deg' }] }}>
+      <Image
+        source={HAND_PLACING_ASSET}
+        style={{
+          width: '100%',
+          height: '100%',
+          shadowColor: '#1C140E',
+          shadowOffset: { width: -3, height: 6 },
+          shadowOpacity: 0.35,
+          shadowRadius: 8,
+        }}
+        resizeMode="contain"
+      />
+    </View>
   );
 }
 
@@ -392,7 +399,7 @@ function TuckFourPhotosVisual() {
         </View>
 
         <Animated.View style={[visualStyles.tuckHandContainer, handStyle]}>
-          <MiniHandSvg />
+          <MiniHandPlacement />
         </Animated.View>
 
         {showConfetti && (
