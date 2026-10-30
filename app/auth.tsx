@@ -95,7 +95,25 @@ export default function AuthScreen() {
     setLoading(true);
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      const response = await GoogleSignin.signIn();
+      let response: any;
+      try {
+        response = await GoogleSignin.signIn();
+      } catch (signInErr: any) {
+        if (
+          String(signInErr.code) === '10' ||
+          signInErr.message?.includes('10') ||
+          signInErr.message?.includes('DEVELOPER_ERROR')
+        ) {
+          console.warn('Web Client ID mismatch detected, retrying with device auth fallback...');
+          GoogleSignin.configure({
+            scopes: ['email', 'profile'],
+            offlineAccess: false,
+          });
+          response = await GoogleSignin.signIn();
+        } else {
+          throw signInErr;
+        }
+      }
 
       // Check for v16+ response structure:
       if ((response as any).type === 'cancelled') {

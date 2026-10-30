@@ -84,9 +84,9 @@ jobs:
           mkdir -p build-output
           APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
           if [ -f "$APK_FILE" ]; then
-            cp "$APK_FILE" build-output/DearDay-Build14.apk
+            cp "$APK_FILE" build-output/DearDay-Build15.apk
             echo "Found APK at $APK_FILE"
-            ls -lh build-output/DearDay-Build14.apk
+            ls -lh build-output/DearDay-Build15.apk
           else
             echo "Error: No APK found!"
             find android/app/build -name "*.apk" -ls || true
@@ -96,8 +96,8 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DearDay-Build14-APK
-          path: build-output/DearDay-Build14.apk
+          name: DearDay-Build15-APK
+          path: build-output/DearDay-Build15.apk
           retention-days: 14
 
       - name: Job Summary
@@ -106,4 +106,4 @@ jobs:
           echo "Your APK has been compiled and signed with the official Dear Day production release keystore." >> $GITHUB_STEP_SUMMARY
           echo "- **Google Sign-In:** 100% Verified with registered Google Cloud Console SHA-1" >> $GITHUB_STEP_SUMMARY
           echo "- **Transparent Logos:** Dark mode native splash screen and icons now seamless" >> $GITHUB_STEP_SUMMARY
-          echo "- **File:** [DearDay-Build14-APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **File:** [DearDay-Build15-APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
