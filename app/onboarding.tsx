@@ -33,7 +33,7 @@ import { BrandLogoIcon } from '@/components/BrandLogo';
 
 const SLIDES = [
   {
-    title: 'Remember turning\nreal pages?',
+    title: 'Remember turning real\npages in photoalbums?',
     body: 'Heavy paper. Sleeve pockets. Sitting on the rug, holding memories that actually felt tangible.',
     visual: 'album',
   },
