@@ -64,125 +64,215 @@ const CATEGORY_CHIPS = [
 
 // ─── Slide 0: Authentic Live Photobook Spread with 3D Page Turning ──────────
 
-const SAMPLE_PAGE_PHOTOS_A = [
-  'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=400&q=80',
-  'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400&q=80',
-  'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=400&q=80',
-  'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&q=80',
+const ONBOARDING_BOOK_PAGES = [
+  {
+    dateStr: 'FRIDAY • OCT 24, 2026',
+    fraction: '24 / 31',
+    headline: 'Autumn Solitude in Kyoto ✎',
+    prevBtn: '‹ Cover',
+    nextBtn: 'Oct 25 ›',
+    photos: [
+      { url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=400&q=80', caption: 'Morning matcha' },
+      { url: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400&q=80', caption: 'Cherry petals' },
+      { url: 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=400&q=80', caption: 'Handmade soba' },
+      { url: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&q=80', caption: 'Lantern dusk' },
+    ],
+  },
+  {
+    dateStr: 'SATURDAY • OCT 25, 2026',
+    fraction: '25 / 31',
+    headline: 'Bamboo Groves & Moss Gardens ✎',
+    prevBtn: '‹ Oct 24',
+    nextBtn: 'Oct 26 ›',
+    photos: [
+      { url: 'https://images.unsplash.com/photo-1478436127897-769e00d0c715?w=400&q=80', caption: 'Bamboo light' },
+      { url: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&q=80', caption: 'Temple moss' },
+      { url: 'https://images.unsplash.com/photo-1492571350019-22de08371fd3?w=400&q=80', caption: 'Red bridge' },
+      { url: 'https://images.unsplash.com/photo-1493780474015-ba834fd0ce2f?w=400&q=80', caption: 'Evening bells' },
+    ],
+  },
+  {
+    dateStr: 'SUNDAY • OCT 26, 2026',
+    fraction: '26 / 31',
+    headline: 'Old Paper & Woodcut Prints ✎',
+    prevBtn: '‹ Oct 25',
+    nextBtn: 'Oct 27 ›',
+    photos: [
+      { url: 'https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?w=400&q=80', caption: 'Ink stones' },
+      { url: 'https://images.unsplash.com/photo-1492571350019-22de08371fd3?w=400&q=80', caption: 'Wooden arches' },
+      { url: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=400&q=80', caption: 'River dusk' },
+      { url: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&q=80', caption: 'Night market' },
+    ],
+  },
 ];
 
-const SAMPLE_PAGE_PHOTOS_B = [
-  'https://images.unsplash.com/photo-1478436127897-769e00d0c715?w=400&q=80',
-  'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=400&q=80',
-  'https://images.unsplash.com/photo-1528164344705-475426879c0d?w=400&q=80',
-  'https://images.unsplash.com/photo-1493780474015-ba834fd0ce2f?w=400&q=80',
-];
+const ONBOARDING_WASHI_TAPE = require('@/assets/stickers/tape_1.png');
+
+function renderOnboardingSpread(page: typeof ONBOARDING_BOOK_PAGES[0]) {
+  return (
+    <View style={visualStyles.livePageInnerContent}>
+      {/* Top Header Row */}
+      <View style={visualStyles.livePageHeaderRow}>
+        <Text style={visualStyles.livePageDateText}>{page.dateStr}</Text>
+        <Text style={visualStyles.livePageFractionText}>{page.fraction}</Text>
+      </View>
+
+      <Text style={visualStyles.livePageHeadlineText} numberOfLines={1}>
+        {page.headline}
+      </Text>
+
+      {/* 2x2 Recessed Photo Pockets Grid */}
+      <View style={visualStyles.livePage2x2Grid}>
+        {page.photos.map((item, i) => (
+          <View key={`photo-${i}`} style={visualStyles.livePolaroidPocket}>
+            {i === 0 && (
+              <Image
+                source={ONBOARDING_WASHI_TAPE}
+                style={visualStyles.livePageWashiTape}
+                resizeMode="contain"
+              />
+            )}
+            <Image source={{ uri: item.url }} style={visualStyles.livePocketPhoto} resizeMode="cover" />
+            <View style={visualStyles.livePocketChin}>
+              <Text style={visualStyles.livePocketChinText} numberOfLines={1}>
+                {item.caption}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      {/* Bottom Page Navigation Footer */}
+      <View style={visualStyles.livePageFooterRow}>
+        <View style={visualStyles.livePageNavPill}>
+          <Text style={visualStyles.livePageFooterText}>{page.prevBtn}</Text>
+        </View>
+        <View style={visualStyles.livePageNavPill}>
+          <Text style={visualStyles.livePageFooterText}>{page.nextBtn}</Text>
+        </View>
+      </View>
+
+      {/* Left Spine Gutter Gradient Shadow */}
+      <View style={visualStyles.liveSpineGutterShadow} pointerEvents="none" />
+    </View>
+  );
+}
 
 function MiniPhotobookOpeningVisual() {
-  const flipProgress = useSharedValue(0);
+  const [currentPageIdx, setCurrentPageIdx] = useState(0);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [flippingPageIdx, setFlippingPageIdx] = useState(0);
 
+  // Continuous forward page turning cycle (never reverses back)
   useEffect(() => {
-    flipProgress.value = withRepeat(
-      withSequence(
-        withTiming(0, { duration: 1800 }),
-        withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.cubic) }),
-        withTiming(1, { duration: 1800 }),
-        withTiming(0, { duration: 1200, easing: Easing.inOut(Easing.cubic) }),
-      ),
-      -1,
-      false
-    );
+    let current = 0;
+    const interval = setInterval(() => {
+      setFlippingPageIdx(current);
+      setIsFlipping(true);
+
+      setTimeout(() => {
+        setIsFlipping(false);
+        current = (current + 1) % ONBOARDING_BOOK_PAGES.length;
+        setCurrentPageIdx(current);
+      }, 1250);
+    }, 2850);
+
+    return () => clearInterval(interval);
   }, []);
 
-  const flippingPageStyle = useAnimatedStyle(() => {
-    const rotateY = -180 * flipProgress.value;
-    return {
-      transform: [
-        { perspective: 1200 },
-        { rotateY: `${rotateY}deg` },
-      ],
-      zIndex: flipProgress.value > 0.5 ? 5 : 25,
-      opacity: flipProgress.value > 0.95 ? withTiming(0, { duration: 100 }) : 1,
-    };
-  });
+  const nextPageIdx = (flippingPageIdx + 1) % ONBOARDING_BOOK_PAGES.length;
 
   return (
     <View style={visualStyles.liveBookCenter}>
+      {/* Embedded CSS Keyframe for mature 3D page curl matching homepage */}
+      {Platform.OS === 'web' && (
+        <style>{`
+          @keyframes onbRealisticCurlForward {
+            0% {
+              transform: perspective(1600px) rotateY(0deg) skewY(0deg);
+              box-shadow: -4px 0 12px rgba(0,0,0,0.10);
+              opacity: 1;
+            }
+            42% {
+              transform: perspective(1600px) rotateY(-78deg) skewY(-4.5deg) scaleX(0.96);
+              box-shadow: -22px 10px 28px rgba(25, 18, 12, 0.30);
+              opacity: 1;
+            }
+            78% {
+              transform: perspective(1600px) rotateY(-148deg) skewY(-2deg) scaleX(0.98);
+              box-shadow: -12px 5px 16px rgba(25, 18, 12, 0.16);
+              opacity: 0.92;
+            }
+            100% {
+              transform: perspective(1600px) rotateY(-180deg) skewY(0deg);
+              box-shadow: -2px 0 6px rgba(0,0,0,0.04);
+              opacity: 0;
+            }
+          }
+        `}</style>
+      )}
+
       {/* Tabletop Ambient Shadow */}
       <View style={visualStyles.liveBookDropShadow} />
 
-      {/* Main Archival Book Spread */}
+      {/* Main Archival Book Stage with Terracotta Linen Hardcover */}
       <View style={visualStyles.liveBookStage}>
-        {/* Left Hardcover Terracotta Linen Spine Hinge */}
+        {/* Left Hardcover Spine with stitched debossed hinge */}
         <View style={visualStyles.liveBookSpine}>
           <View style={visualStyles.liveBookSpineStitch} />
         </View>
 
-        {/* Stacked Paper Page Edge on Right & Bottom */}
+        {/* Stacked Paper Page Edges on Right & Bottom */}
         <View style={visualStyles.liveBookRightEdge} />
         <View style={visualStyles.liveBookBottomEdge} />
 
-        {/* UNDERLYING SPREAD (DAY 25) */}
+        {/* UNDERLYING SPREAD (Next page waiting smoothly) */}
         <View style={visualStyles.livePageSpread}>
-          <View style={visualStyles.livePageHeaderRow}>
-            <Text style={visualStyles.livePageDateText}>SATURDAY • OCT 25, 2026</Text>
-            <Text style={visualStyles.livePageFractionText}>25 / 31</Text>
-          </View>
-          <Text style={visualStyles.livePageHeadlineText} numberOfLines={1}>
-            Bamboo Groves & Moss Gardens ✎
-          </Text>
-
-          {/* 2x2 Recessed Photo Pockets Grid */}
-          <View style={visualStyles.livePage2x2Grid}>
-            {SAMPLE_PAGE_PHOTOS_B.map((url, i) => (
-              <View key={`b-${i}`} style={visualStyles.livePolaroidPocket}>
-                <Image source={{ uri: url }} style={visualStyles.livePocketPhoto} resizeMode="cover" />
-                <View style={visualStyles.livePocketChin}>
-                  <View style={visualStyles.livePocketChinLine1} />
-                  <View style={visualStyles.livePocketChinLine2} />
-                </View>
-              </View>
-            ))}
-          </View>
-
-          {/* Bottom Page Navigation Footer */}
-          <View style={visualStyles.livePageFooterRow}>
-            <Text style={visualStyles.livePageFooterText}>‹ Oct 24</Text>
-            <Text style={visualStyles.livePageFooterText}>Oct 26 ›</Text>
-          </View>
+          {renderOnboardingSpread(ONBOARDING_BOOK_PAGES[isFlipping ? nextPageIdx : currentPageIdx])}
         </View>
 
-        {/* TOP FLIPPING SPREAD (DAY 24) */}
-        <Animated.View style={[visualStyles.livePageSpread, visualStyles.flippingPageLeaf, flippingPageStyle]}>
-          <View style={visualStyles.livePageHeaderRow}>
-            <Text style={visualStyles.livePageDateText}>FRIDAY • OCT 24, 2026</Text>
-            <Text style={visualStyles.livePageFractionText}>24 / 31</Text>
-          </View>
-          <Text style={visualStyles.livePageHeadlineText} numberOfLines={1}>
-            Autumn Solitude in Kyoto ✎
-          </Text>
-
-          {/* 2x2 Recessed Photo Pockets Grid */}
-          <View style={visualStyles.livePage2x2Grid}>
-            {SAMPLE_PAGE_PHOTOS_A.map((url, i) => (
-              <View key={`a-${i}`} style={visualStyles.livePolaroidPocket}>
-                <Image source={{ uri: url }} style={visualStyles.livePocketPhoto} resizeMode="cover" />
-                <View style={visualStyles.livePocketChin}>
-                  <View style={visualStyles.livePocketChinLine1} />
-                  <View style={visualStyles.livePocketChinLine2} />
-                </View>
-              </View>
-            ))}
-          </View>
-
-          {/* Bottom Page Navigation Footer with Corner Curl Flap */}
-          <View style={visualStyles.livePageFooterRow}>
-            <Text style={visualStyles.livePageFooterText}>‹ Cover</Text>
-            <Text style={visualStyles.livePageFooterText}>Oct 25 ›</Text>
-          </View>
-
-          <View style={visualStyles.liveCornerCurlFlap} />
-        </Animated.View>
+        {/* TOP FLIPPING LEAF (Curls forward in continuous loop) */}
+        {isFlipping && (
+          Platform.OS === 'web' ? (
+            <div
+              style={{
+                position: 'absolute',
+                left: 16,
+                right: 6,
+                top: 6,
+                bottom: 6,
+                backgroundColor: '#FAF7EE',
+                borderWidth: 1,
+                borderStyle: 'solid',
+                borderColor: '#E2D9C8',
+                borderTopRightRadius: 8,
+                borderBottomRightRadius: 8,
+                borderTopLeftRadius: 2,
+                borderBottomLeftRadius: 2,
+                overflow: 'hidden',
+                zIndex: 100,
+                transformOrigin: 'left center',
+                transformStyle: 'preserve-3d',
+                animation: 'onbRealisticCurlForward 1.25s cubic-bezier(0.26, 0.92, 0.38, 1) forwards',
+              }}
+            >
+              {renderOnboardingSpread(ONBOARDING_BOOK_PAGES[flippingPageIdx])}
+              {/* Specular Paper Sheen Gradient */}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  pointerEvents: 'none',
+                  background: 'linear-gradient(112deg, transparent 0%, rgba(255,255,255,0.60) 38%, rgba(225,216,202,0.85) 54%, rgba(40,30,20,0.22) 68%, transparent 85%)',
+                }}
+              />
+            </div>
+          ) : (
+            <View style={[visualStyles.livePageSpread, visualStyles.flippingPageLeaf]}>
+              {renderOnboardingSpread(ONBOARDING_BOOK_PAGES[flippingPageIdx])}
+            </View>
+          )
+        )}
       </View>
     </View>
   );
@@ -1361,113 +1451,132 @@ const visualStyles = StyleSheet.create({
   },
   liveBookDropShadow: {
     position: 'absolute',
-    bottom: 12,
-    width: 290,
+    bottom: 10,
+    width: 300,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(25, 18, 12, 0.18)',
+    backgroundColor: 'rgba(25, 18, 12, 0.22)',
     filter: 'blur(10px)',
   },
   liveBookStage: {
-    width: 284,
-    height: 236,
+    width: 304,
+    height: 248,
     position: 'relative',
-    backgroundColor: '#FAF8F5',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E8E1D3',
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    shadowOffset: { width: 4, height: 8 },
-    elevation: 8,
+    backgroundColor: '#D68060', // Terracotta Linen Hardcover
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#B06145',
+    shadowColor: '#1A140E',
+    shadowOpacity: 0.30,
+    shadowRadius: 26,
+    shadowOffset: { width: 0, height: 14 },
+    elevation: 12,
   },
   liveBookSpine: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    width: 12,
-    backgroundColor: '#B53D22',
-    borderTopLeftRadius: 7,
-    borderBottomLeftRadius: 7,
+    width: 16,
+    backgroundColor: '#B06145',
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
     zIndex: 30,
     justifyContent: 'center',
     alignItems: 'center',
   },
   liveBookSpineStitch: {
     width: 2,
-    height: '84%',
+    height: '86%',
     borderStyle: 'dashed',
     borderWidth: 1,
-    borderColor: 'rgba(255, 235, 205, 0.65)',
+    borderColor: 'rgba(255, 235, 205, 0.40)',
   },
   liveBookRightEdge: {
     position: 'absolute',
-    right: -4,
-    top: 4,
-    bottom: 4,
+    right: 2,
+    top: 8,
+    bottom: 8,
     width: 4,
     backgroundColor: '#FAF5EE',
-    borderTopRightRadius: 2,
-    borderBottomRightRadius: 2,
+    borderTopRightRadius: 3,
+    borderBottomRightRadius: 3,
     borderLeftWidth: 1,
     borderLeftColor: '#E2DACB',
   },
   liveBookBottomEdge: {
     position: 'absolute',
-    bottom: -4,
-    left: 12,
-    right: 0,
+    bottom: 2,
+    left: 16,
+    right: 6,
     height: 4,
     backgroundColor: '#FAF5EE',
     borderBottomLeftRadius: 2,
-    borderBottomRightRadius: 2,
+    borderBottomRightRadius: 3,
     borderTopWidth: 1,
     borderTopColor: '#E2DACB',
   },
   livePageSpread: {
     position: 'absolute',
-    left: 12,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    backgroundColor: '#FAF8F5',
-    borderTopRightRadius: 7,
-    borderBottomRightRadius: 7,
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 8,
+    left: 16,
+    right: 6,
+    top: 6,
+    bottom: 6,
+    backgroundColor: '#FAF7EE',
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+    borderTopLeftRadius: 2,
+    borderBottomLeftRadius: 2,
+    borderWidth: 1,
+    borderColor: '#E2D9C8',
+    overflow: 'hidden',
+  },
+  livePageInnerContent: {
+    flex: 1,
+    paddingHorizontal: 11,
+    paddingTop: 9,
+    paddingBottom: 7,
     justifyContent: 'space-between',
+    position: 'relative',
   },
   flippingPageLeaf: {
-    zIndex: 20,
-    transformOrigin: 'left center',
-    borderLeftWidth: 0.5,
-    borderLeftColor: 'rgba(0,0,0,0.08)',
+    zIndex: 100,
+  },
+  liveSpineGutterShadow: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 22,
+    backgroundColor: 'rgba(35, 25, 18, 0.08)',
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: 'rgba(0,0,0,0.04)',
+    pointerEvents: 'none',
   },
   livePageHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingBottom: 2,
+    paddingLeft: 4,
   },
   livePageDateText: {
-    fontSize: 8,
+    fontSize: 8.5,
     fontFamily: 'Inter_700Bold',
     letterSpacing: 0.8,
-    color: '#8C7A6B',
+    color: '#7A695B',
   },
   livePageFractionText: {
     fontSize: 8.5,
     fontFamily: 'Inter_700Bold',
-    color: '#8C7A6B',
+    color: '#DF5739',
   },
   livePageHeadlineText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontFamily: 'PlayfairDisplay_700Bold',
     color: '#2B2420',
     marginBottom: 4,
+    paddingLeft: 4,
   },
   livePage2x2Grid: {
     flex: 1,
@@ -1489,6 +1598,16 @@ const visualStyles = StyleSheet.create({
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
+    position: 'relative',
+  },
+  livePageWashiTape: {
+    position: 'absolute',
+    top: -6,
+    left: -4,
+    width: 44,
+    height: 15,
+    transform: [{ rotate: '-8deg' }],
+    zIndex: 15,
   },
   livePocketPhoto: {
     width: '100%',
@@ -1499,46 +1618,34 @@ const visualStyles = StyleSheet.create({
   livePocketChin: {
     flex: 1,
     justifyContent: 'center',
-    gap: 2.5,
     paddingHorizontal: 2,
   },
-  livePocketChinLine1: {
-    height: 2.5,
-    width: '80%',
-    backgroundColor: 'rgba(43, 36, 32, 0.28)',
-    borderRadius: 1.5,
-  },
-  livePocketChinLine2: {
-    height: 2.5,
-    width: '52%',
-    backgroundColor: 'rgba(43, 36, 32, 0.15)',
-    borderRadius: 1.5,
+  livePocketChinText: {
+    fontSize: 8.5,
+    fontFamily: 'Inter_500Medium',
+    color: '#6B5E52',
   },
   livePageFooterRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 4,
+    paddingLeft: 4,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#EBE4D5',
   },
-  livePageFooterText: {
-    fontSize: 8,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#8C7A6B',
+  livePageNavPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    backgroundColor: '#F3EFE6',
+    borderWidth: 0.5,
+    borderColor: '#DFD8CA',
   },
-  liveCornerCurlFlap: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    width: 14,
-    height: 14,
-    backgroundColor: '#EDE6D8',
-    borderTopLeftRadius: 6,
-    borderBottomRightRadius: 7,
-    borderLeftWidth: 1,
-    borderTopWidth: 1,
-    borderColor: '#D8CEBF',
+  livePageFooterText: {
+    fontSize: 7.5,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#7A695B',
   },
 
   /* Slide 1: Half-Cut Smartphone Gallery */
