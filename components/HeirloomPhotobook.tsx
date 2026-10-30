@@ -12,6 +12,8 @@ import {
   ScrollView,
   PanResponder,
   useWindowDimensions,
+  Animated,
+  Easing,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
@@ -29,6 +31,7 @@ import {
   Sparkle,
   UploadSimple,
   Check,
+  Trash,
 } from 'phosphor-react-native';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { useColors } from '@/hooks/useColors';
@@ -64,6 +67,99 @@ interface PlacedSticker {
   x: number;
   y: number;
   rot: number;
+}
+
+interface DraggableStickerProps {
+  stk: PlacedSticker;
+  catalogItem: any;
+  isSelected: boolean;
+  isDragging: boolean;
+  onSelect: () => void;
+  onDragStart: (uid: string) => void;
+  onDragMove: (uid: string, dx: number, dy: number) => void;
+  onDragEnd: (uid: string, dx: number, dy: number) => void;
+}
+
+function DraggableStickerItem({
+  stk,
+  catalogItem,
+  isSelected,
+  isDragging,
+  onSelect,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
+}: DraggableStickerProps) {
+  const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gesture) => {
+        return Math.abs(gesture.dx) > 2 || Math.abs(gesture.dy) > 2;
+      },
+      onPanResponderGrant: () => {
+        Haptics.selectionAsync();
+        onDragStart(stk.uid);
+        Animated.spring(scaleAnim, {
+          toValue: 1.15,
+          friction: 6,
+          useNativeDriver: false,
+        }).start();
+      },
+      onPanResponderMove: (_, gesture) => {
+        pan.setValue({ x: gesture.dx, y: gesture.dy });
+        onDragMove(stk.uid, gesture.dx, gesture.dy);
+      },
+      onPanResponderRelease: (_, gesture) => {
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 6,
+          useNativeDriver: false,
+        }).start();
+        pan.setValue({ x: 0, y: 0 });
+        onDragEnd(stk.uid, gesture.dx, gesture.dy);
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 6,
+          useNativeDriver: false,
+        }).start();
+        pan.setValue({ x: 0, y: 0 });
+        onDragEnd(stk.uid, 0, 0);
+      },
+    })
+  ).current;
+
+  return (
+    <Animated.View
+      {...panResponder.panHandlers}
+      style={[
+        styles.placedSticker,
+        {
+          left: stk.x,
+          top: stk.y,
+          transform: [
+            { translateX: pan.x },
+            { translateY: pan.y },
+            { rotate: `${stk.rot}deg` },
+            { scale: scaleAnim },
+          ],
+          zIndex: isDragging ? 999 : 910,
+        },
+      ]}
+    >
+      <TouchableOpacity
+        activeOpacity={0.88}
+        onPress={onSelect}
+        style={isSelected && styles.selectedStickerBorder}
+      >
+        {catalogItem.render(1)}
+      </TouchableOpacity>
+    </Animated.View>
+  );
 }
 
 interface HeirloomPhotobookProps {
@@ -124,6 +220,15 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
   // Sticker tray & placed stickers per day
   const [stickerTrayOpen, setStickerTrayOpen] = useState(false);
   const [selectedStickerUid, setSelectedStickerUid] = useState<string | null>(null);
+  const [draggingStickerUid, setDraggingStickerUid] = useState<string | null>(null);
+  const [isOverTrash, setIsOverTrash] = useState(false);
+  const [previewSticker, setPreviewSticker] = useState<any | null>(null);
+
+  // Animated 3D page flip state
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [flipDirection, setFlipDirection] = useState<'forward' | 'backward'>('forward');
+  const pageFlipAnim = useRef(new Animated.Value(0)).current;
+
   const [pageStickers, setPageStickers] = useState<Record<number, PlacedSticker[]>>({
     [defaultInitialDay]: [
       { uid: 'init-stk-1', id: 'stk-tape-1', x: 100, y: 195, rot: -4 },
@@ -173,15 +278,88 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
     return slots;
   }, [activeDayLog]);
 
-  // Handle Page Turns
-  const flipToPage = useCallback((targetPage: number) => {
-    const clamped = Math.max(0, Math.min(totalDaysInMonth + 1, targetPage));
-    if (clamped === activePage) return;
-    setCornerTeased(false);
-    setCoverMenuVisible(false);
-    playPaperRustleSound(clamped > activePage ? 1.05 : 0.92);
-    setActivePage(clamped);
-  }, [activePage, totalDaysInMonth]);
+  // Handle Page Turns with 3D animation
+  const flipToPage = useCallback(
+    (targetPage: number) => {
+      const clamped = Math.max(0, Math.min(totalDaysInMonth + 1, targetPage));
+      if (clamped === activePage || isFlipping) return;
+      setCornerTeased(false);
+      setCoverMenuVisible(false);
+      const isForward = clamped > activePage;
+      setFlipDirection(isForward ? 'forward' : 'backward');
+      setIsFlipping(true);
+      playPaperRustleSound(isForward ? 1.05 : 0.92);
+
+      pageFlipAnim.setValue(0);
+      Animated.timing(pageFlipAnim, {
+        toValue: 1,
+        duration: 380,
+        easing: Easing.bezier(0.25, 0.9, 0.35, 1),
+        useNativeDriver: true,
+      }).start(() => {
+        setActivePage(clamped);
+        setIsFlipping(false);
+        pageFlipAnim.setValue(0);
+      });
+    },
+    [activePage, totalDaysInMonth, isFlipping, pageFlipAnim]
+  );
+
+  const handleStickerDragStart = useCallback((uid: string) => {
+    setDraggingStickerUid(uid);
+    setSelectedStickerUid(uid);
+  }, []);
+
+  const handleStickerDragMove = useCallback(
+    (uid: string, dx: number, dy: number) => {
+      const currentStk = (pageStickers[activePage] || []).find(s => s.uid === uid);
+      if (!currentStk) return;
+      const curX = currentStk.x + dx;
+      const curY = currentStk.y + dy;
+      // Target is located at bottom center of the book page
+      const trashTargetX = bookWidth / 2 - 22;
+      const trashTargetY = bookHeight - 60;
+      const dist = Math.hypot(curX - trashTargetX, curY - trashTargetY);
+      const isTarget = dist < 70;
+      setIsOverTrash(prev => {
+        if (!prev && isTarget) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
+        return isTarget;
+      });
+    },
+    [pageStickers, activePage, bookWidth, bookHeight]
+  );
+
+  const handleStickerDragEnd = useCallback(
+    (uid: string, dx: number, dy: number) => {
+      setDraggingStickerUid(null);
+      if (isOverTrash) {
+        handleRemoveSticker(uid);
+        setIsOverTrash(false);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        playPaperRustleSound(1.2);
+        return;
+      }
+      setIsOverTrash(false);
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+        setPageStickers(prev => {
+          const cur = prev[activePage] || [];
+          return {
+            ...prev,
+            [activePage]: cur.map(s => {
+              if (s.uid !== uid) return s;
+              const newX = Math.max(10, Math.min(bookWidth - 70, s.x + dx));
+              const newY = Math.max(10, Math.min(bookHeight - 80, s.y + dy));
+              return { ...s, x: newX, y: newY };
+            }),
+          };
+        });
+        playStickyGlueSound();
+      }
+    },
+    [isOverTrash, activePage, bookWidth, bookHeight]
+  );
 
   // Direct Device Gallery Picker for Slots
   async function handleSlotPicker(slotIdx: number) {
@@ -634,25 +812,34 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                 const cat = STICKER_CATALOG.find(c => c.id === stk.id);
                 if (!cat) return null;
                 return (
-                  <TouchableOpacity
+                  <DraggableStickerItem
                     key={stk.uid}
-                    style={[
-                      styles.placedSticker,
-                      {
-                        left: stk.x,
-                        top: stk.y,
-                        transform: [{ rotate: `${stk.rot}deg` }],
-                      },
-                    ]}
-                    onLongPress={() => handleRemoveSticker(stk.uid)}
-                    onPress={() => setSelectedStickerUid(stk.uid === selectedStickerUid ? null : stk.uid)}
-                    activeOpacity={0.8}
-                  >
-                    {cat.render(1)}
-                  </TouchableOpacity>
+                    stk={stk}
+                    catalogItem={cat}
+                    isSelected={selectedStickerUid === stk.uid}
+                    isDragging={draggingStickerUid === stk.uid}
+                    onSelect={() => setSelectedStickerUid(stk.uid === selectedStickerUid ? null : stk.uid)}
+                    onDragStart={handleStickerDragStart}
+                    onDragMove={handleStickerDragMove}
+                    onDragEnd={handleStickerDragEnd}
+                  />
                 );
               })}
             </View>
+
+            {/* Drag-to-Delete Circular Target Zone (Sleek, No handholding copy) */}
+            {draggingStickerUid && (
+              <View style={styles.trashZoneWrapper} pointerEvents="none">
+                <View
+                  style={[
+                    styles.trashZonePill,
+                    isOverTrash && styles.trashZonePillActive,
+                  ]}
+                >
+                  <Trash size={22} color="#FFFFFF" weight="bold" />
+                </View>
+              </View>
+            )}
 
             {/* 5. Interactive Bottom-Right Corner Curl */}
             <TouchableOpacity
@@ -677,63 +864,43 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
             </TouchableOpacity>
           </View>
         )}
-      </View>
 
-      {/* Cover Context Menu (Action Pill Bar on Tap & Hold) */}
-      {isCoverView && coverMenuVisible && (
-        <View style={styles.coverPillBar}>
-          <TouchableOpacity
-            style={styles.coverPillBtn}
-            onPress={() => flipToPage(activePage === 0 ? totalDaysInMonth + 1 : 0)}
-            activeOpacity={0.8}
+        {/* Animated 3D Page Curl Leaf when flipping */}
+        {isFlipping && (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.flippingLeafOverlay,
+              {
+                width: bookWidth - 18,
+                height: bookHeight,
+                transform: [
+                  { perspective: 1400 },
+                  {
+                    rotateY: pageFlipAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: flipDirection === 'forward' ? ['0deg', '-180deg'] : ['-180deg', '0deg'],
+                    }),
+                  },
+                ],
+              },
+            ]}
           >
-            <ArrowClockwise size={13} color="#FFFFFF" weight="bold" />
-            <Text style={styles.coverPillText}>
-              {activePage === 0 ? 'Back Cover' : 'Front Cover'}
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.coverPillSep} />
-
-          <TouchableOpacity
-            style={styles.coverPillBtn}
-            onPress={async () => {
-              setShareToast(true);
-              setCoverMenuVisible(false);
-              try {
-                await Share.share({
-                  title: `${currentMonthName} Photobook`,
-                  message: `Take a look at our heirloom ${currentMonthName} photobook in Dear Day!`,
-                });
-              } catch {}
-              setTimeout(() => setShareToast(false), 2400);
-            }}
-            activeOpacity={0.8}
-          >
-            <ShareNetwork size={13} color="#FFFFFF" weight="bold" />
-            <Text style={styles.coverPillText}>Share</Text>
-          </TouchableOpacity>
-
-          <View style={styles.coverPillSep} />
-
-          <TouchableOpacity
-            style={styles.coverPillBtn}
-            onPress={() => {
-              setLinenIndex(prev => (prev + 1) % LINEN_THEMES.length);
-              Haptics.selectionAsync();
-            }}
-            activeOpacity={0.8}
-          >
-            <View
+            {/* Dynamic Specular Paper Shadow Gradient */}
+            <Animated.View
               style={[
-                styles.linenColorDot,
-                { backgroundColor: currentLinen.main },
+                styles.flippingLeafShadow,
+                {
+                  opacity: pageFlipAnim.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [0, 0.38, 0],
+                  }),
+                },
               ]}
             />
-            <Text style={styles.coverPillText}>{currentLinen.name}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+          </Animated.View>
+        )}
+      </View>
 
       {/* ==============================================================
           BOTTOM STICKER DOCK
@@ -782,6 +949,11 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                   key={stk.id}
                   style={[styles.stickerTrayItem, { minWidth: stk.trayWidth, height: 68, justifyContent: 'center', alignItems: 'center' }]}
                   onPress={() => handleAddSticker(stk.id)}
+                  onLongPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                    setPreviewSticker(stk);
+                  }}
+                  delayLongPress={280}
                   activeOpacity={0.8}
                 >
                   {stk.render(stk.trayWidth / stk.width)}
@@ -792,6 +964,30 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
         )}
       </View>
       </View> {/* end tabletopStage */}
+
+      {/* ── Sticker Long-Press High-Res Preview Modal ─────────────────── */}
+      {previewSticker && (
+        <Modal
+          visible={!!previewSticker}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setPreviewSticker(null)}
+        >
+          <TouchableOpacity
+            style={styles.stickerPreviewOverlay}
+            activeOpacity={1}
+            onPress={() => setPreviewSticker(null)}
+          >
+            <View style={styles.stickerPreviewCard}>
+              <View style={styles.stickerPreviewVisualWrap}>
+                {previewSticker.render(1.8)}
+              </View>
+              <Text style={styles.stickerPreviewTitle}>{previewSticker.name}</Text>
+              <Text style={styles.stickerPreviewHint}>Tap in carousel to add to your page</Text>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
 
       {/* ==============================================================
           2-LINE CAPTION EDITOR MODAL (60-80 CHARS)
@@ -1021,7 +1217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 8,
     marginBottom: 6,
   },
@@ -1558,45 +1754,105 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFEAE0',
   },
 
-  // Cover Action Pill Bar
-  coverPillBar: {
-    flexDirection: 'row',
+  selectedStickerBorder: {
+    borderWidth: 1.5,
+    borderColor: '#E8593A',
+    borderRadius: 8,
+    borderStyle: 'dashed',
+    padding: 2,
+  },
+
+  // Drag-to-Delete Trash Zone
+  trashZoneWrapper: {
+    position: 'absolute',
+    bottom: 14,
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: '#231F1D',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginTop: 8,
-    gap: 8,
+    justifyContent: 'center',
+    zIndex: 980,
+  },
+  trashZonePill: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(38, 30, 24, 0.88)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
     elevation: 8,
   },
-  coverPillBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 2,
-  },
-  coverPillSep: {
-    width: 1,
-    height: 12,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  coverPillText: {
-    fontSize: 10.5,
-    fontWeight: '600',
-    color: '#FAF6F0',
-  },
-  linenColorDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 1,
+  trashZonePillActive: {
+    backgroundColor: '#E53935',
     borderColor: '#FFFFFF',
+    transform: [{ scale: 1.22 }],
+  },
+
+  // 3D Flipping Leaf Overlay
+  flippingLeafOverlay: {
+    position: 'absolute',
+    left: 18,
+    top: 0,
+    bottom: 0,
+    backgroundColor: '#FAF7EE',
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+    overflow: 'hidden',
+    zIndex: 960,
+    borderWidth: 1,
+    borderColor: '#DFD7C6',
+  },
+  flippingLeafShadow: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#1E150D',
+  },
+
+  // Sticker Long-Press High-Res Preview Modal
+  stickerPreviewOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(25, 20, 16, 0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  stickerPreviewCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E2D9C8',
+    padding: 24,
+    alignItems: 'center',
+    maxWidth: 280,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  stickerPreviewVisualWrap: {
+    minHeight: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  stickerPreviewTitle: {
+    fontFamily: 'PlayfairDisplay_700Bold',
+    fontSize: 17,
+    color: '#2B2420',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  stickerPreviewHint: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    color: '#8A7E72',
+    textAlign: 'center',
   },
 
   // Bottom Sticker Dock

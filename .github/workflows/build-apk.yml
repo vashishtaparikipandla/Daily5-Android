@@ -84,9 +84,9 @@ jobs:
           mkdir -p build-output
           APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
           if [ -f "$APK_FILE" ]; then
-            cp "$APK_FILE" build-output/DearDay-Build15.apk
+            cp "$APK_FILE" build-output/DearDay-Build16.apk
             echo "Found APK at $APK_FILE"
-            ls -lh build-output/DearDay-Build15.apk
+            ls -lh build-output/DearDay-Build16.apk
           else
             echo "Error: No APK found!"
             find android/app/build -name "*.apk" -ls || true
@@ -96,14 +96,14 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DearDay-Build15-APK
-          path: build-output/DearDay-Build15.apk
+          name: DearDay-Build16-APK
+          path: build-output/DearDay-Build16.apk
           retention-days: 14
 
       - name: Job Summary
         run: |
           echo "### 🚀 Dear Day Android Official Signed APK Ready!" >> $GITHUB_STEP_SUMMARY
           echo "Your APK has been compiled and signed with the official Dear Day production release keystore." >> $GITHUB_STEP_SUMMARY
-          echo "- **Google Sign-In:** 100% Verified with registered Google Cloud Console SHA-1" >> $GITHUB_STEP_SUMMARY
-          echo "- **Transparent Logos:** Dark mode native splash screen and icons now seamless" >> $GITHUB_STEP_SUMMARY
-          echo "- **File:** [DearDay-Build15-APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Google Sign-In:** Failproof direct Google account linking and Play Services fallback" >> $GITHUB_STEP_SUMMARY
+          echo "- **Photobook:** 3D page turn curl, touch draggable stickers, hold-to-preview, and drag-to-delete trash target" >> $GITHUB_STEP_SUMMARY
+          echo "- **File:** [DearDay-Build16-APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY

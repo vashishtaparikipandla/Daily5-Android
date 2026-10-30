@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   TextInput, FlatList, Dimensions, Platform, useWindowDimensions, Image,
+  ActivityIndicator,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -162,25 +163,36 @@ function MiniPhotobookOpeningVisual() {
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
   const [flippingPageIdx, setFlippingPageIdx] = useState(0);
+  const nativeFlipAnim = useSharedValue(0);
 
-  // Continuous forward page turning cycle (never reverses back)
+  // Snappy, continuous forward page turning cycle
   useEffect(() => {
     let current = 0;
     const interval = setInterval(() => {
       setFlippingPageIdx(current);
       setIsFlipping(true);
+      nativeFlipAnim.value = 0;
+      nativeFlipAnim.value = withTiming(-180, { duration: 580, easing: Easing.bezier(0.26, 0.92, 0.38, 1) });
 
       setTimeout(() => {
         setIsFlipping(false);
         current = (current + 1) % ONBOARDING_BOOK_PAGES.length;
         setCurrentPageIdx(current);
-      }, 1250);
-    }, 2850);
+      }, 620);
+    }, 1450);
 
     return () => clearInterval(interval);
   }, []);
 
   const nextPageIdx = (flippingPageIdx + 1) % ONBOARDING_BOOK_PAGES.length;
+
+  const nativeLeafStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 1400 },
+      { rotateY: `${nativeFlipAnim.value}deg` },
+    ],
+    opacity: nativeFlipAnim.value < -90 ? 0 : 1,
+  }));
 
   return (
     <View style={visualStyles.liveBookCenter}>
@@ -268,9 +280,9 @@ function MiniPhotobookOpeningVisual() {
               />
             </div>
           ) : (
-            <View style={[visualStyles.livePageSpread, visualStyles.flippingPageLeaf]}>
+            <Animated.View style={[visualStyles.livePageSpread, visualStyles.flippingPageLeaf, nativeLeafStyle]}>
               {renderOnboardingSpread(ONBOARDING_BOOK_PAGES[flippingPageIdx])}
-            </View>
+            </Animated.View>
           )
         )}
       </View>
@@ -306,7 +318,7 @@ function ScrollingPhoneGalleryVisual() {
 
   useEffect(() => {
     scrollAnim.value = withRepeat(
-      withTiming(-210, { duration: 4200, easing: Easing.linear }),
+      withTiming(-210, { duration: 2400, easing: Easing.linear }),
       -1,
       false
     );
@@ -419,32 +431,32 @@ function TuckFourPhotosVisual() {
         ];
         const target = slotTargets[current];
 
-        handX.value = target.x + 40;
-        handY.value = target.y + 40;
-        handOpacity.value = withTiming(1, { duration: 160 });
+        handX.value = target.x + 30;
+        handY.value = target.y + 30;
+        handOpacity.value = withTiming(1, { duration: 120 });
 
-        handX.value = withTiming(target.x, { duration: 420, easing: Easing.out(Easing.cubic) });
-        handY.value = withTiming(target.y, { duration: 420, easing: Easing.out(Easing.cubic) });
+        handX.value = withTiming(target.x, { duration: 260, easing: Easing.out(Easing.cubic) });
+        handY.value = withTiming(target.y, { duration: 260, easing: Easing.out(Easing.cubic) });
 
         setTimeout(() => {
-          handOpacity.value = withTiming(0, { duration: 220 });
+          handOpacity.value = withTiming(0, { duration: 140 });
           setActiveSlot(current + 1);
           current++;
 
           if (current === 4) {
             setTimeout(() => {
               setShowConfetti(true);
-            }, 260);
+            }, 180);
 
             setTimeout(() => {
               setShowConfetti(false);
               setActiveSlot(0);
               current = 0;
-            }, 2300);
+            }, 1400);
           }
-        }, 500);
+        }, 300);
       }
-    }, 1100);
+    }, 620);
 
     return () => clearInterval(interval);
   }, []);
@@ -812,6 +824,7 @@ export default function OnboardingScreen() {
   const [recalledDays, setRecalledDays] = useState<number | null>(null);
   const [livedWeeks, setLivedWeeks] = useState(1350);
   const [slide, setSlide] = useState(0);
+  const [isRevealing, setIsRevealing] = useState(false);
   const slideRef = useRef<FlatList>(null);
 
   const parsedDate = parseDobDate(dob);
@@ -997,13 +1010,28 @@ export default function OnboardingScreen() {
             <TouchableOpacity
               style={[
                 styles.btn,
-                { backgroundColor: colors.primary, opacity: recalledDays === null ? 0.4 : 1, marginTop: 12 },
+                { backgroundColor: colors.primary, opacity: recalledDays === null || isRevealing ? 0.6 : 1, marginTop: 12 },
               ]}
-              onPress={() => transition(2)}
-              disabled={recalledDays === null}
+              onPress={() => {
+                if (recalledDays === null || isRevealing) return;
+                setIsRevealing(true);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setTimeout(() => {
+                  transition(2);
+                  setIsRevealing(false);
+                }, 200);
+              }}
+              disabled={recalledDays === null || isRevealing}
               activeOpacity={0.85}
             >
-              <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Reveal My Life in Weeks →</Text>
+              {isRevealing ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <ActivityIndicator size="small" color={colors.primaryForeground} />
+                  <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Calculating life in weeks...</Text>
+                </View>
+              ) : (
+                <Text style={[styles.btnText, { color: colors.primaryForeground }]}>Reveal My Life in Weeks →</Text>
+              )}
             </TouchableOpacity>
           </View>
         )}

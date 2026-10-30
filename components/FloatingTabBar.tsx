@@ -38,7 +38,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
   const activePillBg = isDark ? '#38302A' : '#EAE6E1';
   const activePillBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)';
 
-  const bottomOffset = Math.max(insets.bottom, isWeb ? 18 : 12);
+  const bottomOffset = Math.max((insets.bottom || 0) + 8, isWeb ? 18 : 16);
 
   return (
     <View

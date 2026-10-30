@@ -20,7 +20,6 @@ import {
   Check,
   Sparkle,
   X,
-  FilmStrip,
   LockSimple,
 } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
@@ -29,8 +28,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDiary } from '@/contexts/DiaryContext';
 import { BookCover } from '@/components/BookCover';
 import { BrandLogoLoader } from '@/components/BrandLogo';
-import { VisualLayoutPicker } from '@/components/VisualLayoutPicker';
-import { WeeklyReelModal } from '@/components/WeeklyReelModal';
 import { ProtectedScreen } from '@/components/ProtectedScreen';
 import { exportBookAsPdf } from '@/lib/pdfExport';
 import { bookDisplayName, formatShortDate, formatFullDate } from '@/lib/data';
@@ -72,9 +69,6 @@ export function BookViewerContent() {
   const [isAnimating, setIsAnimating] = useState(false);
   const flipAnim = useRef(new Animated.Value(0)).current;
   const [exporting, setExporting] = useState(false);
-  const [showLayoutModal, setShowLayoutModal] = useState(false);
-  const [showVolumeReel, setShowVolumeReel] = useState(false);
-  const [showSealModal, setShowSealModal] = useState(false);
 
   const book = getBook(mk ?? '');
   const [selectedLayout, setSelectedLayout] = useState<PageLayoutType>(book?.pageLayout || 'quad');
@@ -259,7 +253,7 @@ export function BookViewerContent() {
           onPress: async () => {
             await lockCurrentMonth();
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            setShowSealModal(true);
+            Alert.alert('Volume Sealed', 'This volume is now permanently preserved in your archival library.');
           },
         },
       ],
@@ -512,7 +506,7 @@ export function BookViewerContent() {
             {bookDisplayName(book)}
           </Text>
           <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-            {pageIndex === 0 ? 'Front Cover' : `Page ${pageIndex} of ${pages.length - 1}`}
+            Heirloom Edition
           </Text>
         </View>
 
@@ -568,75 +562,11 @@ export function BookViewerContent() {
 
       {/* 3D Heirloom Photobook Viewport */}
       <ScrollView
-        contentContainerStyle={{ paddingVertical: 14, paddingHorizontal: 16, alignItems: 'center' }}
+        contentContainerStyle={{ paddingVertical: 14, paddingHorizontal: 20, alignItems: 'center' }}
         showsVerticalScrollIndicator={false}
       >
         <HeirloomPhotobook monthKey={book.monthKey} initialDay={1} />
       </ScrollView>
-
-      {/* ── Volume Retrospective Story Reel Modal ──────────────────────── */}
-      <WeeklyReelModal
-        visible={showVolumeReel}
-        onClose={() => setShowVolumeReel(false)}
-        weeklyDays={sortedDays}
-        streakCount={book.days.length}
-        title={`VOL. ${book.monthKey} RETROSPECTIVE`}
-        subtitle="Archival memories in review"
-        summaryTitle="Volume in Review"
-        summarySubtitle={`${book.days.length} days captured and preserved.`}
-      />
-
-      {/* ── Archival Wax Seal Ceremony Modal ───────────────────────────── */}
-      <Modal
-        visible={showSealModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSealModal(false)}
-      >
-        <View style={styles.sealModalOverlay}>
-          <View style={[styles.sealModalCard, { backgroundColor: colors.card, borderColor: colors.borderStrong }]}>
-            <View style={styles.sealWaxRing}>
-              <View style={styles.sealWaxCore}>
-                <Sparkle size={32} color="#F7F4EF" weight="fill" />
-              </View>
-            </View>
-
-            <Text style={[styles.sealModalTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
-              Volume Bound & Sealed
-            </Text>
-            <Text style={[styles.sealModalSub, { color: colors.mutedForeground }]}>
-              This edition of {bookDisplayName(book)} is now permanently closed and preserved in your archival library.
-            </Text>
-
-            <View style={styles.sealActionRow}>
-              <TouchableOpacity
-                style={[styles.sealActionSecondary, { borderColor: colors.border }]}
-                onPress={() => {
-                  setShowSealModal(false);
-                  router.back();
-                }}
-              >
-                <Text style={[styles.sealActionSecondaryText, { color: colors.foreground }]}>
-                  Back to Library
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.sealActionPrimary, { backgroundColor: colors.primary }]}
-                onPress={() => {
-                  setShowSealModal(false);
-                  setShowVolumeReel(true);
-                }}
-              >
-                <FilmStrip size={16} color={colors.primaryForeground} weight="bold" />
-                <Text style={[styles.sealActionPrimaryText, { color: colors.primaryForeground }]}>
-                  Watch Reel
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

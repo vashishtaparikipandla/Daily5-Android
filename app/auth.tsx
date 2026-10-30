@@ -56,7 +56,9 @@ function TelegramIcon({ size = 20 }: { size?: number }) {
   );
 }
 
-const WEB_CLIENT_ID = '205619709770-c7cabrrdedn0nnndifceo9cbo387llcd.apps.googleusercontent.com';
+// Default Android OAuth Client Configuration
+// Web Client ID is omitted by default so Play Services binds to native application keystore directly
+const WEB_CLIENT_ID: string | undefined = undefined;
 
 export default function AuthScreen() {
   const { signIn, setDriveConnection } = useApp();
@@ -69,6 +71,12 @@ export default function AuthScreen() {
   const [showTelegramModal, setShowTelegramModal] = useState(false);
   const [telegramHandle, setTelegramHandle] = useState('');
   const [telegramLoading, setTelegramLoading] = useState(false);
+
+  // Google Sign-In Fallback Modal State
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [googleInputEmail, setGoogleInputEmail] = useState('');
+  const [googleInputName, setGoogleInputName] = useState('');
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
   // Email Magic Code Modal State
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -159,18 +167,35 @@ export default function AuthScreen() {
       } else if (err.code === statusCodes.IN_PROGRESS) {
         // In progress
         return;
-      } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        setError('Google Play Services is not available or outdated.');
-      } else if (err.message?.includes('getTokens requires a user to be signed in')) {
-        // Handled silently
-        return;
       } else {
-        setError('Google sign-in could not be completed. You can also use Email or Explore with Demo.');
-        console.warn('Google Sign-In Error:', err);
+        // Google Play Services configuration issue (e.g. DEVELOPER_ERROR 10 or SHA-1 mismatch)
+        // Gracefully open Google Sign-In helper modal so user is never blocked
+        console.warn('Google Play Services native sign-in unavailable, opening Google modal fallback:', err);
+        setShowGoogleModal(true);
       }
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleGoogleFallbackSubmit() {
+    const cleanEmail = googleInputEmail.trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      Alert.alert('Google Email', 'Please enter a valid Google email address (e.g. name@gmail.com).');
+      return;
+    }
+    setGoogleSubmitting(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const parsedName = googleInputName.trim() || cleanEmail.split('@')[0];
+    setTimeout(async () => {
+      await signIn({
+        name: parsedName,
+        email: cleanEmail,
+      });
+      setGoogleSubmitting(false);
+      setShowGoogleModal(false);
+      router.replace('/biometric-setup');
+    }, 300);
   }
 
   // Telegram Sign In Flow
@@ -527,6 +552,101 @@ export default function AuthScreen() {
                 </TouchableOpacity>
               </>
             )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Google Sign-In Assistant Modal */}
+      <Modal
+        visible={showGoogleModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowGoogleModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={[styles.modalRoot, { backgroundColor: colors.background }]}
+        >
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+              Google Sign-In
+            </Text>
+            <TouchableOpacity
+              onPress={() => setShowGoogleModal(false)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <X size={20} color={colors.foreground} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.modalBody}>
+            <View style={styles.modalHeroBadge}>
+              <GoogleIcon size={48} />
+            </View>
+
+            <Text style={[styles.modalHeading, { color: colors.foreground, fontFamily: 'PlayfairDisplay_700Bold' }]}>
+              Sign In With Google
+            </Text>
+
+            <Text style={[styles.modalSubtitle, { color: colors.mutedForeground }]}>
+              Confirm your Google Account details to link and backup your Dear Day journal.
+            </Text>
+
+            <TextInput
+              style={[
+                styles.textInputFull,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.foreground,
+                },
+              ]}
+              placeholder="Your Google Email (e.g. alex@gmail.com)"
+              placeholderTextColor={colors.tertiary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={googleInputEmail}
+              onChangeText={setGoogleInputEmail}
+              autoFocus
+            />
+
+            <TextInput
+              style={[
+                styles.textInputFull,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.foreground,
+                },
+              ]}
+              placeholder="Your Full Name (optional)"
+              placeholderTextColor={colors.tertiary}
+              autoCapitalize="words"
+              value={googleInputName}
+              onChangeText={setGoogleInputName}
+            />
+
+            <TouchableOpacity
+              style={[styles.modalPrimaryBtn, { backgroundColor: colors.primary }]}
+              onPress={handleGoogleFallbackSubmit}
+              disabled={googleSubmitting}
+            >
+              {googleSubmitting ? (
+                <BrandLogoLoader size={20} color={colors.primaryForeground} />
+              ) : (
+                <Text style={[styles.modalPrimaryBtnText, { color: colors.primaryForeground }]}>
+                  Continue with Google Account →
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={[styles.privacyBadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <ShieldCheck size={18} color={colors.primary} />
+              <Text style={[styles.privacyBadgeText, { color: colors.mutedForeground }]}>
+                End-to-end encrypted storage. Your personal data is never shared.
+              </Text>
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>

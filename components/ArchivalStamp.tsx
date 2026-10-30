@@ -352,27 +352,31 @@ function Tilting3DStampShowcase({ stamp, isUnlocked, stampAsset }: Tilting3DProp
   }
 
   // Native 3D Animation & PanResponder
-  const rotateX = Animated.add(
-    pan.y.interpolate({
-      inputRange: [-22, 22],
-      outputRange: ['-18deg', '18deg'],
-    }),
+  const sumY = Animated.add(
+    pan.y,
     ambientWobble.interpolate({
       inputRange: [-1, 1],
-      outputRange: ['-5deg', '5deg'],
+      outputRange: [-6, 6],
     })
   );
 
-  const rotateY = Animated.add(
-    pan.x.interpolate({
-      inputRange: [-26, 26],
-      outputRange: ['-20deg', '20deg'],
-    }),
+  const sumX = Animated.add(
+    pan.x,
     ambientWobble.interpolate({
       inputRange: [-1, 1],
-      outputRange: ['-7deg', '7deg'],
+      outputRange: [-8, 8],
     })
   );
+
+  const rotateX = sumY.interpolate({
+    inputRange: [-28, 28],
+    outputRange: ['-22deg', '22deg'],
+  });
+
+  const rotateY = sumX.interpolate({
+    inputRange: [-34, 34],
+    outputRange: ['-26deg', '26deg'],
+  });
 
   return (
     <View style={styles.nativeShowcaseWrap} {...panResponder.panHandlers}>

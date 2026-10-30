@@ -12,7 +12,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '@/contexts/AppContext';
 import { useDiary } from '@/contexts/DiaryContext';
 import { WoodenTableBackground } from '@/components/WoodenTableBackground';
-import { DappledPlantShadowOverlay } from '@/components/DappledPlantShadowOverlay';
 import { BrandLogoHorizontal } from '@/components/BrandLogo';
 import { HeirloomPhotobook } from '@/components/HeirloomPhotobook';
 import { BadgeUnlockCelebrationModal } from '@/components/BadgeUnlockCelebrationModal';
@@ -97,9 +96,6 @@ export default function TodayTab() {
 
   return (
     <WoodenTableBackground>
-      {/* Swaying Dappled Botanical Plant Shadow on top of table */}
-      <DappledPlantShadowOverlay />
-
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingTop: topPad + 4, paddingBottom: botPad }]}
