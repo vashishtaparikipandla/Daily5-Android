@@ -84,42 +84,40 @@ jobs:
           mkdir -p build-output
           APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
           if [ -f "$APK_FILE" ]; then
-            cp "$APK_FILE" build-output/DearDay-Build17.apk
-            echo "Found APK at $APK_FILE"
-            ls -lh build-output/DearDay-Build17.apk
-          else
-            echo "Error: No APK found!"
-            find android/app/build -name "*.apk" -ls || true
-            exit 1
-          fi
+            cp "$APK_FILE" build-output/DearDay-Build18.apk
+          echo "Found APK at $APK_FILE"
+          ls -lh build-output/DearDay-Build18.apk
+        else
+          echo "Error: No APK found!"
+          find android/app/build -name "*.apk" -ls || true
+          exit 1
+        fi
 
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: DearDay-Build17-APK
-          path: build-output/DearDay-Build17.apk
-          retention-days: 14
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: DearDay-Build18-APK
+        path: build-output/DearDay-Build18.apk
+        retention-days: 14
 
-      - name: Print Release Keystore SHA-1 (for Firebase Console)
-        run: |
-          echo "=== Release Keystore SHA-1 (register this in Firebase Console for Google Sign-In) ==="
-          keytool -list -v \
-            -keystore android/app/release.keystore \
-            -alias "166d4c3fcd3104977d14255d6b4c35de" \
-            -storepass "2a10a1e38f72249fcb3a0722f2387c27" \
-            -keypass "0a503966bb0ee27299c2ebdb6d6b1ec0" \
-            2>/dev/null | grep -E "SHA1|SHA-1|Certificate fingerprint" || true
-          echo "==============================="
+    - name: Print Release Keystore SHA-1 (for Firebase Console)
+      run: |
+        echo "=== Release Keystore SHA-1 ==="
+        keytool -list -v \
+          -keystore android/app/release.keystore \
+          -alias "166d4c3fcd3104977d14255d6b4c35de" \
+          -storepass "2a10a1e38f72249fcb3a0722f2387c27" \
+          -keypass "0a503966bb0ee27299c2ebdb6d6b1ec0" \
+          2>/dev/null | grep -E "SHA1|SHA-1|Certificate fingerprint" || true
+        echo "==============================="
 
-      - name: Job Summary
-        run: |
-          echo "### 🚀 Dear Day Android Build 17 — APK Ready!" >> $GITHUB_STEP_SUMMARY
-          echo "**Fixes in this build:**" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Page flip now pivots from spine (left edge), not page center" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Grey scroll indicator rect removed from sticker tray" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Discover 'Create Today' now navigates to homescreen photobook" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Sticker drag performance: native driver for scale animation" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ DraggableStickerItem memoised to prevent unnecessary re-renders" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Drive backup: fixed offlineAccess flag, better DEVELOPER_ERROR message" >> $GITHUB_STEP_SUMMARY
-          echo "- **⚠️ Google Sign-In:** Requires SHA-1 fingerprint registered in Firebase Console — see 'Print Release Keystore SHA-1' step above" >> $GITHUB_STEP_SUMMARY
-          echo "- **File:** [DearDay-Build17-APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+    - name: Job Summary
+      run: |
+        echo "### 🚀 Dear Day Android Build 18 — Official Signed APK Ready!" >> $GITHUB_STEP_SUMMARY
+        echo "**Updates in this build:**" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ **Google Sign-In:** Official Firebase OAuth client credentials & matching SHA-1 registered" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ **Google Drive Backup:** Official Web Client ID configured for seamless backup & restore" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ **3D Photobook:** Spine-edge pivot flip animation (translate-rotate-translate)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ **Stickers:** Native driver scale & memoised sticker items for 60fps dragging" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ **Discover:** 'Capture Today' redirects cleanly to home photobook" >> $GITHUB_STEP_SUMMARY
+        echo "- **File:** [DearDay-Build18-APK](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY

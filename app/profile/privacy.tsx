@@ -34,7 +34,7 @@ import { exportBackupFile, importBackupFromFilePicker } from '@/lib/backup';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { BrandLogoLoader } from '@/components/BrandLogo';
 
-const WEB_CLIENT_ID: string | undefined = undefined;
+const WEB_CLIENT_ID = '564713560218-ik1t9e0ji78ubqueohndkdffqngm60j4.apps.googleusercontent.com';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

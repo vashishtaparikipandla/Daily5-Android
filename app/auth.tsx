@@ -56,9 +56,8 @@ function TelegramIcon({ size = 20 }: { size?: number }) {
   );
 }
 
-// Default Android OAuth Client Configuration
-// Web Client ID is omitted by default so Play Services binds to native application keystore directly
-const WEB_CLIENT_ID: string | undefined = undefined;
+// Official Firebase Android & Web OAuth Client Configuration
+const WEB_CLIENT_ID = '564713560218-ik1t9e0ji78ubqueohndkdffqngm60j4.apps.googleusercontent.com';
 
 export default function AuthScreen() {
   const { signIn, setDriveConnection } = useApp();

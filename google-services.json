@@ -12,7 +12,20 @@
           "package_name": "app.daily5.android"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "564713560218-4ra7tmrj5bbn4u1slft3cjebqk53nhdb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.daily5.android",
+            "certificate_hash": "0a4764c9b3c65f736ff41d9d4a1f7691e150fd83"
+          }
+        },
+        {
+          "client_id": "564713560218-ik1t9e0ji78ubqueohndkdffqngm60j4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD_EHV-J3lRwCsoK_eqZESAv4qm50czxxY"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "564713560218-ik1t9e0ji78ubqueohndkdffqngm60j4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
