@@ -246,7 +246,7 @@ function PrivacyContent() {
       GoogleSignin.configure({
         scopes: ['https://www.googleapis.com/auth/drive.appdata'],
         webClientId: WEB_CLIENT_ID,
-        offlineAccess: true,
+        offlineAccess: false,  // avoids serverAuthCode requirement which needs a web client ID
       });
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const response = await GoogleSignin.signIn();
@@ -270,6 +270,17 @@ function PrivacyContent() {
         // User cancelled sign-in
       } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         Alert.alert('Google Play Services unavailable', 'Google Play Services is required to connect Google Drive.');
+      } else if (
+        String(err.code) === '10' ||
+        err.message?.includes('DEVELOPER_ERROR') ||
+        err.message?.includes('10:')
+      ) {
+        // SHA-1 fingerprint not registered in Firebase Console
+        Alert.alert(
+          'Configuration Required',
+          'Google Sign-In needs the app fingerprint registered in the Google Cloud Console. Please visit the App Settings to complete this one-time setup, or use Local Backup instead.',
+          [{ text: 'OK' }]
+        );
       } else {
         console.error('Google Drive Connection Error:', err);
         Alert.alert('Connection failed', err?.message || 'Could not connect to Google Drive. Please try again.');

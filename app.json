@@ -33,7 +33,7 @@
       },
       "package": "app.daily5.android",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 16,
+      "versionCode": 17,
       "softwareKeyboardLayoutMode": "resize",
       "androidNavigationBar": {
         "barStyle": "dark-content",

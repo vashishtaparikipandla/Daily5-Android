@@ -61,7 +61,7 @@ export default function DiscoverTab() {
               title="No Memories on This Day Yet"
               description="Moments recorded on this day in past years will magically surface here as your archival diary grows."
               actionLabel="Capture Today's Moments"
-              onAction={() => router.push({ pathname: '/log-modal', params: { date: today } })}
+              onAction={() => router.push('/(tabs)/')}
               style={styles.emptyStateFill}
             />
           </View>

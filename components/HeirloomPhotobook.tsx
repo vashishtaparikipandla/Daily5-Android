@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import {
   View,
   Text,
@@ -80,7 +80,8 @@ interface DraggableStickerProps {
   onDragEnd: (uid: string, dx: number, dy: number) => void;
 }
 
-function DraggableStickerItem({
+// Memoised to prevent re-renders from parent state changes (e.g. pageStickers updates)
+const DraggableStickerItem = memo(function DraggableStickerItem({
   stk,
   catalogItem,
   isSelected,
@@ -105,7 +106,7 @@ function DraggableStickerItem({
         Animated.spring(scaleAnim, {
           toValue: 1.15,
           friction: 6,
-          useNativeDriver: false,
+          useNativeDriver: true,  // ✅ native driver for scale — no JS bridge jank
         }).start();
       },
       onPanResponderMove: (_, gesture) => {
@@ -116,7 +117,7 @@ function DraggableStickerItem({
         Animated.spring(scaleAnim, {
           toValue: 1,
           friction: 6,
-          useNativeDriver: false,
+          useNativeDriver: true,
         }).start();
         pan.setValue({ x: 0, y: 0 });
         onDragEnd(stk.uid, gesture.dx, gesture.dy);
@@ -125,7 +126,7 @@ function DraggableStickerItem({
         Animated.spring(scaleAnim, {
           toValue: 1,
           friction: 6,
-          useNativeDriver: false,
+          useNativeDriver: true,
         }).start();
         pan.setValue({ x: 0, y: 0 });
         onDragEnd(stk.uid, 0, 0);
@@ -160,7 +161,7 @@ function DraggableStickerItem({
       </TouchableOpacity>
     </Animated.View>
   );
-}
+});
 
 interface HeirloomPhotobookProps {
   initialDay?: number;
@@ -865,7 +866,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
           </View>
         )}
 
-        {/* Animated 3D Page Curl Leaf when flipping */}
+        {/* Animated 3D Page Curl Leaf when flipping — pivot from LEFT SPINE edge */}
         {isFlipping && (
           <Animated.View
             pointerEvents="none"
@@ -874,14 +875,22 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
               {
                 width: bookWidth - 18,
                 height: bookHeight,
+                // Spine-edge pivot trick:
+                // RN Animated.View pivots from centre by default.
+                // To pivot from the LEFT spine we:
+                //   1. translate LEFT by half the page width  (moves pivot to left edge)
+                //   2. rotateY
+                //   3. translate RIGHT by half the page width (restore position)
                 transform: [
+                  { translateX: -((bookWidth - 18) / 2) },
                   { perspective: 1400 },
                   {
                     rotateY: pageFlipAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: flipDirection === 'forward' ? ['0deg', '-180deg'] : ['-180deg', '0deg'],
+                      outputRange: flipDirection === 'forward' ? ['0deg', '-180deg'] : ['180deg', '0deg'],
                     }),
                   },
+                  { translateX: (bookWidth - 18) / 2 },
                 ],
               },
             ]}
@@ -893,7 +902,7 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
                 {
                   opacity: pageFlipAnim.interpolate({
                     inputRange: [0, 0.5, 1],
-                    outputRange: [0, 0.38, 0],
+                    outputRange: [0, 0.45, 0],
                   }),
                 },
               ]}
@@ -942,6 +951,9 @@ export function HeirloomPhotobook({ initialDay, monthKey }: HeirloomPhotobookPro
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              scrollIndicatorInsets={{ right: 1 }}
+              overScrollMode="never"
               contentContainerStyle={styles.stickerTrayScroll}
             >
               {STICKER_CATALOG.map(stk => (
